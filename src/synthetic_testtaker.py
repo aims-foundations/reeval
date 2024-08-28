@@ -7,7 +7,7 @@ from scipy.stats import beta, lognorm, norm
 import jax
 
 class SimulatedTestTaker():
-    def __init__(self, theta=None, model="3PL"):
+    def __init__(self, theta=None, model="1PL"):
         self.model = model
         if theta==None:
             self.ability = torch.normal(mean=0.0, std=1.0, size=(1,))
