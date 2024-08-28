@@ -92,6 +92,9 @@ def perform_t_test(sample_1, sample_2, label=""):
     else:
         print(f"Fail to reject the null hypothesis for {label}.")
         
+def compute_mse(predicted, true):
+    return np.mean((predicted - true) ** 2)
+
 if __name__ == "__main__":
     print(calculate_1d_wasserstein_distance([0, 1, 3], [5, 6, 8]))
     print(calculate_1d_wasserstein_distance([1, 1, 3], [5, 6, 8]))
