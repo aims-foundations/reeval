@@ -52,7 +52,6 @@ if __name__ == "__main__":
 
     true_theta = pd.read_csv('/Users/tyhhh/Desktop/certified-eval/data/synthetic/response_matrix/true_theta.csv')
     true_Z = pd.read_csv('/Users/tyhhh/Desktop/certified-eval/data/synthetic/response_matrix/true_Z.csv')
-    print(true_theta)
     true_theta = true_theta.iloc[:, 0].to_numpy()
     true_Z = true_Z.iloc[:, 0].to_numpy()
     
