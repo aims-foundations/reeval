@@ -31,7 +31,7 @@ def model(question_num, testtaker_num, response_matrix):
     
     numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
 
-def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=9, num_warmup=10):
+def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=9000, num_warmup=1000):
     rng_key = random.PRNGKey(0)
     rng_key, rng_key_ = random.split(rng_key)
     
@@ -66,6 +66,11 @@ if __name__ == "__main__":
     z2_samples = np.array(z2_samples)
     z3_samples = np.array(z3_samples)
 
+    np.save('../data/synthetic/MCMC_3PL/theta_samples.npy', theta_samples)
+    np.save('../data/synthetic/MCMC_3PL/z1_samples.npy', z1_samples)
+    np.save('../data/synthetic/MCMC_3PL/z2_samples.npy', z2_samples)
+    np.save('../data/synthetic/MCMC_3PL/z3_samples.npy', z3_samples)
+    
     true_theta = pd.read_csv('../data/synthetic/response_matrix/true_theta.csv')
     true_Z = pd.read_csv('../data/synthetic/response_matrix/true_Z_3PL.csv')
     true_theta = true_theta.iloc[:, 0].to_numpy()
