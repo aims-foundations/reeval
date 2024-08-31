@@ -37,6 +37,13 @@ def model(Z, asked_question_list, asked_answer_list):
     probs = item_response_fn_1PL(Z_asked, theta_hat, datatype="jnp")
     numpyro.sample("obs", dist.Bernoulli(probs), obs=asked_answer_list)
 
+# def model(asked_question_list, asked_answer_list):
+#     Z_asked = numpyro.sample("Z", dist.Normal(0.0, 1.0, (asked_question_list.size(),)))
+#     theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0)) # prior
+#     Z_asked = Z[asked_question_list]
+#     probs = item_response_fn_1PL(Z_asked, theta_hat, datatype="jnp")
+#     numpyro.sample("obs", dist.Bernoulli(probs), obs=asked_answer_list)
+
 def fit_theta_mcmc(Z, asked_question_list, asked_answer_list, num_samples=9000, num_warmup=1000):
     rng_key = random.PRNGKey(0)
     rng_key, rng_key_ = random.split(rng_key)
@@ -122,14 +129,12 @@ if __name__ == "__main__":
     asked_answer_list = jnp.array(asked_answer_list)
     z3 = jnp.array(z3)
 
-    mean_theta, std_theta, _ = fit_theta_mcmc(z3, asked_question_list, asked_answer_list)
+    mean_theta, std_theta, theta_samples = fit_theta_mcmc(z3, asked_question_list, asked_answer_list)
 
     print(f"mcmc theta mean: {mean_theta}")
     print(f"mcmc theta std: {std_theta}")
     
-    plot_trace_and_density(theta_samples_list)
-    
-    
+    plot_trace_and_density(theta_samples)
     
     theta_samples_list = [theta_samples[:1000], theta_samples[:1001]]
     plot_trace_and_density(theta_samples_list)

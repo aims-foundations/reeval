@@ -113,3 +113,12 @@ if __name__ == "__main__":
     print(f'Wasserstein Distance: {wd}')
     print(f'error rate: {(wd - diff)/diff}')
     
+    mean_1 = 0.7
+    mean_2 = 0.3
+    samples_1 = np.random.binomial(n=1, p=mean_1, size=size)
+    samples_2 = np.random.binomial(n=1, p=mean_2, size=size)
+    wd = calculate_1d_wasserstein_distance(samples_1, samples_2)
+    diff = samples_1.mean() - samples_2.mean()
+    print(wd)
+    print(diff)
+    
