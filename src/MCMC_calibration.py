@@ -7,7 +7,8 @@ import jax.random as random
 import pandas as pd
 import matplotlib.pyplot as plt
 import torch
-from utils import item_response_fn_3PL, compute_mse, set_seed
+from tqdm import tqdm
+from utils import item_response_fn_3PL, set_seed
 
 def model(question_num, testtaker_num, response_matrix):
     z1_hat = numpyro.sample("z1_hat", dist.Normal(0.0, 1.0).expand((question_num,)))
@@ -30,7 +31,7 @@ def model(question_num, testtaker_num, response_matrix):
     
     numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
 
-def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=900, num_warmup=100):
+def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=9, num_warmup=10):
     rng_key = random.PRNGKey(0)
     rng_key, rng_key_ = random.split(rng_key)
     
@@ -59,51 +60,38 @@ if __name__ == "__main__":
 
     theta_samples, z1_samples, z2_samples, z3_samples = \
         irt_mcmc(question_num, testtaker_num, response_matrix)
-    
-    theta_mean = jnp.mean(theta_samples, axis=0)
-    z1_mean = jnp.mean(z1_samples, axis=0)
-    z2_mean = jnp.mean(z2_samples, axis=0)
-    z3_mean = jnp.mean(z3_samples, axis=0)
 
-    theta_mean = np.array(theta_mean)
-    z1_mean = np.array(z1_mean)
-    z2_mean = np.array(z2_mean)
-    z3_mean = np.array(z3_mean)
+    theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
+    z1_samples = np.array(z1_samples) # (num_samples, question_num)
+    z2_samples = np.array(z2_samples)
+    z3_samples = np.array(z3_samples)
 
-    true_theta = pd.read_csv('/Users/tyhhh/Desktop/certified-eval/data/synthetic/response_matrix/true_theta.csv')
-    true_Z = pd.read_csv('/Users/tyhhh/Desktop/certified-eval/data/synthetic/response_matrix/true_Z_3PL.csv')
+    true_theta = pd.read_csv('../data/synthetic/response_matrix/true_theta.csv')
+    true_Z = pd.read_csv('../data/synthetic/response_matrix/true_Z_3PL.csv')
     true_theta = true_theta.iloc[:, 0].to_numpy()
     true_z1 = true_Z.iloc[:, 0].to_numpy()
     true_z2 = true_Z.iloc[:, 1].to_numpy()
     true_z3 = true_Z.iloc[:, 2].to_numpy()
     
-    assert true_theta.shape == theta_mean.shape
-    assert true_z1.shape == z1_mean.shape
+    assert true_theta.shape == theta_samples[0].shape
+    assert true_z1.shape == z1_samples[0].shape == z2_samples[0].shape == z3_samples[0].shape
+
     
-    theta_mse = compute_mse(theta_mean, true_theta)
-    z1_mse = compute_mse(z1_mean, true_z1)
-    z2_mse = compute_mse(z2_mean, true_z2)
-    z3_mse = compute_mse(z3_mean, true_z3)
-
-    print(f"Theta MSE: {theta_mse}")
-    print(f"z1 MSE: {z1_mse}")
-    print(f"z2 MSE: {z2_mse}")
-    print(f"z3 MSE: {z3_mse}")
-
-
     
     # Goodness of Fit
-    theta = torch.tensor(theta_mean, dtype=torch.float32)
-
+    theta = torch.tensor(true_theta, dtype=torch.float16)
+    num_hmc_samples = theta_samples.shape[0]
+    
     bins = np.linspace(-3, 3, 7)
     print(bins)
     # [-3. -2. -1.  0.  1.  2.  3.]
+    # TODO: <-3 or >3 as new bins for real data
 
     diff_list = []
-    for i in range(question_num):
-        single_z1 = torch.tensor(true_z1[i], dtype=torch.float32)
-        single_z2 = torch.tensor(true_z2[i], dtype=torch.float32)
-        single_z3 = torch.tensor(true_z3[i], dtype=torch.float32)
+    for i in tqdm(range(question_num)):
+        single_z1_samples = torch.tensor(z1_samples[:, i], dtype=torch.float16)
+        single_z2_samples = torch.tensor(z2_samples[:, i], dtype=torch.float16)
+        single_z3_samples = torch.tensor(z3_samples[:, i], dtype=torch.float16)
 
         y_col = y_df.iloc[:, i].values
 
@@ -113,11 +101,14 @@ if __name__ == "__main__":
                 y_empirical = y_col[bin_mask].mean()
 
                 theta_mid = (bins[j] + bins[j + 1]) / 2
-                theta_mid_tensor = torch.tensor([theta_mid], dtype=torch.float32)
-                y_theoretical = item_response_fn_3PL(
-                    single_z1, single_z2, single_z3, theta_mid_tensor
-                ).item()
-
+                theta_mid_tensor = torch.tensor([theta_mid], dtype=torch.float16)
+                y_theoretical_list = [item_response_fn_3PL(
+                    single_z1_samples[k],
+                    single_z2_samples[k],
+                    single_z3_samples[k],
+                    theta_mid_tensor
+                ).item() for k in range(num_hmc_samples)]
+                y_theoretical = sum(y_theoretical_list) / len(y_theoretical_list)
                 diff = abs(y_empirical - y_theoretical)
                 diff_list.append(diff)
 
