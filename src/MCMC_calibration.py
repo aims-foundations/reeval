@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import numpyro
 import numpyro.distributions as dist
@@ -53,38 +54,47 @@ def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=9000, num
     return theta_samples, z1_samples, z2_samples, z3_samples
     
 if __name__ == "__main__":
+    experiment_type = "real"
     set_seed(10)
-    y_df = pd.read_csv('/Users/tyhhh/Desktop/certified-eval/data/synthetic/response_matrix/synthetic_matrix_3PL.csv', index_col=0)
+    
+    if experiment_type == "synthetic":
+        y_df = pd.read_csv('../data/synthetic/response_matrix/synthetic_matrix_3PL.csv', index_col=0)
+    elif experiment_type == "real":
+        y_df = pd.read_csv('../data/real/response_matrix/all_matrix.csv', index_col=0)
+    
     response_matrix = y_df.values
     testtaker_num, question_num = response_matrix.shape
 
-    theta_samples, z1_samples, z2_samples, z3_samples = \
-        irt_mcmc(question_num, testtaker_num, response_matrix)
+    theta_file = f'../data/synthetic/MCMC_3PL/theta_samples_{experiment_type}.npy'
+    z1_file = f'../data/synthetic/MCMC_3PL/z1_samples_{experiment_type}.npy'
+    z2_file = f'../data/synthetic/MCMC_3PL/z2_samples_{experiment_type}.npy'
+    z3_file = f'../data/synthetic/MCMC_3PL/z3_samples_{experiment_type}.npy'
 
-    theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
-    z1_samples = np.array(z1_samples) # (num_samples, question_num)
-    z2_samples = np.array(z2_samples)
-    z3_samples = np.array(z3_samples)
+    if os.path.exists(theta_file) and os.path.exists(z1_file) \
+        and os.path.exists(z2_file) and os.path.exists(z3_file):
+        print("Loading existing samples...")
+        theta_samples = np.load(theta_file)
+        z1_samples = np.load(z1_file)
+        z2_samples = np.load(z2_file)
+        z3_samples = np.load(z3_file)
+    else:
+        print("No existing file, Running MCMC...")
+        theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
+            question_num, testtaker_num, response_matrix
+            )
+        theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
+        z1_samples = np.array(z1_samples) # (num_samples, question_num)
+        z2_samples = np.array(z2_samples)
+        z3_samples = np.array(z3_samples)
 
-    np.save('../data/synthetic/MCMC_3PL/theta_samples.npy', theta_samples)
-    np.save('../data/synthetic/MCMC_3PL/z1_samples.npy', z1_samples)
-    np.save('../data/synthetic/MCMC_3PL/z2_samples.npy', z2_samples)
-    np.save('../data/synthetic/MCMC_3PL/z3_samples.npy', z3_samples)
-    
-    true_theta = pd.read_csv('../data/synthetic/response_matrix/true_theta.csv')
-    true_Z = pd.read_csv('../data/synthetic/response_matrix/true_Z_3PL.csv')
-    true_theta = true_theta.iloc[:, 0].to_numpy()
-    true_z1 = true_Z.iloc[:, 0].to_numpy()
-    true_z2 = true_Z.iloc[:, 1].to_numpy()
-    true_z3 = true_Z.iloc[:, 2].to_numpy()
-    
-    assert true_theta.shape == theta_samples[0].shape
-    assert true_z1.shape == z1_samples[0].shape == z2_samples[0].shape == z3_samples[0].shape
-
-    
-    
+        np.save(theta_file, theta_samples)
+        np.save(z1_file, z1_samples)
+        np.save(z2_file, z2_samples)
+        np.save(z3_file, z3_samples)
+        
     # Goodness of Fit
-    theta = torch.tensor(true_theta, dtype=torch.float16)
+    theta_mean = np.mean(theta_samples, axis=0)
+    theta = torch.tensor(theta_mean, dtype=torch.float16)
     num_hmc_samples = theta_samples.shape[0]
     
     bins = np.linspace(-3, 3, 7)
@@ -131,4 +141,4 @@ if __name__ == "__main__":
     plt.ylabel('Density')
     plt.title('Histogram of Differences (Empirical vs Theoretical)')
     plt.grid(True)
-    plt.savefig(f'../plot/synthetic/MCMC_3pl.png')
+    plt.savefig(f'../plot/synthetic/MCMC_3pl_{experiment_type}.png')
