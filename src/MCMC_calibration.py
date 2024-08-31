@@ -113,8 +113,9 @@ if __name__ == "__main__":
                     single_z3_samples[k],
                     theta_mid_tensor
                 ).item() for k in range(num_hmc_samples)]
-                y_theoretical = sum(y_theoretical_list) / len(y_theoretical_list)
-                diff = abs(y_empirical - y_theoretical)
+                
+                in_diff_list = [abs(y_empirical - yt) for yt in y_theoretical_list]
+                diff = sum(in_diff_list) / len(in_diff_list)
                 diff_list.append(diff)
 
     diff_array = np.array(diff_list)
