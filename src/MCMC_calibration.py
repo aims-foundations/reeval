@@ -5,6 +5,7 @@ from numpyro.infer import MCMC, NUTS
 import jax.numpy as jnp
 import jax.random as random
 import pandas as pd
+import matplotlib.pyplot as plt
 import torch
 from utils import item_response_fn_3PL, compute_mse, set_seed
 
@@ -29,7 +30,7 @@ def model(question_num, testtaker_num, response_matrix):
     
     numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
 
-def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=9, num_warmup=10):
+def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=900, num_warmup=100):
     rng_key = random.PRNGKey(0)
     rng_key, rng_key_ = random.split(rng_key)
     
@@ -52,7 +53,8 @@ def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=9, num_wa
     
 if __name__ == "__main__":
     set_seed(10)
-    response_matrix = pd.read_csv('/Users/tyhhh/Desktop/certified-eval/data/real/response_matrix/all_matrix.csv', index_col=0).values
+    y_df = pd.read_csv('/Users/tyhhh/Desktop/certified-eval/data/synthetic/response_matrix/synthetic_matrix_3PL.csv', index_col=0)
+    response_matrix = y_df.values
     testtaker_num, question_num = response_matrix.shape
 
     theta_samples, z1_samples, z2_samples, z3_samples = \
@@ -68,8 +70,8 @@ if __name__ == "__main__":
     z2_mean = np.array(z2_mean)
     z3_mean = np.array(z3_mean)
 
-    true_theta = pd.read_csv('/Users/tyhhh/Desktop/certified-eval/data/real/irt_result/theta/all_3PL_theta.csv')
-    true_Z = pd.read_csv('/Users/tyhhh/Desktop/certified-eval/data/real/irt_result/Z/all_3PL_Z_clean.csv')
+    true_theta = pd.read_csv('/Users/tyhhh/Desktop/certified-eval/data/synthetic/response_matrix/true_theta.csv')
+    true_Z = pd.read_csv('/Users/tyhhh/Desktop/certified-eval/data/synthetic/response_matrix/true_Z_3PL.csv')
     true_theta = true_theta.iloc[:, 0].to_numpy()
     true_z1 = true_Z.iloc[:, 0].to_numpy()
     true_z2 = true_Z.iloc[:, 1].to_numpy()
@@ -103,7 +105,7 @@ if __name__ == "__main__":
         single_z2 = torch.tensor(true_z2[i], dtype=torch.float32)
         single_z3 = torch.tensor(true_z3[i], dtype=torch.float32)
 
-        y_col = response_matrix.iloc[:, i].values
+        y_col = y_df.iloc[:, i].values
 
         for j in range(len(bins) - 1):
             bin_mask = (theta >= bins[j]) & (theta < bins[j + 1])
@@ -112,7 +114,9 @@ if __name__ == "__main__":
 
                 theta_mid = (bins[j] + bins[j + 1]) / 2
                 theta_mid_tensor = torch.tensor([theta_mid], dtype=torch.float32)
-                y_theoretical = item_response_fn_1PL(theta_mid_tensor, single_z3).item()
+                y_theoretical = item_response_fn_3PL(
+                    single_z1, single_z2, single_z3, theta_mid_tensor
+                ).item()
 
                 diff = abs(y_empirical - y_theoretical)
                 diff_list.append(diff)
@@ -130,4 +134,4 @@ if __name__ == "__main__":
     plt.ylabel('Density')
     plt.title('Histogram of Differences (Empirical vs Theoretical)')
     plt.grid(True)
-    plt.show()
+    plt.savefig(f'../plot/synthetic/MCMC_3pl.png')
