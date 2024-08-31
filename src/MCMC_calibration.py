@@ -24,7 +24,7 @@ def model(question_num, testtaker_num, response_matrix):
         z1_hat_expanded,
         z2_hat_expanded,
         z3_hat_expanded,
-        theta_hat_expanded, 
+        theta_hat_expanded,
         datatype="jnp"
     )
     
