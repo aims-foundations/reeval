@@ -54,7 +54,7 @@ def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=9000, num
     return theta_samples, z1_samples, z2_samples, z3_samples
     
 if __name__ == "__main__":
-    experiment_type = "synthetic"
+    experiment_type = "real"
     set_seed(10)
     
     if experiment_type == "synthetic":
@@ -117,13 +117,14 @@ if __name__ == "__main__":
 
                 theta_mid = (bins[j] + bins[j + 1]) / 2
                 theta_mid_tensor = torch.tensor([theta_mid], dtype=torch.float16)
-                y_theoretical_list = [item_response_fn_3PL(
-                    single_z1_samples[k],
-                    single_z2_samples[k],
-                    single_z3_samples[k],
+                y_theoretical_tensor = item_response_fn_3PL(
+                    single_z1_samples,
+                    single_z2_samples,
+                    single_z3_samples,
                     theta_mid_tensor
-                ).item() for k in range(num_hmc_samples)]
-                in_diff_list = [abs(y_empirical - yt) for yt in y_theoretical_list]
+                )
+                y_theoretical = y_theoretical_tensor.numpy()
+                in_diff_list = [abs(y_empirical - yt) for yt in y_theoretical]
                 diff = sum(in_diff_list) / len(in_diff_list)
                 diff_list.append(diff)
 
