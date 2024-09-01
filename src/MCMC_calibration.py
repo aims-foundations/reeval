@@ -136,9 +136,10 @@ if __name__ == "__main__":
     print(f'Standard deviation of differences: {std_diff}')
 
     plt.figure(figsize=(10, 6))
-    plt.hist(diff_list, bins=200, density=True, alpha=0.7, color='blue')
+    plt.hist(diff_list, bins=40, density=True, alpha=0.7, color='blue')
     plt.xlabel('Difference')
     plt.ylabel('Density')
     plt.title('Histogram of Differences (Empirical vs Theoretical)')
+    plt.xlim(0, 1)
     plt.grid(True)
     plt.savefig(f'../plot/synthetic/MCMC_3pl_{experiment_type}.png')
