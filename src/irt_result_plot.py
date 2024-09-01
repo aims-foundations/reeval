@@ -21,13 +21,9 @@ def plot_hist(serial, data, color, para, perturb):
     plt.grid(True)
             
 if __name__ == "__main__":
-    
     # parser = argparse.ArgumentParser()
-    # parser.add_argument("response_matrix_path", type=str, help="path to response matrix")
     # parser.add_argument("experiment_type", type=str, help="real or synthetic")
-    
     # args = parser.parse_args()
-    # response_matrix_path = args.response_matrix_path
     
     true_Z_path = f'../data/synthetic/response_matrix/true_Z.csv'
     true_theta_path = f'../data/synthetic/response_matrix/true_theta.csv'
@@ -38,13 +34,14 @@ if __name__ == "__main__":
     
     plt.rcParams.update({'font.size': 20})
     
-    perturb_list = ["base", "perturb1", "perturb2"]
-    model_list = ["1PL", "2PL","3PL"]
+    perturb_list = ["base", "perturb1", "perturb2", "all"]
+    model_list = ["1PL", "2PL", "3PL"]
 
 
 
     # run mirt.R
     subprocess.run(f"conda run -n R Rscript fit_irt.R {experiment_type}", shell=True, check=True)
+    print("finished running mirt.R")
     
     # clean up item parameters inferred from IRT
     for filename in os.listdir(Z_dir):
@@ -69,10 +66,12 @@ if __name__ == "__main__":
             # Save the cleaned data to a new CSV file
             clean_file_path = os.path.join(Z_dir, filename.replace('.csv', '_clean.csv'))
             new_df.to_csv(clean_file_path, index=False)
+    print("finished cleaning up item parameters inferred from IRT")
+
 
 
     if experiment_type == 'synthetic':
-        # synthetic mse of Z and theta
+        # mse of Z and theta, only synthetic 
         mse_output_path = '../plot/synthetic/mse.txt'
         with open(mse_output_path, 'w') as f:
             f.write('MSE of Z\n')
@@ -94,7 +93,8 @@ if __name__ == "__main__":
                     mse_theta = mean_squared_error(true_theta, synthetic_theta)
                     model = filename.split('_theta.csv')[0].split('synthetic_')[1]
                     f.write(f'{model}: {mse_theta}\n')
-
+        print("finished mse of Z and theta, only synthetic")
+    
     
     
     # 3D plot of [z1, z2, z3], only 3PL
@@ -122,6 +122,7 @@ if __name__ == "__main__":
 
     ax.legend()
     plt.savefig('../plot/real/3d3pl.png')
+    print("finished 3D plot of [z1, z2, z3], only 3PL")
 
 
 
@@ -150,10 +151,11 @@ if __name__ == "__main__":
         plot_hist(9, perturb2_value[2], 'b', 'z3', 'perturb2')   
 
         plt.savefig(f'../plot/real/iparams{i+1}pl.png')
+    print("finished plot Z distribution (density histogram)")
+    
 
 
-
-    # 1D Wasserstein Distance
+    # 1D Wasserstein Distance of Z
     with open("../plot/real/1D_Wasserstein_Distance.txt", "w", encoding="utf-8") as f:
         for model in model_list:
             f.write(f"{model}\n")
@@ -176,7 +178,8 @@ if __name__ == "__main__":
                 f.write(f"Distance between base and perturb2: {distance_1_3}\n")
                 f.write(f"Distance between perturb1 and perturb2: {distance_2_3}\n")
                 f.write("\n")
-            
+    print("finished 1D Wasserstein Distance of Z")
+    
 
 
     # 3D Wasserstein Distance of Z
@@ -205,7 +208,8 @@ if __name__ == "__main__":
             f.write(f"Distance between base_matrix and perturb2_matrix: {distance_1_3}\n")
             f.write(f"Distance between perturb1_matrix and perturb2_matrix: {distance_2_3}\n")
             f.write("\n")
-
+    print("finished 3D Wasserstein Distance of Z")
+    
 
 
     # irt curve & scattar plot, only 1PL base
@@ -229,8 +233,8 @@ if __name__ == "__main__":
         z3 = torch.tensor(closest_points[target], dtype=torch.float32)
         indice = closest_points_indices[target]
 
-        y_df = pd.read_csv('../data/real/response_matrix/base_matrix.csv')
-        y = y_df.iloc[:, indice+1].values
+        y_df = pd.read_csv('../data/real/response_matrix/base_matrix.csv', index_col=0)
+        y = y_df.iloc[:, indice].values
 
         plt.figure(figsize=(10, 6))
 
@@ -244,3 +248,4 @@ if __name__ == "__main__":
         plt.ylabel('Pr(y=1)')
         plt.title(f'Scatter Plot and 1PL Model Curve for d around {target}')
         plt.savefig(f'../plot/real/empiricalvsestimated{i+1}.png')
+    print("finished irt curve & scattar plot, only 1PL base")

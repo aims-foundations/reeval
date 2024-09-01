@@ -22,7 +22,7 @@ def extract_content(tag, text):
 if __name__ == "__main__":
     load_dotenv()
     hf_token = os.getenv('HF_TOKEN')
-
+    
     os.makedirs("../../../data/real/pre_irt_data/eval", exist_ok=True)
 
     parser = argparse.ArgumentParser(description='get eval score using get-as-a-judge')

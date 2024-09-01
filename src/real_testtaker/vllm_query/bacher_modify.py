@@ -1,6 +1,5 @@
 from openai import OpenAI
 from concurrent.futures import ThreadPoolExecutor, wait
-from functools import partial
 from tqdm import tqdm
 
 class GPTBatcher:

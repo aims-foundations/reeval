@@ -15,13 +15,12 @@ def beta_params_from_mode(mode, concentration=10):
     beta_param = (1 - mode) * (concentration - 2) + 1
     return alpha, beta_param
 
-def construct_Z1_Z2(Y_bar, question_num, theta_1, theta_2):
+def construct_Z(Y_bar, question_num, theta):
     alpha, beta = beta_params_from_mode(Y_bar)
     beta_dist = torch.distributions.Beta(alpha, beta)
     Y = beta_dist.sample((question_num,))
-    Z_1 = inverse_item_response_fn_1PL(Y, theta_1)
-    Z_2 = inverse_item_response_fn_1PL(Y, theta_2)
-    return Z_1, Z_2
+    Z = inverse_item_response_fn_1PL(Y, theta)
+    return Z
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -34,7 +33,8 @@ if __name__ == "__main__":
 
     set_seed(args.seed)
 
-    Z_1, Z_2 = construct_Z1_Z2(args.Y_bar, args.question_num, args.theta_1, args.theta_2)
+    Z_1 = construct_Z(args.Y_bar, args.question_num, args.theta_1)
+    Z_2 = construct_Z(args.Y_bar, args.question_num, args.theta_2)
 
     testtaker1 = SimulatedTestTaker(theta=args.theta_1, model="1PL")
     testtaker2 = SimulatedTestTaker(theta=args.theta_2, model="1PL")
@@ -102,7 +102,3 @@ if __name__ == "__main__":
     fig_dir = '../plot/synthetic'
     os.makedirs(fig_dir, exist_ok=True)
     plt.savefig(f'{fig_dir}/test_dependent_simulation.png')
-    
-    
-    
-    

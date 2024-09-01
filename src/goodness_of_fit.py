@@ -5,23 +5,26 @@ from utils import item_response_fn_1PL
 import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
-    base_coef_1PL = pd.read_csv('../data/real/irt_result/Z/base_1PL_Z_clean.csv')
-    base_value_1PL = base_coef_1PL.iloc[:, 2].values
+    all_coef_1PL = pd.read_csv('../data/real/irt_result/Z/all_1PL_Z_clean.csv')
+    all_value_1PL = all_coef_1PL.iloc[:, 2].values
 
-    theta_df = pd.read_csv('../data/real/irt_result/theta/base_1PL_theta.csv')
+    theta_df = pd.read_csv('../data/real/irt_result/theta/all_1PL_theta.csv')
     theta = torch.tensor(theta_df.iloc[:, 1].values, dtype=torch.float32)
 
-    y_df = pd.read_csv('../data/real/response_matrix/base_matrix.csv')
+    y_df = pd.read_csv('../data/real/response_matrix/all_matrix.csv')
+
+    assert y_df.shape[1] == len(all_value_1PL), f"Number of columns in y_df ({y_df.shape[1]}) does not match the length of all_value_1PL ({len(all_value_1PL)})"
+    assert y_df.shape[0] == len(theta_df), f"Number of rows in y_df ({y_df.shape[0]}) does not match the length of theta_df ({len(theta_df)})"
 
     bins = np.linspace(-3, 3, 7)
     print(bins)
     # [-3. -2. -1.  0.  1.  2.  3.]
 
     diff_list = []
-    for i in range(len(base_value_1PL)):
-        single_z3 = torch.tensor(base_value_1PL[i], dtype=torch.float32)
+    for i in range(len(all_value_1PL)):
+        single_z3 = torch.tensor(all_value_1PL[i], dtype=torch.float32)
 
-        y_col = y_df.iloc[:, i+1].values
+        y_col = y_df.iloc[:, i].values
 
         for j in range(len(bins) - 1):
             bin_mask = (theta >= bins[j]) & (theta < bins[j + 1])
@@ -48,4 +51,4 @@ if __name__ == "__main__":
     plt.ylabel('Density')
     plt.title('Histogram of Differences (Empirical vs Theoretical)')
     plt.grid(True)
-    plt.show()
+    plt.savefig('../plot/real/goodness_of_fit.png')
