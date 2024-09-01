@@ -121,8 +121,8 @@ if __name__ == "__main__":
         asked_answer_list.append(new_testtaker.ask(z3, i))
     
     # MLE
-    theta_hat = fit_theta_mle(z3, asked_question_list, asked_answer_list, epoch=300)
-    print(f"mle theta: {theta_hat}")
+    # theta_hat = fit_theta_mle(z3, asked_question_list, asked_answer_list, epoch=300)
+    # print(f"mle theta: {theta_hat}")
 
     # MCMC
     asked_question_list = jnp.array(asked_question_list)
@@ -131,10 +131,10 @@ if __name__ == "__main__":
 
     mean_theta, std_theta, theta_samples = fit_theta_mcmc(z3, asked_question_list, asked_answer_list)
 
+    print(theta_samples)
+    
     print(f"mcmc theta mean: {mean_theta}")
     print(f"mcmc theta std: {std_theta}")
-    
-    plot_trace_and_density(theta_samples)
     
     theta_samples_list = [theta_samples[:1000], theta_samples[:1001]]
     plot_trace_and_density(theta_samples_list)

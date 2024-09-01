@@ -41,4 +41,4 @@ if __name__ == "__main__":
         "perturb2": perturb2_dataset
     })
 
-    dataset_dict.push_to_hub("yuhengtu/airbench_difficulty", private=True)
+    dataset_dict.push_to_hub("stair-lab/airbench-difficulty", private=True)

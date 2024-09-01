@@ -12,8 +12,8 @@ from tqdm import tqdm
 from utils import item_response_fn_3PL, set_seed
 
 def model(question_num, testtaker_num, response_matrix):
-    z1_hat = numpyro.sample("z1_hat", dist.Normal(0.0, 1.0).expand((question_num,)))
-    z2_hat = numpyro.sample("z2_hat", dist.Normal(0.0, 1.0).expand((question_num,)))
+    z1_hat = numpyro.sample("z1_hat", dist.Beta(0.5, 4).expand((question_num,)))
+    z2_hat = numpyro.sample("z2_hat", dist.LogNormal(0.0, 1.0).expand((question_num,)))
     z3_hat = numpyro.sample("z3_hat", dist.Normal(0.0, 1.0).expand((question_num,)))
     
     theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0).expand((testtaker_num,)))
@@ -54,7 +54,7 @@ def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=9000, num
     return theta_samples, z1_samples, z2_samples, z3_samples
     
 if __name__ == "__main__":
-    experiment_type = "real"
+    experiment_type = "synthetic"
     set_seed(10)
     
     if experiment_type == "synthetic":
@@ -72,13 +72,13 @@ if __name__ == "__main__":
 
     if os.path.exists(theta_file) and os.path.exists(z1_file) \
         and os.path.exists(z2_file) and os.path.exists(z3_file):
-        print("Loading existing samples...")
+        print("Loading existing samples..")
         theta_samples = np.load(theta_file)
         z1_samples = np.load(z1_file)
         z2_samples = np.load(z2_file)
         z3_samples = np.load(z3_file)
     else:
-        print("No existing file, Running MCMC...")
+        print("No existing file, Running MCMC..")
         theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
             question_num, testtaker_num, response_matrix
             )
@@ -123,7 +123,6 @@ if __name__ == "__main__":
                     single_z3_samples[k],
                     theta_mid_tensor
                 ).item() for k in range(num_hmc_samples)]
-                
                 in_diff_list = [abs(y_empirical - yt) for yt in y_theoretical_list]
                 diff = sum(in_diff_list) / len(in_diff_list)
                 diff_list.append(diff)
@@ -136,7 +135,7 @@ if __name__ == "__main__":
     print(f'Standard deviation of differences: {std_diff}')
 
     plt.figure(figsize=(10, 6))
-    plt.hist(diff_list, bins=40, density=True, alpha=0.7, color='blue')
+    plt.hist(diff_list, bins=200, density=True, alpha=0.7, color='blue')
     plt.xlabel('Difference')
     plt.ylabel('Density')
     plt.title('Histogram of Differences (Empirical vs Theoretical)')
