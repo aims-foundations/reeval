@@ -31,11 +31,13 @@ if __name__ == "__main__":
     perturb1_df = combined_df[combined_df['label'] == 'perturb1'].reset_index(drop=True)
     perturb2_df = combined_df[combined_df['label'] == 'perturb2'].reset_index(drop=True)
     
-    base_dataset = Dataset.from_pandas(base_df)
-    perturb1_dataset = Dataset.from_pandas(perturb1_df)
-    perturb2_dataset = Dataset.from_pandas(perturb2_df)
+    all_dataset = Dataset.from_pandas(combined_df.drop(columns=['label']))
+    base_dataset = Dataset.from_pandas(base_df.drop(columns=['label']))
+    perturb1_dataset = Dataset.from_pandas(perturb1_df.drop(columns=['label']))
+    perturb2_dataset = Dataset.from_pandas(perturb2_df.drop(columns=['label']))
     
     dataset_dict = DatasetDict({
+        "all": all_dataset,
         "base": base_dataset,
         "perturb1": perturb1_dataset,
         "perturb2": perturb2_dataset
