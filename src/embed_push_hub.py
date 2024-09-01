@@ -37,7 +37,7 @@ if __name__ == "__main__":
     perturb2_dataset = Dataset.from_pandas(perturb2_df.drop(columns=['label']))
     
     dataset_dict = DatasetDict({
-        "all": all_dataset,
+        "whole": all_dataset,
         "base": base_dataset,
         "perturb1": perturb1_dataset,
         "perturb2": perturb2_dataset
