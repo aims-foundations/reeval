@@ -1,10 +1,29 @@
 from openai import OpenAI
 from concurrent.futures import ThreadPoolExecutor, wait
 from tqdm import tqdm
+from together import Together
 
-class GPTBatcher:
-    def __init__(self, api_key, model_name, temperature, system_prompt="",max_token=256,num_workers=64,timeout_duration=60,retry_attempts=2,api_base_url=None):
-        self.client = OpenAI(api_key=api_key)
+class Batcher:
+    def __init__(
+        self,
+        api_name, # together/vllm
+        api_key, 
+        model_name,
+        temperature, 
+        system_prompt="",
+        max_token=256,
+        num_workers=64,
+        timeout_duration=60,
+        retry_attempts=2,
+        api_base_url=None
+    ):
+        
+        if api_name == "vllm":
+            self.client = OpenAI(api_key=api_key)
+        elif api_name == "together":
+            self.client = Together(api_key=api_key)
+        else:
+            raise ValueError("Invalid API name")
         self.model_name = model_name
         self.system_prompt = system_prompt
         self.temperature = temperature
@@ -82,7 +101,7 @@ class GPTBatcher:
         for i in range(0, len(lst), n):
             yield lst[i:i + n]
 
-    def handle_message_list(self,message_list):
+    def handle_message_list(self, message_list):
         indexed_list = [(index, data) for index, data in enumerate(message_list)]
         max_length = len(indexed_list)
         attitude_list = self.process_attitude(indexed_list)
@@ -93,3 +112,4 @@ class GPTBatcher:
     
     def get_miss_index(self):
         return self.miss_index
+    

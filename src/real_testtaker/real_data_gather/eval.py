@@ -1,10 +1,9 @@
 import os
 from dotenv import load_dotenv
 import csv
-import argparse
 from huggingface_hub import login
 import datasets
-from bacher_modify import GPTBatcher
+from bacher import Batcher
 
 def extract_content(tag, text):
     start_idx = text.find(tag)
@@ -22,24 +21,18 @@ def extract_content(tag, text):
 if __name__ == "__main__":
     load_dotenv()
     hf_token = os.getenv('HF_TOKEN')
-    
-    os.makedirs("../../../data/real/pre_irt_data/eval", exist_ok=True)
-
-    parser = argparse.ArgumentParser(description='get eval score using get-as-a-judge')
-    parser.add_argument('--start', type=int, required=True, help='Start index')
-    parser.add_argument('--end', type=int, required=True, help='End index')
-
-    args = parser.parse_args()
-    start = args.start
-    end = args.end
-
-    load_dotenv()
     openai_key = os.getenv('OPENAI_KEY')
-    batcher_eval = GPTBatcher(api_key=openai_key,
-                            model_name='gpt-4o',
-                            temperature=0,
-                            num_workers=64,
-                            )
+    
+    input_dir = "../../../data/real/pre_irt_data/answer"
+    output_dir = "../../../data/real/pre_irt_data/eval"
+    os.makedirs(output_dir, exist_ok=True)
+
+    batcher = Batcher(
+        api_key=openai_key,
+        model_name='gpt-4o',
+        temperature=0,
+        num_workers=64,
+    )
 
     login(token = hf_token)
     judge_prompts = datasets.load_dataset("stanford-crfm/air-bench-2024", "judge_prompts", split="test")
@@ -47,11 +40,10 @@ if __name__ == "__main__":
     model_string_list = [
         'meta-llama/Meta-Llama-3-8B-Instruct',
         ]
-    subset_model_string_list = model_string_list[start-1:end]
 
-    for model_string in subset_model_string_list:
+    for model_string in model_string_list:
         model_string = model_string.replace('/','_')
-        with open(f'../../../data/real/pre_irt_data/answer/answer_{model_string}_result.csv', 'r', newline='', encoding='utf-8') as infile:
+        with open(f'{input_dir}/answer_{model_string}_result.csv', 'r', newline='', encoding='utf-8') as infile:
             reader = csv.reader(infile)
             header = next(reader)
             row_list = [row for row in reader]
@@ -68,11 +60,11 @@ if __name__ == "__main__":
             
             question_list.append(judge_prompt.replace("{{QUESTION}}", prompt).replace("{{ANSWER}}", answer))
 
-        result_list = batcher_eval.handle_message_list(question_list)
+        result_list = batcher.handle_message_list(question_list)
         reason_list = [extract_content("##short_reasoning: ", result) for result in result_list]
         score_list = [float(extract_content("##the_score: ", result)) for result in result_list]
 
-        with open(f'../../../data/real/pre_irt_data/eval/eval_{model_string}_result.csv', 'w', newline='', encoding='utf-8') as outfile:
+        with open(f'{output_dir}/eval_{model_string}_result.csv', 'w', newline='', encoding='utf-8') as outfile:
             writer = csv.writer(outfile)
             writer.writerow(['cate-idx', 'l2-name', 'l3-name', 'l4-name', 'prompt', 'response', 'score_reason', 'score'])
 
@@ -80,5 +72,4 @@ if __name__ == "__main__":
                 cate_idx, l2_name, l3_name, l4_name, prompt, response = row
                 reason = reason_list[i]
                 score = score_list[i]
-
                 writer.writerow([cate_idx, l2_name, l3_name, l4_name, prompt, response, reason, score])

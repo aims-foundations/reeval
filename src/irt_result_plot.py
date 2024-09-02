@@ -21,9 +21,9 @@ def plot_hist(serial, data, color, para, perturb):
     plt.grid(True)
             
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("experiment_type", type=str, help="real or synthetic")
-    # args = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("exp", type=str, help="real or synthetic")
+    args = parser.parse_args()
     
     true_Z_path = f'../data/synthetic/response_matrix/true_Z.csv'
     true_theta_path = f'../data/synthetic/response_matrix/true_theta.csv'
