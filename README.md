@@ -2,8 +2,8 @@
 
 This repository implements the paper Reliable and Efficient Model-based Evaluation for Language Models. In the synthetic experiment section, three simulations show the effectiveness of using item response theory (IRT) in language model evaluation. To replicate our experiment, first, you need to set up the environment:
 ```bash
-conda create -n certify python=3.10 -y
-conda activate certify
+conda create -n reeval python=3.10 -y
+conda activate reeval
 pip install -r requirements.txt
 conda env create -f R.yml
 ```
