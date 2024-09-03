@@ -91,7 +91,7 @@ if __name__ == "__main__":
     
     # index search file
     input_file = f"{input_dir}/eval_01-ai_yi-34b-chat_result.csv"
-    output_file = f"{output_dir}/insex_search.csv"
+    output_file = f"{output_dir}/index_search.csv"
 
     data = pd.read_csv(input_file)
     output_data = []

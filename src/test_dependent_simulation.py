@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 import os
 import torch
-from synthetic_testtaker import SimulatedTestTaker
+from testtaker import SimulatedTestTaker, RealTestTaker
 from fit_theta import fit_theta_mcmc
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
@@ -25,30 +25,38 @@ def construct_Z(Y_bar, question_num, theta):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--seed", type=int, default=10)
+    parser.add_argument("--data_type", type=str, default="synthetic")
+    # synthetic data
     parser.add_argument("--question_num", type=int, default=1000)
     parser.add_argument("--Y_bar", type=float, default=0.7)
     parser.add_argument("--theta_1", type=float, default=1)
     parser.add_argument("--theta_2", type=float, default=2)
+    # real data
     args = parser.parse_args()
 
     set_seed(args.seed)
+    
+    if args.data_type == "synthetic":
+        Z_1 = construct_Z(args.Y_bar, args.question_num, args.theta_1)
+        Z_2 = construct_Z(args.Y_bar, args.question_num, args.theta_2)
 
-    Z_1 = construct_Z(args.Y_bar, args.question_num, args.theta_1)
-    Z_2 = construct_Z(args.Y_bar, args.question_num, args.theta_2)
-
-    testtaker1 = SimulatedTestTaker(theta=args.theta_1, model="1PL")
-    testtaker2 = SimulatedTestTaker(theta=args.theta_2, model="1PL")
+        testtaker1 = SimulatedTestTaker(theta=args.theta_1, model="1PL")
+        testtaker2 = SimulatedTestTaker(theta=args.theta_2, model="1PL")
+        
+        asked_question_list = list(range(args.question_num))
+        
+        asked_answer_list_1 = []
+        for i in range(args.question_num):
+            asked_answer_list_1.append(testtaker1.ask(Z_1, i))
+        
+        asked_answer_list_2 = []
+        for i in range(args.question_num):
+            asked_answer_list_2.append(testtaker2.ask(Z_2, i))
     
-    asked_question_list = list(range(args.question_num))
-    
-    asked_answer_list_1 = []
-    for i in range(args.question_num):
-        asked_answer_list_1.append(testtaker1.ask(Z_1, i))
-    
-    asked_answer_list_2 = []
-    for i in range(args.question_num):
-        asked_answer_list_2.append(testtaker2.ask(Z_2, i))
-    
+    elif args.data_type == "real":
+        testtaker1 = RealTestTaker(question_Z_path, model_string="Qwen_Qwen2-72B-Instruct")
+        testtaker2 = RealTestTaker(question_Z_path, model_string="meta_llama-3-8b-chat")
+        
     # CTT
     print("CTT")
     CTT_1_mean = sum(asked_answer_list_1) / len(asked_answer_list_1)
@@ -99,6 +107,6 @@ if __name__ == "__main__":
     plt.ylabel('Density')
     plt.legend()
 
-    fig_dir = '../plot/synthetic'
+    fig_dir = f'../plot/{args.data_type}'
     os.makedirs(fig_dir, exist_ok=True)
     plt.savefig(f'{fig_dir}/test_dependent_simulation.png')

@@ -8,7 +8,7 @@ from numpyro.diagnostics import hpdi
 import torch
 import torch.optim as optim
 from utils import item_response_fn_3PL, item_response_fn_2PL, item_response_fn_1PL
-from synthetic_testtaker import SimulatedTestTaker
+from testtaker import SimulatedTestTaker
 import matplotlib.pyplot as plt
 import seaborn as sns
 
