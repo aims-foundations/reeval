@@ -57,10 +57,6 @@ class RealTestTaker():
         assert len(Z) == len(self.score_list)
         return self.score_list[question_index]
     
-    def get_answer_list(self, Z):
-        assert len(Z) == len(self.score_list)
-        return self.score_list
-    
 if __name__ == "__main__":
     torch.manual_seed(42)
     np.random.seed(42)

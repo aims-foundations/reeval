@@ -54,8 +54,8 @@ if __name__ == "__main__":
             asked_answer_list_2.append(testtaker2.ask(Z_2, i))
     
     elif args.data_type == "real":
-        testtaker1 = RealTestTaker(question_Z_path, model_string="Qwen_Qwen2-72B-Instruct")
-        testtaker2 = RealTestTaker(question_Z_path, model_string="meta_llama-3-8b-chat")
+        testtaker1 = RealTestTaker(question_text_list, model_string="Qwen_Qwen2-72B-Instruct")
+        testtaker2 = RealTestTaker(question_text_list, model_string="meta_llama-3-8b-chat")
         
     # CTT
     print("CTT")
