@@ -5,6 +5,7 @@ from datasets import load_dataset
 from sklearn.linear_model import BayesianRidge
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
+from sklearn.decomposition import PCA
 
 if __name__ == "__main__":
     dataset = load_dataset("stair-lab/airbench-difficulty", split="whole")
@@ -22,8 +23,10 @@ if __name__ == "__main__":
     X = emb['question_text']
     y = dataset['z3']
 
-    X = np.array(X) 
+    X = np.array(X)
+    print(f'Shape of X: {X.shape}') 
     y = np.array(y)
+    
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     model = BayesianRidge()
@@ -36,3 +39,12 @@ if __name__ == "__main__":
 
     test_error = mean_squared_error(y_test, y_test_pred)
     print(f'Test Set Error (MSE): {test_error}')
+    
+    
+    
+    y_mean_pred = np.mean(y_train)
+    mean_pred_train_error = mean_squared_error(y_train, np.full_like(y_train, y_mean_pred))
+    mean_pred_test_error = mean_squared_error(y_test, np.full_like(y_test, y_mean_pred))
+
+    print(f'Mean Prediction Training Set Error (MSE): {mean_pred_train_error}')
+    print(f'Mean Prediction Test Set Error (MSE): {mean_pred_test_error}')
