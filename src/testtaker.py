@@ -47,10 +47,7 @@ class CheatingTestTaker():
         return self.true_ability, self.cheat_ability
 
 class RealTestTaker():
-    def __init__(self, question_Z_path, model_string):
-        question_Z_df = pd.read_csv(question_Z_path)
-        question_text_list = question_Z_df.iloc[:, 0].tolist()
-        
+    def __init__(self, question_text_list, model_string):
         data_df = pd.read_csv(f"../data/real/pre_irt_data/eval/eval_{model_string}_result.csv")
         prompt_score_dict = dict(zip(data_df['prompt'], data_df['score']))
         self.score_list = [prompt_score_dict.get(text, None) for text in question_text_list]
@@ -59,6 +56,10 @@ class RealTestTaker():
     def ask(self, Z, question_index):
         assert len(Z) == len(self.score_list)
         return self.score_list[question_index]
+    
+    def get_answer_list(self, Z):
+        assert len(Z) == len(self.score_list)
+        return self.score_list
     
 if __name__ == "__main__":
     torch.manual_seed(42)
