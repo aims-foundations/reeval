@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import torch
@@ -60,62 +61,58 @@ if __name__ == "__main__":
     torch.manual_seed(42)
     np.random.seed(42)
     
-    # test RealTestTaker
-    testtaker = RealTestTaker(exp="appendix1", model_string="Qwen_Qwen2-72B-Instruct")
-    testtaker.ask(None, 0)
-    
-    # question_num = 500
-    # testtaker_num = 1000
+    question_num = 500
+    testtaker_num = 1000
 
-    # # 1PL
-    # z3 = torch.normal(mean=0.0, std=1.0, size=(question_num,))
+    # 1PL
+    z3 = torch.normal(mean=0.0, std=1.0, size=(question_num,))
     
-    # response_matrix = np.zeros((testtaker_num, question_num))
-    # true_theta = np.zeros(testtaker_num)
-    # for i in range(testtaker_num):
-    #     new_testtaker = SimulatedTestTaker(model="1PL")
-    #     true_theta[i] = new_testtaker.get_ability().item()
+    response_matrix = np.zeros((testtaker_num, question_num))
+    true_theta = np.zeros(testtaker_num)
+    for i in range(testtaker_num):
+        new_testtaker = SimulatedTestTaker(model="1PL")
+        true_theta[i] = new_testtaker.get_ability().item()
         
-    #     for j in range(question_num):
-    #         response_matrix[i, j] = new_testtaker.ask(z3, j).item()
+        for j in range(question_num):
+            response_matrix[i, j] = new_testtaker.ask(z3, j).item()
             
-    # save_dir = "../data/synthetic/response_matrix/"
-    # os.makedirs(save_dir, exist_ok=True)
+    save_dir = "../data/synthetic/response_matrix/"
+    os.makedirs(save_dir, exist_ok=True)
 
-    # response_df = pd.DataFrame(response_matrix.astype(int))
-    # response_df.insert(0, '', [f'testtaker_{i}' for i in range(testtaker_num)])
-    # response_df.to_csv(os.path.join(save_dir, "synthetic_matrix_1PL.csv"), index=False)
+    response_df = pd.DataFrame(response_matrix.astype(int))
+    response_df.insert(0, '', [f'testtaker_{i}' for i in range(testtaker_num)])
+    response_df.to_csv(os.path.join(save_dir, "synthetic_matrix_1PL.csv"), index=False)
 
-    # true_theta_df = pd.DataFrame(true_theta, columns=["true_theta"])
-    # true_theta_df.to_csv(os.path.join(save_dir, "true_theta.csv"), index=False)
+    true_theta_df = pd.DataFrame(true_theta, columns=["true_theta"])
+    true_theta_df.to_csv(os.path.join(save_dir, "true_theta.csv"), index=False)
     
-    # Z_df = pd.DataFrame(z3.numpy(), columns=["z3"])
-    # Z_df.to_csv(os.path.join(save_dir, "true_Z_1PL.csv"), index=False)
+    Z_df = pd.DataFrame(z3.numpy(), columns=["z3"])
+    Z_df.to_csv(os.path.join(save_dir, "true_Z_1PL.csv"), index=False)
     
-    # # 3PL
-    # z1 = torch.distributions.Beta(0.5, 4).sample((question_num,))
-    # z2 = torch.distributions.LogNormal(0, 1).sample((question_num,))
-    # Z = torch.vstack((z1, z2, z3)).T
+    # 3PL
+    z1 = torch.distributions.Beta(0.5, 4).sample((question_num,))
+    z2 = torch.distributions.LogNormal(0, 1).sample((question_num,))
+    Z = torch.vstack((z1, z2, z3)).T
 
-    # response_matrix = np.zeros((testtaker_num, question_num))
-    # true_theta = np.zeros(testtaker_num)
-    # for i in range(testtaker_num):
-    #     new_testtaker = SimulatedTestTaker(model="3PL")
-    #     true_theta[i] = new_testtaker.get_ability().item()
+    response_matrix = np.zeros((testtaker_num, question_num))
+    true_theta = np.zeros(testtaker_num)
+    for i in range(testtaker_num):
+        new_testtaker = SimulatedTestTaker(model="3PL")
+        true_theta[i] = new_testtaker.get_ability().item()
         
-    #     for j in range(question_num):
-    #         response_matrix[i, j] = new_testtaker.ask(Z, j).item()
+        for j in range(question_num):
+            response_matrix[i, j] = new_testtaker.ask(Z, j).item()
             
-    # save_dir = "../data/synthetic/response_matrix/"
-    # os.makedirs(save_dir, exist_ok=True)
+    save_dir = "../data/synthetic/response_matrix/"
+    os.makedirs(save_dir, exist_ok=True)
 
-    # response_df = pd.DataFrame(response_matrix.astype(int))
-    # response_df.insert(0, '', [f'testtaker_{i}' for i in range(testtaker_num)])
-    # response_df.to_csv(os.path.join(save_dir, "synthetic_matrix_3PL.csv"), index=False)
+    response_df = pd.DataFrame(response_matrix.astype(int))
+    response_df.insert(0, '', [f'testtaker_{i}' for i in range(testtaker_num)])
+    response_df.to_csv(os.path.join(save_dir, "synthetic_matrix_3PL.csv"), index=False)
     
-    # Z_df = pd.DataFrame({
-    #     "z1": z1.numpy(),
-    #     "z2": z2.numpy(),
-    #     "z3": z3.numpy()
-    # })
-    # Z_df.to_csv(os.path.join(save_dir, "true_Z_3PL.csv"), index=False)
+    Z_df = pd.DataFrame({
+        "z1": z1.numpy(),
+        "z2": z2.numpy(),
+        "z3": z3.numpy()
+    })
+    Z_df.to_csv(os.path.join(save_dir, "true_Z_3PL.csv"), index=False)
