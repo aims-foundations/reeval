@@ -1,8 +1,7 @@
-import os
+import numpy as np
 import pandas as pd
 import torch
 from utils import item_response_fn_3PL, item_response_fn_2PL, item_response_fn_1PL, item_response_fn_1PL_cheat
-import numpy as np
 
 class SimulatedTestTaker():
     def __init__(self, theta=None, model="1PL"):
@@ -55,7 +54,7 @@ class RealTestTaker():
 
     def ask(self, Z, question_index):
         assert len(Z) == len(self.score_list)
-        return self.score_list[question_index]
+        return torch.tensor(self.score_list[question_index])
     
 if __name__ == "__main__":
     torch.manual_seed(42)
