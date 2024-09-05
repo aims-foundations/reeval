@@ -54,7 +54,7 @@ def sample_real_subsets(text_list, z3_list, Y_bar, subset_size):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--seed", type=int, default=10)
+    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--data_type", type=str, default="synthetic") # synthetic or real
     # synthetic data
     parser.add_argument("--question_num", type=int, default=1000)
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     parser.add_argument("--theta_1", type=float, default=1)
     parser.add_argument("--theta_2", type=float, default=2)
     # real data
-    parser.add_argument("--subset_size", type=int, default=500)
+    parser.add_argument("--subset_size", type=int, default=100)
     args = parser.parse_args()
 
     set_seed(args.seed)
