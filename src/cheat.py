@@ -49,10 +49,10 @@ def fit_cheat_theta_mcmc(
     return mean_theta_true, std_theta_true, theta_true_samples, \
         mean_theta_cheat, std_theta_cheat, theta_cheat_samples
         
-def main(testtaker_true_theta, testtaker_cheat_gain, z3, contamination, asked_question_list):
+def synthetic_main(testtaker_true_theta, testtaker_cheat_gain, z3, contamination, asked_question_list):
     testtaker = CheatingTestTaker(
         true_theta=testtaker_true_theta, cheat_gain=testtaker_cheat_gain, model="1PL"
-        )
+    )
     true_theta, cheat_theta = testtaker.get_ability()
     print(f"true theta: {true_theta}")
     print(f"cheat theta: {cheat_theta}")
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     contamination = contamination[torch.randperm(args.question_num)]
     
     print("Test Taker 1")
-    asked_answer_list_1, theta_true_samples_1, theta_cheat_samples_1 = main(
+    asked_answer_list_1, theta_true_samples_1, theta_cheat_samples_1 = synthetic_main(
         args.testtaker1_true_theta, 
         args.testtaker1_cheat_gain, 
         z3, 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     )
     
     print("\n\n\nTest Taker 2")
-    asked_answer_list_2, theta_true_samples_2, theta_cheat_samples_2 = main(
+    asked_answer_list_2, theta_true_samples_2, theta_cheat_samples_2 = synthetic_main(
         args.testtaker2_true_theta, 
         args.testtaker2_cheat_gain,
         z3,

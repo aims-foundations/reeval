@@ -47,18 +47,18 @@ if __name__ == '__main__':
     
     prompts = filtered_index_search_df['text'].tolist()
     print(f"Total number of prompts: {len(prompts)}")
-    subset_length = int(len(prompts) * 0.8)
-    subset_prompts = prompts[:subset_length]
-    questions = [user % p for p in subset_prompts]
+    questions = [user % p for p in prompts]
 
     results = batcher.handle_message_list(questions)
 
     assert len(questions) == len(results)
-    data = {'question': subset_prompts, 'answer': results}
+    data = {'question': prompts, 'answer': results}
     df = pd.DataFrame(data)
-    csv_path = f"{dir}/finetune_data.csv"
-    df.to_csv(csv_path, index=False, encoding='utf-8')
-
     dataset = Dataset.from_pandas(df)
-    dataset_dict = DatasetDict({'train': dataset})
+    train_test_split = dataset.train_test_split(test_size=0.2)
+
+    dataset_dict = DatasetDict({
+        'train': train_test_split['train'],
+        'test': train_test_split['test']
+    })
     dataset_dict.push_to_hub('stair-lab/airbench-fintune')
