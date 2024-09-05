@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import jax.random as random
 import torch
 from utils import item_response_fn_1PL_cheat, set_seed, perform_t_test
-from synthetic_testtaker import CheatingTestTaker
+from testtaker import CheatingTestTaker
 import matplotlib.pyplot as plt
 
 def model(Z, asked_question_list, asked_answer_list, contamination):

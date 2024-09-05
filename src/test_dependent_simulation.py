@@ -1,13 +1,14 @@
 from argparse import ArgumentParser
-import os
 import torch
-from synthetic_testtaker import SimulatedTestTaker
+from testtaker import SimulatedTestTaker, RealTestTaker
 from fit_theta import fit_theta_mcmc
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from utils import set_seed, perform_t_test
+import pandas as pd
 
 def inverse_item_response_fn_1PL(y,theta):
+    y = torch.tensor(y, dtype=torch.float32)
     return -theta - torch.log((1 - y) / y)
 
 def beta_params_from_mode(mode, concentration=10):
@@ -22,33 +23,92 @@ def construct_Z(Y_bar, question_num, theta):
     Z = inverse_item_response_fn_1PL(Y, theta)
     return Z
 
+def sample_real_subsets(text_list, z3_list, Y_bar, subset_size):
+    z3_tensor = torch.tensor(z3_list)
+    z3_sorted, indices = torch.sort(z3_tensor)
+    text_sorted = [text_list[i] for i in indices.tolist()]
+    mean_all = z3_sorted.mean().item()
+    std_all = z3_sorted.std().item()
+    print(f"mean of all z3 values: {mean_all}")
+    print(f"std of all z3 values: {std_all}")
+
+    a = inverse_item_response_fn_1PL(Y_bar, 1).item()
+    b = inverse_item_response_fn_1PL(Y_bar, 2).item()
+
+    subset1_probs = torch.exp(-0.5 * ((z3_sorted - a) / (std_all / 2)) ** 2)
+    subset1_probs /= subset1_probs.sum()
+    subset2_probs = torch.exp(-0.5 * ((z3_sorted - b) / (std_all / 2)) ** 2)
+    subset2_probs /= subset2_probs.sum()
+
+    subset1_indices = torch.multinomial(subset1_probs, subset_size, replacement=False)
+    subset2_indices = torch.multinomial(subset2_probs, subset_size, replacement=False)
+
+    subset1_z3_list = z3_sorted[subset1_indices].tolist()
+    subset2_z3_list = z3_sorted[subset2_indices].tolist()
+
+    subset1_text_list = [text_sorted[i] for i in subset1_indices]
+    subset2_text_list = [text_sorted[i] for i in subset2_indices]
+
+    return subset1_z3_list, subset1_text_list, subset2_z3_list, subset2_text_list
+
+
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--seed", type=int, default=10)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--data_type", type=str, default="synthetic") # synthetic or real
+    # synthetic data
     parser.add_argument("--question_num", type=int, default=1000)
     parser.add_argument("--Y_bar", type=float, default=0.7)
     parser.add_argument("--theta_1", type=float, default=1)
     parser.add_argument("--theta_2", type=float, default=2)
+    # real data
+    parser.add_argument("--subset_size", type=int, default=100)
     args = parser.parse_args()
 
     set_seed(args.seed)
+    
+    if args.data_type == "synthetic":
+        Z_1 = construct_Z(args.Y_bar, args.question_num, args.theta_1)
+        Z_2 = construct_Z(args.Y_bar, args.question_num, args.theta_2)
 
-    Z_1 = construct_Z(args.Y_bar, args.question_num, args.theta_1)
-    Z_2 = construct_Z(args.Y_bar, args.question_num, args.theta_2)
+        testtaker1 = SimulatedTestTaker(theta=args.theta_1, model="1PL")
+        testtaker2 = SimulatedTestTaker(theta=args.theta_2, model="1PL")
+        
+        asked_question_list = list(range(args.question_num))
+        
+        asked_answer_list_1 = []
+        for i in range(args.question_num):
+            asked_answer_list_1.append(testtaker1.ask(Z_1, i))
+        
+        asked_answer_list_2 = []
+        for i in range(args.question_num):
+            asked_answer_list_2.append(testtaker2.ask(Z_2, i))
+    
+    elif args.data_type == "real":
+        z3_df = pd.read_csv('../data/real/irt_result/appendix1/Z/all_1PL_Z_clean.csv')
+        index_search_df = pd.read_csv('../data/real/response_matrix/appendix1/index_search.csv')
 
-    testtaker1 = SimulatedTestTaker(theta=args.theta_1, model="1PL")
-    testtaker2 = SimulatedTestTaker(theta=args.theta_2, model="1PL")
-    
-    asked_question_list = list(range(args.question_num))
-    
-    asked_answer_list_1 = []
-    for i in range(args.question_num):
-        asked_answer_list_1.append(testtaker1.ask(Z_1, i))
-    
-    asked_answer_list_2 = []
-    for i in range(args.question_num):
-        asked_answer_list_2.append(testtaker2.ask(Z_2, i))
-    
+        z3_list = z3_df['z3'].tolist()
+        filtered_index_search_df = index_search_df[index_search_df['is_deleted'] != 1]
+        text_list = filtered_index_search_df['text'].tolist()
+        assert len(z3_list) == len(text_list)
+        
+        Z_1, subset1_text_list, Z_2, subset2_text_list = \
+            sample_real_subsets(text_list, z3_list, args.Y_bar, args.subset_size)
+            
+        testtaker1 = RealTestTaker(subset1_text_list, model_string="Qwen_Qwen2-72B-Instruct")
+        testtaker2 = RealTestTaker(subset2_text_list, model_string="meta_llama-3-8b-chat")
+        
+        asked_question_list = list(range(args.subset_size))
+        
+        asked_answer_list_1 = []
+        for i in range(args.subset_size):
+            asked_answer_list_1.append(testtaker1.ask(Z_1, i))
+        
+        asked_answer_list_2 = []
+        for i in range(args.subset_size):
+            asked_answer_list_2.append(testtaker2.ask(Z_2, i))
+            
     # CTT
     print("CTT")
     CTT_1_mean = sum(asked_answer_list_1) / len(asked_answer_list_1)
@@ -99,6 +159,5 @@ if __name__ == "__main__":
     plt.ylabel('Density')
     plt.legend()
 
-    fig_dir = '../plot/synthetic'
-    os.makedirs(fig_dir, exist_ok=True)
+    fig_dir = f'../plot/{args.data_type}'
     plt.savefig(f'{fig_dir}/test_dependent_simulation.png')

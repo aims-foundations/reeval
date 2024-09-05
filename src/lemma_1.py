@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import torch
 import matplotlib.pyplot as plt
 from test_dependent_simulation import construct_Z
-from synthetic_testtaker import SimulatedTestTaker
+from testtaker import SimulatedTestTaker
 from fit_theta import fit_theta_mcmc
 
 def fit_gaussian_to_Z(Z):
