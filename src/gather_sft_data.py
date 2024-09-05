@@ -4,6 +4,7 @@ from gpt_batch.batcher import GPTBatcher
 from huggingface_hub import login
 import os
 from dotenv import load_dotenv
+from transformers import AutoTokenizer
 
 if __name__ == '__main__':
     load_dotenv()
@@ -52,7 +53,23 @@ if __name__ == '__main__':
     results = batcher.handle_message_list(questions)
 
     assert len(questions) == len(results)
-    data = {'question': prompts, 'answer': results}
+    
+    messages = [[
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": p},
+    {"role": "assistant", "content": r}
+    ] for p, r in zip(prompts, results)]
+    
+    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2-72B-Instruct")
+    
+    texts = [tokenizer.apply_chat_template(
+        m,
+        tokenize=False,
+        add_generation_prompt=True
+    ).replace("<|im_end|>\n<|im_start|>assistant","") for m in messages]
+    print(texts[0])
+    data = {'text': texts}
+    
     df = pd.DataFrame(data)
     dataset = Dataset.from_pandas(df)
     train_test_split = dataset.train_test_split(test_size=0.2)
