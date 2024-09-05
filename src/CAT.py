@@ -81,7 +81,7 @@ def main(question_num, new_testtaker, strategy, subset_question_num, warmup, sta
         asked_question_jnp = jnp.array(asked_question_list)
         asked_answer_jnp = jnp.array(asked_answer_list)
         z3_jnp = jnp.array(z3)
-5
+
         mean_theta, std_theta, theta_samples = fit_theta_mcmc(
             z3_jnp, 
             asked_question_jnp, 
