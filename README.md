@@ -144,5 +144,7 @@ To run the code:
 ```
 python get_response_matrix.py --exp appendix1
 ```
+# real appendix 2
+```
 trl sft --model_name_or_path Qwen/Qwen2-72B-Instruct --dataset_name stair-lab/airbench-fintune --output_dir ./data/real/finetune
 ```
