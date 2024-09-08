@@ -4,7 +4,6 @@ from utils import load_state, item_response_fn_1PL
 
 def compute_sem(single_theta, asked_question_list, z3):
     asked_z3 = z3[asked_question_list]
-    print(asked_z3)
     I = 0
     for j in range(asked_z3.shape[0]):
         P = item_response_fn_1PL(asked_z3[j], single_theta)
@@ -54,9 +53,9 @@ def compute_3_metrics(true_thetas, theta_hats, asked_question_lists, z3):
     return Remp_list, mse_list, bias_list
 
 if __name__ == '__main__':
-    question_num = 500
-    subset_question_num = 50
-    testtaker_num = 10
+    question_num = 5000
+    subset_question_num = 500
+    testtaker_num = 50
     state_path = f"../data/synthetic/CAT/mle_{question_num}_{subset_question_num}_{testtaker_num}.pt"
     state = load_state(state_path)
         

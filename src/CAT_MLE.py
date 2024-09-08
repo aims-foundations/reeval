@@ -1,9 +1,12 @@
+import argparse
 import torch
 import random
-from fit_theta import fit_theta_mle
+import wandb
+from tqdm import tqdm
 from utils import item_response_fn_1PL, set_seed, save_state, load_state
-from argparse import ArgumentParser
-
+import torch.optim as optim
+from testtaker import SimulatedTestTaker
+    
 def CAT_owen(z3, unasked_question_list, theta_mean):
     z3_unasked = z3[unasked_question_list]
     z3_unasked = torch.tensor(z3_unasked)
@@ -21,83 +24,71 @@ def CAT_fisher(z3, unasked_question_list, theta_mean):
     index_with_max_fisher_info = torch.argmax(torch.tensor(fisher_info_list)).item()
     return unasked_question_list[index_with_max_fisher_info]
 
-def main(question_num, subset_question_num, testtaker_num):
-    print(f'question_num: {question_num}')
-    print(f'subset_question_num: {subset_question_num}')
-    print(f'testtaker_num: {testtaker_num}')
+def main(serial, strategy):
+    set_seed(42)
     
-    state_path = f"../data/synthetic/CAT/mle_{question_num}_{subset_question_num}_{testtaker_num}.pt"
-    # state = load_state(state_path)
-    # if state:
-    #     z3 = state['z3']
-    #     true_thetas = state['true_thetas']
-    #     asked_question_lists = state['asked_question_lists']
-    #     unasked_question_lists = state['unasked_question_lists']
-    #     asked_answer_lists = state['asked_answer_lists']
-    #     theta_means = state['theta_means']
-    #     start_epoch = state['epoch'] + 1
-
-    z3 = torch.normal(mean=0.0, std=1.0, size=(question_num,))
-    init_question_index = random.randint(0, question_num - 1)
-    asked_question_lists = [[init_question_index] for _ in range(testtaker_num)]
-    unasked_question_lists = [[i for i in range(question_num) if i != init_question_index] for _ in range(testtaker_num)]
+    state = load_state("../data/synthetic/CAT_MLE/pre_cat.pt")
+    z3 = state['z3']
+    true_thetas = state['true_thetas']
+    true_theta = true_thetas[serial]
+    subset_question_num = state['subset_question_num']
     
-    true_thetas = torch.normal(mean=0.0, std=1.0, size=(testtaker_num,))
-    probs = item_response_fn_1PL(z3[init_question_index], true_thetas)
-    responses = torch.distributions.Bernoulli(probs).sample()
+    state_path = f"../data/synthetic/CAT_MLE/sweep/mle_{serial}_{strategy}.pt"
+    question_num = z3.shape[0]
+    init_question_index = random.randint(0, question_num-1)
     
-    asked_answer_lists = [[r] for r in responses]
+    testtaker = SimulatedTestTaker(true_theta, model="1PL")
     
-    theta_means = [[] for _ in range(testtaker_num)]
-    for epoch in range(subset_question_num-1):
-        print(f'\nepoch: {epoch+1}')
+    theta_hat = torch.normal(
+        mean=0.0, std=1.0, size=(1,), requires_grad=True, device='cuda'
+    )
+    optimizer = optim.Adam([theta_hat], lr=0.01)
+    
+    asked_question_list = [init_question_index]
+    unasked_question_list = [
+        i for i in range(question_num) if i != init_question_index
+    ]
+    asked_answer_list = [testtaker.ask(z3, init_question_index).cuda()]
+    theta_hats = []
+    
+    pbar = tqdm(range(subset_question_num-1), desc=f"true theta: {true_theta}; epoch")
+    for _ in pbar:
+        log_prob = 0
+        for j, asked_question_index in enumerate(asked_question_list):
+            prob = item_response_fn_1PL(z3[asked_question_index], theta_hat)
+            bernoulli = torch.distributions.Bernoulli(prob)
+            log_prob = log_prob + bernoulli.log_prob(asked_answer_list[j])
         
-        new_question_indexs = []
-        for i in range(testtaker_num):
-            print(f'testtaker: {i+1}')
-            asked_question_tensor = torch.tensor(asked_question_lists[i])
-            asked_answer_tensor = torch.tensor(asked_answer_lists[i])
-            z3_tensor = z3.clone().detach()
+        loss = -log_prob / len(asked_question_list)
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
 
-            mean_theta = fit_theta_mle(
-                z3_tensor, 
-                asked_question_tensor, 
-                asked_answer_tensor
-            )
-            theta_means[i].append(mean_theta)
-
-            if i%2 == 0: # random
-                new_question_index = random.choice(unasked_question_lists[i])
-            elif i%2 == 1: # fisher
-                new_question_index = CAT_fisher(z3, unasked_question_lists[i], mean_theta)
-            # elif strategy=="owen":
-            #     new_question_index = CAT_owen(z3, unasked_question_list, mean_theta)
-            new_question_indexs.append(new_question_index)
-            asked_question_lists[i].append(new_question_index)
-            unasked_question_lists[i].remove(new_question_index)
+        pbar.set_postfix({"theta_hat": theta_hat.item()})
+        theta_hats.append(theta_hat.item())
         
-        assert len(new_question_indexs) == len(true_thetas)
-        probs = item_response_fn_1PL(z3[new_question_indexs], true_thetas)
-        responses = torch.distributions.Bernoulli(probs).sample()
-        for j in range(len(asked_answer_lists)):
-            asked_answer_lists[j].append(responses[j])
+        if strategy == "random": # random
+            new_question_index = random.choice(unasked_question_list)
+        elif strategy == "fisher": # fisher
+            new_question_index = CAT_fisher(z3, unasked_question_list, theta_hat)
+        # elif strategy=="owen":
+        #     new_question_index = CAT_owen(z3, unasked_question_list, mean_theta)
+
+        asked_question_list.append(new_question_index)
+        unasked_question_list.remove(new_question_index)
+        asked_answer_list.append(testtaker.ask(z3, new_question_index).cuda())
     
-        save_state(
-            state_path, 
-            z3 = z3,
-            true_thetas=true_thetas,
-            asked_question_lists=asked_question_lists,
-            theta_means=theta_means, 
-        )
-        
+    save_state(
+        state_path, 
+        asked_question_list=asked_question_list,
+        theta_hats=theta_hats, 
+    )
+    
 if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument("--seed", type=int, default=10)
-    parser.add_argument("--question_num", type=int, default=1000)
-    parser.add_argument("--subset_question_num", type=int, default=100)
-    parser.add_argument("--testtaker_num", type=int, default=50)
+    wandb.init(project="CAT_MLE")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--serial", type=int)
+    parser.add_argument("--strategy", type=str)
     args = parser.parse_args()
-
-    set_seed(args.seed)
     
-    main(args.question_num, args.subset_question_num, args.testtaker_num)
+    main(args.serial, args.strategy)

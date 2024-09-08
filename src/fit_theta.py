@@ -12,23 +12,27 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 def fit_theta_mle(Z, asked_question_list, asked_answer_list, epoch=300):
-    theta_hat = torch.normal(mean=0.0, std=1.0, size=(1,), requires_grad=True)
+    Z = Z.cuda()
+    asked_question_list = asked_question_list.cuda()
+    asked_answer_list = asked_answer_list.cuda()
+    
+    theta_hat = torch.normal(mean=0.0, std=1.0, size=(1,), requires_grad=True, device='cuda')
     optimizer = optim.Adam([theta_hat], lr=0.01)
+    
     for _ in range(epoch):
         log_prob = 0
         for i, asked_question_index in enumerate(asked_question_list):
-            # prob = item_response_fn_3PL(*Z[asked_question_index, :], theta_hat)
             prob = item_response_fn_1PL(Z[asked_question_index], theta_hat)
             bernoulli = torch.distributions.Bernoulli(prob)
             log_prob = log_prob + bernoulli.log_prob(asked_answer_list[i].float())
         
-        loss = -log_prob/len(asked_question_list)
+        loss = -log_prob / len(asked_question_list)
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
         # print(theta_hat)
-        
-    return theta_hat
+
+    return theta_hat.cpu()
 
 def model(Z, asked_question_list, asked_answer_list):
     theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0)) # prior
@@ -113,7 +117,9 @@ if __name__ == "__main__":
         asked_answer_list.append(new_testtaker.ask(z3, i))
     
     # MLE
-    theta_hat = fit_theta_mle(z3, asked_question_list, asked_answer_list, epoch=300)
+    asked_question_tensor = torch.tensor(asked_question_list)
+    asked_answer_tensor = torch.tensor(asked_answer_list)
+    theta_hat = fit_theta_mle(z3, asked_question_tensor, asked_answer_tensor, epoch=300)
     print(f"mle theta: {theta_hat}")
 
     # MCMC
