@@ -1,8 +1,8 @@
 import pickle
+import re
 from lampo.reward_model import RewardModelTemplate
 from embed_text_package.embed_text import Embedder
 from torch.utils.data import DataLoader
-import torch
 from torch.utils.data import Dataset
 
 class MessageDataset(Dataset):
@@ -14,6 +14,10 @@ class MessageDataset(Dataset):
 
     def __getitem__(self, idx):
         return {"question_text": self.data["question_text"][idx]}
+    
+def extract_score(input_str: str) -> int:
+    match = re.search(r'Your task is to output a prompt at score (\d+)', input_str)
+    return int(match.group(1))
 
 class MyRewardModel(RewardModelTemplate):
     def __init__(self, config):
@@ -21,11 +25,9 @@ class MyRewardModel(RewardModelTemplate):
         self.load()
 
     async def compute(self, messages):
-        """
-        It receives a list of messages (strings) and returns a list of scores 
-        """
-        dataset = MessageDataset(messages)
+        objective_scores = [extract_score(m) for m in messages]
         
+        dataset = MessageDataset(messages)
         model_name = "meta-llama/Meta-Llama-3-8B"
         cols_to_be_embded = ['question_text']
         embdr = Embedder()
@@ -35,12 +37,13 @@ class MyRewardModel(RewardModelTemplate):
             dataloader, model_name, cols_to_be_embded
         )
         X = emb['question_text']
-        
-        scores = self.model.predict(X)
-        return scores.tolist()
+        scores = self.model.predict(X).tolist()
+
+        rewards = [-abs(a - b) for a, b in zip(scores, objective_scores)]
+        return rewards
 
     def load(self):
-        with open('../data/real/auto_gen/bayesian_ridge_model.pkl', 'rb') as f:
+        with open('../../data/real/ppo/bayesian_ridge_model.pkl', 'rb') as f:
             self.model = pickle.load(f)
 
     def unload(self):

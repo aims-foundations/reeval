@@ -6,6 +6,7 @@ from sklearn.linear_model import BayesianRidge
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from sklearn.decomposition import PCA
+import pickle
 
 if __name__ == "__main__":
     dataset = load_dataset("stair-lab/airbench-difficulty", split="whole")
@@ -48,3 +49,8 @@ if __name__ == "__main__":
 
     print(f'Mean Prediction Training Set Error (MSE): {mean_pred_train_error}')
     print(f'Mean Prediction Test Set Error (MSE): {mean_pred_test_error}')
+    
+    
+    
+    with open('../data/real/ppo/bayesian_ridge_model.pkl', 'wb') as model_file:
+        pickle.dump(model, model_file)
