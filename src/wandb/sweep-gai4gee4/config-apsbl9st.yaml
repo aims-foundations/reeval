@@ -1,6 +1,0 @@
-wandb_version: 1
-
-serial:
-  value: 9
-strategy:
-  value: fisher
