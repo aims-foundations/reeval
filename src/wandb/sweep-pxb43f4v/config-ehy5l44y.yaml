@@ -1,0 +1,10 @@
+wandb_version: 1
+
+question_num:
+  value: 1000
+seed:
+  value: 30
+subset_question_num:
+  value: 100
+testtaker_num:
+  value: 50

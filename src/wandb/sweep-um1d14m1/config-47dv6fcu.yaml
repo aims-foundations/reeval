@@ -1,0 +1,6 @@
+wandb_version: 1
+
+serial:
+  value: 19
+strategy:
+  value: random
