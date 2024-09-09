@@ -1,3 +1,5 @@
+save/
+.ipynb_checkpoints/
 .env
 *.pyc
 __pycache__/*
