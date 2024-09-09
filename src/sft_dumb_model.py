@@ -4,7 +4,7 @@ from trl import SFTTrainer
 dataset = load_dataset("stair-lab/airbench-fintune", split="train")
 
 trainer = SFTTrainer(
-    "Qwen/Qwen2-72B-Instruct",
+    "google/gemma-7b-it",
     train_dataset=dataset,
     dataset_text_field="text",
     max_seq_length=512,

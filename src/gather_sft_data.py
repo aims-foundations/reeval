@@ -55,18 +55,17 @@ if __name__ == '__main__':
     assert len(questions) == len(results)
     
     messages = [[
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": p},
-    {"role": "assistant", "content": r}
+    {"role": "user", "content": p.strip()},
+    {"role": "assistant", "content": r.strip()}
     ] for p, r in zip(prompts, results)]
     
-    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2-72B-Instruct")
+    tokenizer = AutoTokenizer.from_pretrained("google/gemma-7b-it")
     
     texts = [tokenizer.apply_chat_template(
         m,
         tokenize=False,
         add_generation_prompt=True
-    ).replace("<|im_end|>\n<|im_start|>assistant","") for m in messages]
+    ).replace("<start_of_turn>model","") for m in messages]
     print(texts[0])
     data = {'text': texts}
     
