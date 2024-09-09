@@ -7,17 +7,17 @@ from torch.utils.data import Dataset
 
 class MessageDataset(Dataset):
     def __init__(self, messages):
-        self.messages = {"question_text": messages}
-
+        self.data = [m[1] for m in messages]
+  
     def __len__(self):
-        return len(self.data["question_text"])
+        return len(self.data)
 
     def __getitem__(self, idx):
-        return {"question_text": self.data["question_text"][idx]}
+        return {"question_text": self.data[idx]}
     
 def extract_score(input_str: str) -> int:
-    match = re.search(r'Your task is to output a prompt at score (\d+)', input_str)
-    return int(match.group(1))
+    match = re.search(r'Your task is to output a prompt at score "([-+]?\d*\.\d+|\d+)"', input_str)
+    return float(match.group(1))
 
 class MyRewardModel(RewardModelTemplate):
     def __init__(self, config):
@@ -25,7 +25,7 @@ class MyRewardModel(RewardModelTemplate):
         self.load()
 
     async def compute(self, messages):
-        objective_scores = [extract_score(m) for m in messages]
+        objective_scores = [extract_score(m[0]) for m in messages]
         
         dataset = MessageDataset(messages)
         model_name = "meta-llama/Meta-Llama-3-8B"
@@ -41,7 +41,7 @@ class MyRewardModel(RewardModelTemplate):
 
         rewards = [-abs(a - b) for a, b in zip(scores, objective_scores)]
         return rewards
-
+    
     def load(self):
         with open('../../data/real/ppo/bayesian_ridge_model.pkl', 'rb') as f:
             self.model = pickle.load(f)

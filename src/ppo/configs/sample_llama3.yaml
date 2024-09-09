@@ -7,7 +7,7 @@ lora_dropout: 0.1
 output_dir: save/llama3-ppo
 
 # Reward model
-reward_model: http://localhost:8000
+reward_model: http://localhost:4324
 discount_reward_factor: 0.99
 
 # Dataset

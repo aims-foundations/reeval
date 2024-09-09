@@ -26,7 +26,7 @@ if __name__ == "__main__":
         
         target_score = random.uniform(-5, 5)
         
-        text = template % (prompt1, score1, prompt2, score2, prompt3, score3, target_score)
+        text = template % (prompt1, round(score1,2), prompt2, round(score2,2), prompt3, round(score3,2), round(target_score,2))
         new_texts.append(text)
         
     df = pd.DataFrame(new_texts, columns=['text'])
