@@ -1,5 +1,4 @@
 program: CAT_MLE.py
-project: "CAT_MLE"
 method: grid
 parameters:
   serial:

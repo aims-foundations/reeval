@@ -51,8 +51,8 @@ def main(serial, strategy):
     asked_answer_list = [testtaker.ask(z3, init_question_index).cuda()]
     theta_hats = []
     
-    pbar = tqdm(range(subset_question_num), desc=f"true theta: {true_theta}; epoch")
-    for i in pbar:
+    pbar = tqdm(range(subset_question_num-1), desc=f"true theta: {true_theta}; epoch")
+    for _ in pbar:
         log_prob = 0
         for j, asked_question_index in enumerate(asked_question_list):
             prob = item_response_fn_1PL(z3[asked_question_index], theta_hat)
@@ -66,10 +66,7 @@ def main(serial, strategy):
 
         pbar.set_postfix({"theta_hat": theta_hat.item()})
         theta_hats.append(theta_hat.item())
-
-        if i == subset_question_num-1:
-            break
-            
+        
         if strategy == "random": # random
             new_question_index = random.choice(unasked_question_list)
         elif strategy == "fisher": # fisher
@@ -88,7 +85,7 @@ def main(serial, strategy):
     )
     
 if __name__ == "__main__":
-    wandb.init(mode = "offline")
+    wandb.init(project="CAT_MLE")
     parser = argparse.ArgumentParser()
     parser.add_argument("--serial", type=int)
     parser.add_argument("--strategy", type=str)
