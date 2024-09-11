@@ -16,5 +16,3 @@ CAT_modern.py
 CAT_owen.py
 CAT_fisher.py
 wandb/
-.ipynb_checkpoints/
-.ipynb_checkpoints/*
