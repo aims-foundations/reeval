@@ -18,3 +18,4 @@ CAT_fisher.py
 wandb/
 save/
 .ipynb_checkpoints/
+.Rhistory

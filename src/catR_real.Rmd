@@ -39,7 +39,7 @@ func.create.response <- function(b, th, np, ni) {
 
 ```{r}
 ni<-246
-np<-4 #472
+np<-472
 set.seed(42)
 theta <- rnorm(np, mean=0, sd=1)
 b <- rnorm(ni, mean=0, sd=1)
@@ -49,7 +49,7 @@ b <- rnorm(ni, mean=0, sd=1)
 item.bank <- data.frame(
   a = rep(1, ni),
   b = b,       
-  c = rep(0, ni),
+  c = rep(0.5, ni),
   d = rep(1, ni)
 )
 
@@ -96,7 +96,7 @@ func.catSim <- function(resp, item.bank, method){
 }
 
 monte.carlo.cat.simulation <- function(th.sample, item.bank, iteration){
-  np<-4 #472
+  np<-472
   resp.sample <- func.create.response(item.bank$b, th.sample, np, ni)
   
   simulated_pid <- sprintf("sim_%03d", 1:np)
