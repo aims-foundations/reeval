@@ -7,57 +7,55 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
-# Initialize WebDriver
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+if __name__ == "__main__":
+    exp = "lite"
+    
+    if exp == "classic":
+        base_url = f'https://crfm.stanford.edu/helm/classic/latest/#/runs?q=&page='
+        total_pages = 86+1
+        csv_file = f'../../data/real/crawl/crawl_dataset_name_classic.csv'
+    elif exp == "lite":
+        base_url = f'https://crfm.stanford.edu/helm/lite/latest/#/runs?page='
+        total_pages = 21+1
+        csv_file = f'../../data/real/crawl/crawl_dataset_name_lite.csv'
+    
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+        
+    failed_pages = []
+    for page in range(1, total_pages):
+        try:
+            url = f'{base_url}{page}'
+            driver.get(url)
+            driver.refresh()
 
-csv_file = '../../data/real/crawl/crawl_dataset_name.csv'
-failed_pages = []
+            WebDriverWait(driver, 120).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, 'table.table tbody tr'))
+            )
 
-for page in range(1, 87):
-    try:
-        # Navigate to the correct page
-        url = f'https://crfm.stanford.edu/helm/classic/latest/#/runs?q=&page={page}'
-        driver.get(url)
+            runs = []
+            table_rows = driver.find_elements(By.CSS_SELECTOR, 'table.table tbody tr')
+            for row in table_rows:
+                run = row.find_elements(By.TAG_NAME, 'td')[0].text.strip()
+                runs.append(run)
 
-        # Refresh the page to ensure correct page load
-        driver.refresh()
+            df_new = pd.DataFrame(runs, columns=['Run'])
 
-        # Wait until the page loads and the table rows are present
-        WebDriverWait(driver, 120).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'table.table tbody tr'))
-        )
+            if os.path.exists(csv_file):
+                df_existing = pd.read_csv(csv_file)
+                df_updated = pd.concat([df_existing, df_new], ignore_index=True)
+            else:
+                df_updated = df_new
 
-        # Scrape the table rows
-        runs = []
-        table_rows = driver.find_elements(By.CSS_SELECTOR, 'table.table tbody tr')
+            df_updated.to_csv(csv_file, index=False)
+            print(f"Page {page} scraped and saved.")
 
-        for row in table_rows:
-            run = row.find_elements(By.TAG_NAME, 'td')[0].text.strip()
-            runs.append(run)
+        except Exception as e:
+            print(f"Error on page {page}: {e}")
+            failed_pages.append(page)
 
-        # Convert the results into a DataFrame
-        df_new = pd.DataFrame(runs, columns=['Run'])
+    driver.quit()
 
-        # Check if the CSV file already exists and append new data
-        if os.path.exists(csv_file):
-            df_existing = pd.read_csv(csv_file)
-            df_updated = pd.concat([df_existing, df_new], ignore_index=True)
-        else:
-            df_updated = df_new
-
-        # Save the updated data to the CSV file
-        df_updated.to_csv(csv_file, index=False)
-        print(f"Page {page} scraped and saved.")
-
-    except Exception as e:
-        print(f"Error on page {page}: {e}")
-        failed_pages.append(page)
-
-# Quit the WebDriver
-driver.quit()
-
-# Print failed pages if any
-if failed_pages:
-    print(f"Failed pages: {failed_pages}")
-else:
-    print("All pages scraped successfully.")
+    if failed_pages:
+        print(f"Failed pages: {failed_pages}")
+    else:
+        print("All pages scraped successfully.")
