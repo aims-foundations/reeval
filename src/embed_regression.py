@@ -1,11 +1,11 @@
 import numpy as np
 from embed_text_package.embed_text import Embedder
 from torch.utils.data import DataLoader
-from datasets import load_dataset
 from sklearn.linear_model import BayesianRidge
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 import pickle
+from datasets import load_dataset, Dataset
 
 if __name__ == "__main__":
     dataset = load_dataset("stair-lab/airbench-difficulty", split="whole")
@@ -53,4 +53,14 @@ if __name__ == "__main__":
     
     with open('../data/real/auto_gen/bayesian_ridge_model.pkl', 'wb') as f:
         pickle.dump(model, f)
+        
     
+    
+    question_texts = dataset['question_text']
+    embedding_list = [X[i] for i in range(len(question_texts))]
+    
+    hf_dataset = Dataset.from_dict({
+        'question_text': question_texts,
+        'embedding': embedding_list
+    })
+    hf_dataset.push_to_hub("stair-lab/airbench-embedding")

@@ -5,13 +5,13 @@ import torch.optim as optim
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def MLE_calibration(response_matrix, device):
+def MLE_calibration(response_matrix, device, lr=0.01, weight_decay=0.01, epochs=1000):
     theta_hat = torch.normal(mean=0.0, std=1.0, size=(response_matrix.size(0),), requires_grad=True, device=device)
     z3 = torch.normal(mean=0.0, std=1.0, size=(response_matrix.size(1),), requires_grad=True, device=device)
 
-    optimizer = optim.Adam([theta_hat, z3], lr=0.01, weight_decay=0.01)
+    optimizer = optim.Adam([theta_hat, z3], lr=lr, weight_decay=weight_decay)
     
-    pbar = tqdm(range(1000))
+    pbar = tqdm(range(epochs))
     for _ in pbar:
         theta_hat_matrix = theta_hat.unsqueeze(1)
         z3_matrix = z3.unsqueeze(0)
