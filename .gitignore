@@ -10,11 +10,6 @@ plot/
 *.csv
 *.png
 *.log
-CAT_random.py
-CAT_plot.py
-CAT_modern.py
-CAT_owen.py
-CAT_fisher.py
 wandb/
 save/
 .ipynb_checkpoints/
