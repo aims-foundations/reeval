@@ -43,12 +43,14 @@ if __name__ == "__main__":
     train_size = int(0.8 * response_matrix.shape[1])
     
     theta_nonamor, z3_nonamor = MLE_calibration(response_matrix, device)
+    z3_nonamor_train = z3_nonamor[:train_size]
+    z3_nonamor_train = z3_nonamor_train.cpu().detach().numpy()
     z3_nonamor_test = z3_nonamor[train_size:]
     z3_nonamor_test = z3_nonamor_test.cpu().detach().numpy()
     
     dataset = load_dataset("stair-lab/airbench-embedding", split="train")
     embeddings = dataset['embedding']
-    emb_tensor = torch.tensor(embeddings).cuda() # [1199, 4096]
+    emb_tensor = torch.tensor(embeddings).to(device) # [1199, 4096]
     
     assert response_matrix.shape[1] == emb_tensor.shape[0]
     
@@ -57,21 +59,31 @@ if __name__ == "__main__":
     emb_test = emb_tensor[train_size:]
     
     theta_amor_train, z3_amor_train, W_train = amortized_MLE_calibration(response_matrix_train, emb_train, device)
-    
+    z3_amor_train = z3_amor_train.cpu().detach().numpy()
     z3_amor_test = torch.matmul(emb_test, W_train)
     z3_amor_test = z3_amor_test.cpu().detach().numpy()
     
+    assert z3_amor_train.shape == z3_nonamor_train.shape
     assert z3_amor_test.shape == z3_nonamor_test.shape
     
-    plt.figure(figsize=(5, 5))
-    plt.scatter(z3_nonamor_test, z3_amor_test, label='Z values')
+    plt.figure(figsize=(10, 5))
+
+    plt.subplot(1, 2, 1)
+    plt.scatter(z3_nonamor_train, z3_amor_train, label='Train Z values')
+    plt.xlabel('z3_nonamor_train')
+    plt.ylabel('z3_amor_train')
+    plt.title('Training: Non-amortized vs Amortized Z3')
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.scatter(z3_nonamor_test, z3_amor_test, label='Test Z values')
     plt.xlabel('z3_nonamor_test')
     plt.ylabel('z3_amor_test')
-    plt.title('Comparison of z3 values')
+    plt.title('Test: Non-amortized vs Amortized Z3')
     plt.legend()
 
     plt.tight_layout()
-    plt.savefig('../plot/synthetic/amor_nonamor_comparison.png')
-    
-    
-    
+    plt.savefig('../plot/real/amor_nonamor_train_test_comparison.png')
+
+        
+        
