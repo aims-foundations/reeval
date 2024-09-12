@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from tqdm import tqdm
 from utils import item_response_fn_1PL, set_seed
@@ -85,5 +86,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig('../plot/real/amor_nonamor_train_test_comparison.png')
 
-        
-        
+    corr_train = np.corrcoef(z3_nonamor_train, z3_amor_train)[0, 1]
+    corr_test = np.corrcoef(z3_nonamor_test, z3_amor_test)[0, 1]
+    print(f"Correlation between non-amortized and amortized Z3 values in training set: {corr_train}")
+    print(f"Correlation between non-amortized and amortized Z3 values in test set: {corr_test}")
