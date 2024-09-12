@@ -9,7 +9,7 @@ def MLE_calibration(response_matrix, device):
     theta_hat = torch.normal(mean=0.0, std=1.0, size=(response_matrix.size(0),), requires_grad=True, device=device)
     z3 = torch.normal(mean=0.0, std=1.0, size=(response_matrix.size(1),), requires_grad=True, device=device)
 
-    optimizer = optim.Adam([theta_hat, z3], lr=0.01)
+    optimizer = optim.Adam([theta_hat, z3], lr=0.01, weight_decay=0.01)
     
     pbar = tqdm(range(1000))
     for _ in pbar:
@@ -31,6 +31,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     y_df = pd.read_csv('../data/synthetic/response_matrix/synthetic_matrix_1PL.csv', index_col=0)
     response_matrix = torch.tensor(y_df.values, dtype=torch.float32, device=device)
+    
     theta_py, z3_py = MLE_calibration(response_matrix, device)
     theta_py = theta_py.cpu().detach().numpy()
     z3_py = z3_py.cpu().detach().numpy()
