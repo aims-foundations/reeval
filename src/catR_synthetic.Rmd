@@ -43,8 +43,6 @@ np<-472
 set.seed(42)
 theta <- rnorm(np, mean=0, sd=1)
 b <- rnorm(ni, mean=0, sd=1)
-# simulated_pid <- sprintf("sim_%03d", 1:np)
-# df.true.theta <- data.frame(pid = simulated_pid, thetaTrue = theta)
 
 item.bank <- data.frame(
   a = rep(1, ni),
@@ -96,7 +94,6 @@ func.catSim <- function(resp, item.bank, method){
 }
 
 monte.carlo.cat.simulation <- function(th.sample, item.bank, iteration){
-  np<-472
   resp.sample <- func.create.response(item.bank$b, th.sample, np, ni)
   
   simulated_pid <- sprintf("sim_%03d", 1:np)
@@ -153,18 +150,6 @@ df.compare.all <- df.monte.carlo.simulation.compare %>%
   unique() %>%
   mutate(variant = ifelse(variant == "adaptive", "CAT", "Random"))
 df.compare.all
-```
-
-```{r}
-# df.monte.carlo.simulation.compare <- merge(df.monte.carlo.results.v2, df.true.theta, by = "pid", all.x = TRUE)
-# df.monte.carlo.simulation.compare
-```
-
-```{r}
-# df.compare.all <- df.monte.carlo.simulation.compare %>%
-#   select(pid, variant, trialNumTotal, thetaEstimate, iteration, thetaSE, thetaTrue) %>%
-#   mutate(variant = ifelse(variant == "adaptive", "CAT", "Random"))
-# df.compare.all
 ```
 
 ```{r}
@@ -256,8 +241,7 @@ g.bias.all <- ggplot(df.aggregrate.learning.curve.all, mapping = aes(x = trialNu
 ```{r fig.width=30,fig.height=12}
 g.reliability.all + g.mse.all + g.bias.all
 
-ggsave("../plots/roar_cat_study2_figure2.png")
-ggsave("../plots/roar_cat_study2_figure2.pdf")
+ggsave("../plot/synthetic/catR.png")
 ```
 
 
