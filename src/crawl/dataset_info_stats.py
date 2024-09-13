@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import re
 import requests
@@ -22,9 +23,7 @@ def get_question_count(exp_string, exp):
             question_count = len(json_data.get('request_states', []))
             version_found = True
             return question_count
-        else:
-            print(f"Failed to retrieve data for {exp_string} with version {i}, status code: {response.status_code}")
-    
+           
     if not version_found:
         print(f"Could not retrieve data for {exp_string} from any version v1.0.0 to v1.{max_version}.0, return 0")
         return 0
@@ -43,19 +42,22 @@ if __name__ == "__main__":
     first_run_list = df.groupby('cleaned_run')['Run'].first().tolist()
     output_path = f'../../data/real/crawl/dataset_info_stats_{exp}.csv'
 
-    all_results = []
     for i, exp_string in enumerate(tqdm(first_run_list)):
+        if os.path.exists(output_path):
+            existing_df = pd.read_csv(output_path)
+        else:
+            existing_df = pd.DataFrame(columns=['dataset_name', 'model_count', 'question_count'])
+
         question_count = get_question_count(exp_string, exp)
-        all_results.append({
+        new_data = pd.DataFrame([{
             'dataset_name': dataset_names[i],
             'model_count': model_counts[i],
             'question_count': question_count
-        })
+        }])
 
-        result_df = pd.DataFrame(all_results)
-        result_df = result_df.sort_values(by=['model_count', 'question_count'], ascending=[False, False])
+        existing_df = pd.concat([existing_df, new_data], ignore_index=True)
+        existing_df = existing_df.sort_values(by=['model_count', 'question_count'], ascending=[False, False])
+        existing_df.to_csv(output_path, index=False)
 
-        if i == 0:
-            result_df.to_csv(output_path, index=False, mode='w')
-        else:
-            result_df.to_csv(output_path, index=False, mode='a', header=False)
+
+

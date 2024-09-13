@@ -1,10 +1,11 @@
 import pandas as pd
 import requests
 
-file_path = f'../../data/real/crawl/crawl_dataset_name_lite.csv'
+file_path = f'../../data/real/crawl/crawl_dataset_name_classic.csv'
 df = pd.read_csv(file_path)
 
-filtered_df = df[df['Run'].str.startswith('mmlu:subject=college_chemistry')]
+filtered_df = df[df['Run'].str.startswith('synthetic_reasoning')]
+print(filtered_df)
 for i, row in filtered_df.iterrows():
     exp_string = row['Run']
     
