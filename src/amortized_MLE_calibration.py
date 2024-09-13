@@ -13,10 +13,10 @@ def amortized_MLE_calibration(response_matrix, embedding, device):
     theta_hat = torch.normal(mean=0.0, std=1.0, size=(response_matrix.size(0),), requires_grad=True, device=device)
     W = torch.normal(mean=0.0, std=0.01, size=(embedding.size(1),), requires_grad=True, device=device)
     
-    optimizer = optim.Adam([W, theta_hat], lr=0.001, weight_decay=0.01)
+    optimizer = optim.Adam([W, theta_hat], lr=0.001, weight_decay=1)
     torch.nn.utils.clip_grad_norm_([W, theta_hat], max_norm=1.0)
     
-    pbar = tqdm(range(3000))
+    pbar = tqdm(range(1000))
     for _ in pbar:
         z3 = torch.matmul(embedding, W) # z3 [959]
         theta_hat_matrix = theta_hat.unsqueeze(1) # (n, 1)
@@ -90,3 +90,9 @@ if __name__ == "__main__":
     corr_test = np.corrcoef(z3_nonamor_test, z3_amor_test)[0, 1]
     print(f"Correlation between non-amortized and amortized Z3 values in training set: {corr_train}")
     print(f"Correlation between non-amortized and amortized Z3 values in test set: {corr_test}")
+    
+    mse_train = np.mean((z3_nonamor_train - z3_amor_train) ** 2)
+    mse_test = np.mean((z3_nonamor_test - z3_amor_test) ** 2)
+    print(f"MSE between non-amortized and amortized Z3 values in training set: {mse_train}")
+    print(f"MSE between non-amortized and amortized Z3 values in test set: {mse_test}")
+    
