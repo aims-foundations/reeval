@@ -1,0 +1,12 @@
+wandb_version: 1
+
+W_init_std:
+  value: 0.08713483592107822
+epochs:
+  value: 1000
+lr:
+  value: 0.0020718862667604664
+max_norm:
+  value: 1.5365989646164664
+weight_decay:
+  value: 0.670575087263477
