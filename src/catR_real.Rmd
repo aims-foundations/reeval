@@ -39,15 +39,16 @@ func.create.response <- function(b, th, np, ni) {
 
 ```{r}
 set.seed(42)
-theta <- read_csv("../data/real/")
-b <- rnorm(ni, mean=0, sd=1)
-ni<-246
-np<-472
+np<-500
+theta <- rnorm(np, mean=0, sd=1)
+df.b <- read_csv("../data/real/irt_result/normal/Z/all_1PL_Z_clean.csv", col_select = 3)
+b <- df.b$z3
+ni <- length(b)
 
 item.bank <- data.frame(
   a = rep(1, ni),
-  b = b,       
-  c = rep(0.5, ni),
+  b = b,
+  c = rep(0, ni),
   d = rep(1, ni)
 )
 
