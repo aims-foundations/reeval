@@ -41,18 +41,17 @@ if __name__ == "__main__":
     model_counts = df.groupby('cleaned_run').size().tolist()
     
     first_run_list = df.groupby('cleaned_run')['Run'].first().tolist()
-    question_counts = []
-    for exp_string in tqdm(first_run_list):
-        question_count = get_question_count(exp_string, exp)
-        question_counts.append(question_count)
-
-    result_df = pd.DataFrame({
-        'dataset_name': dataset_names,
-        'model_count': model_counts,
-        'question_count': question_counts
-    })
-    result_df = result_df.sort_values(by=['model_count', 'question_count'], ascending=[False, False])
-
     output_path = f'../../data/real/crawl/dataset_info_stats_{exp}.csv'
-    result_df.to_csv(output_path, index=False)
 
+    for i, exp_string in enumerate(tqdm(first_run_list)):
+        question_count = get_question_count(exp_string, exp)
+        result_df = pd.DataFrame({
+            'dataset_name': [dataset_names[i]],
+            'model_count': [model_counts[i]],
+            'question_count': [question_count]
+        })
+
+        if i == 0:
+            result_df.to_csv(output_path, index=False, mode='w')
+        else:
+            result_df.to_csv(output_path, index=False, mode='a', header=False)
