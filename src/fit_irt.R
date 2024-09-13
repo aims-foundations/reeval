@@ -84,6 +84,18 @@ if (data_type == "real_normal") {
                                      "../data/synthetic/irt_result/theta/synthetic_2PL_theta.csv",
                                      "../data/synthetic/irt_result/theta/synthetic_3PL_theta.csv")
   output_files_list_theta <- list(output_files_synthetic_theta)
+} else if (data_type == "normal_syn_reason") {
+  input_files <- c("../data/real/response_matrix/normal_syn_reason/all_matrix.csv")
+
+  output_files_all_Z <- c("../data/real/irt_result/Z/all_1PL_Z.csv",
+                                 "../data/real/irt_result/Z/all_2PL_Z.csv",
+                                 "../data/real/irt_result/Z/all_3PL_Z.csv")
+  output_files_list_Z <- list(output_files_all_Z)
+
+  output_files_all_theta <- c("../data/real/irt_result/theta/all_1PL_theta.csv",
+                                     "../data/real/irt_result/theta/all_2PL_theta.csv",
+                                     "../data/real/irt_result/theta/all_3PL_theta.csv")
+  output_files_list_theta <- list(output_files_all_theta)
 } else {
   stop("Invalid data type specified.")
 }

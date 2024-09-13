@@ -24,7 +24,7 @@ if __name__ == "__main__":
     plt.rcParams.update({'font.size': 20})
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--exp", type=str, help="synthetic or real_normal or real_appendix1")
+    parser.add_argument("--exp", type=str)
     args = parser.parse_args()
     
     if args.exp == "synthetic":
@@ -45,6 +45,12 @@ if __name__ == "__main__":
         theta_dir = f'../data/real/irt_result/appendix1/theta'
         output_dir = '../plot/real'
         response_matrix_dir = '../data/real/response_matrix/appendix1'
+        
+    elif args.exp == "normal_syn_reason":
+        Z_dir = f'../data/real/irt_result/normal_syn_reason/Z'
+        theta_dir = f'../data/real/irt_result/normal_syn_reason/theta'
+        output_dir = '../plot/real'
+        response_matrix_dir = '../data/real/response_matrix/normal_syn_reason'
         
     os.makedirs(Z_dir, exist_ok=True)
     os.makedirs(theta_dir, exist_ok=True)
