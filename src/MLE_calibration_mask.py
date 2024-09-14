@@ -16,13 +16,13 @@ def MLE_calibration_mask(response_matrix, device):
         theta_hat_matrix = theta_hat.unsqueeze(1)
         z3_matrix = z3.unsqueeze(0)
         prob_matrix = item_response_fn_1PL(z3_matrix, theta_hat_matrix)
-        berns = torch.distributions.Bernoulli(prob_matrix.flatten())
         
         mask = response_matrix != -1
         masked_response_matrix = response_matrix.flatten()[mask.flatten()]
         masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
 
-        loss = -torch.distributions.Bernoulli(masked_prob_matrix).log_prob(masked_response_matrix).mean()
+        berns = torch.distributions.Bernoulli(masked_prob_matrix)
+        loss = -berns.log_prob(masked_response_matrix).mean()
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
