@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 from embed_text_package.embed_text import Embedder
 from torch.utils.data import DataLoader
@@ -7,11 +8,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 import pickle
 
-if __name__ == "__main__":
-    dataset = load_dataset("stair-lab/airbench-difficulty", split="whole")
-    cols_to_be_embded = ['question_text']
+def main(
+    hf_repo,
+    save_path,
+    model_name = "meta-llama/Meta-Llama-3-8B",
     bs = 1024
-    model_name = "meta-llama/Meta-Llama-3-8B"
+):
+    dataset = load_dataset(hf_repo, split="whole")
+    cols_to_be_embded = ['question_text']
     
     embdr = Embedder()
     embdr.load(model_name)
@@ -47,6 +51,23 @@ if __name__ == "__main__":
     print(f'Mean Prediction Training Set Error (MSE): {mean_pred_train_error}')
     print(f'Mean Prediction Test Set Error (MSE): {mean_pred_test_error}')
     
-    with open('../data/real/auto_gen/bayesian_ridge_model.pkl', 'wb') as f:
+    with open(save_path, 'wb') as f:
         pickle.dump(model, f)
+    
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--exp', type=str, default='airbench')
+    args = parser.parse_args()
+    
+    if args.exp == 'airbench':
+        main(
+            hf_repo='stair-lab/airbench-difficulty',
+            save_path='../data/real/ppo/airbench/bayesian_ridge_model.pkl'
+        )
+    
+    elif args.exp == 'synthetic_reasoning':
+        main(
+            hf_repo='stair-lab/synthetic_reasoning-difficulty',
+            save_path='../data/real/ppo/synthetic_reasoning/bayesian_ridge_model.pkl'
+        )
     
