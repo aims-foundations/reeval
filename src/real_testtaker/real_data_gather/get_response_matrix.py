@@ -12,6 +12,10 @@ if __name__ == "__main__":
         skip_list = []
     elif exp == "appendix1":
         skip_list = ["Qwen_Qwen2-72B-Instruct", "meta_llama-3-8b-chat"]
+    elif exp == "appendix2":
+        skip_list = ["google_gemma-7b-it", "meta_llama-3-8b-chat"]
+    else:
+        raise ValueError("Invalid experiment name")
         
     input_dir = "../../../data/real/pre_irt_data/eval"
     output_dir = f"../../../data/real/response_matrix/{exp}"

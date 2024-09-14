@@ -37,15 +37,15 @@ def main(serial, strategy):
     testtaker = SimulatedTestTaker(true_theta, model="1PL")
     
     theta_hat = torch.normal(
-        mean=0.0, std=1.0, size=(1,), requires_grad=True, device='cpu'
+        mean=0.0, std=1.0, size=(1,), requires_grad=True, device='cuda'
     )
-    optimizer = optim.SGD([theta_hat], lr=0.005, momentum=0.9)
+    optimizer = optim.Adam([theta_hat], lr=0.01)
     
     asked_question_list = [init_question_index]
     unasked_question_list = [
         i for i in range(question_num) if i != init_question_index
     ]
-    asked_answer_list = [testtaker.ask(z3, init_question_index).cpu()]
+    asked_answer_list = [testtaker.ask(z3, init_question_index).cuda()]
     theta_hats = []
     
     pbar = tqdm(range(subset_question_num), desc=f"true theta: {true_theta}; epoch")
@@ -74,7 +74,6 @@ def main(serial, strategy):
         elif strategy=="owen":
             new_question_index = CAT_owen(z3, unasked_question_list, theta_hat)
 
-        print(z3[new_question_index])
         asked_question_list.append(new_question_index)
         unasked_question_list.remove(new_question_index)
         asked_answer_list.append(testtaker.ask(z3, new_question_index).cpu())
