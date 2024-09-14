@@ -31,17 +31,31 @@ def MLE_calibration_mask(response_matrix, device):
 
     return theta_hat, z3
 
-
-def main(y_df_path, z3_r_path, theta_r_path, fig_path, device):
+def main(
+    y_df_path,
+    z3_r_path,
+    theta_r_path,
+    save_z3_path,
+    save_theta_path, 
+    fig_path,
+    device
+):
     y_df = pd.read_csv(y_df_path, index_col=0)
     response_matrix = torch.tensor(y_df.values, dtype=torch.float32, device=device)
     
-    theta_py, z3_py = MLE_calibration(response_matrix, device)
+    theta_py, z3_py_whole = MLE_calibration_mask(response_matrix, device)
     theta_py = theta_py.cpu().detach().numpy()
-    z3_py = z3_py.cpu().detach().numpy()
+    z3_py_whole = z3_py_whole.cpu().detach().numpy()
+    
+    z3_df = pd.DataFrame(z3_py_whole, columns=["z3"])
+    z3_df.to_csv(save_z3_path, index=False)
+    theta_df = pd.DataFrame(theta_py, columns=["theta"])
+    theta_df.to_csv(save_theta_path, index=False)
     
     z3_r = pd.read_csv(z3_r_path)['z3']
     theta_r = pd.read_csv(theta_r_path)['F1']
+    
+    z3_py = z3_py_whole[:z3_r.shape[0]]
 
     plt.figure(figsize=(10, 5))
 
@@ -66,4 +80,12 @@ if __name__ == "__main__":
     set_seed(42)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-   
+    main(
+        '../data/real/response_matrix/normal_syn_reason/mask_matrix.csv', 
+        '../data/real/irt_result/normal_syn_reason/Z/non_mask_1PL_Z_clean.csv',
+        '../data/real/irt_result/normal_syn_reason/theta/non_mask_1PL_theta.csv', 
+        '../data/real/irt_result/pyMLE_normal_syn_reason/Z/mask_1PL_Z.csv',
+        '../data/real/irt_result/pyMLE_normal_syn_reason/theta/mask_1PL_theta.csv',
+        '../plot/real/maskpy_unmaskr_calibration_comparison.png',
+        device
+    )

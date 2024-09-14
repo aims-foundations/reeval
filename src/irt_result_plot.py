@@ -59,9 +59,9 @@ if __name__ == "__main__":
 
 
 
-    # run mirt.R
-    print("running mirt.R")
-    subprocess.run(f"conda run -n R Rscript fit_irt.R {args.exp}", shell=True, check=True)
+    # # run mirt.R
+    # print("running mirt.R")
+    # subprocess.run(f"conda run -n R Rscript fit_irt.R {args.exp}", shell=True, check=True)
     
     # clean up item parameters inferred from IRT
     print("cleaning up item parameters inferred from IRT")
@@ -107,22 +107,22 @@ if __name__ == "__main__":
 
         fig, axes = plt.subplots(1, 3, figsize=(18, 6), sharey=True)
 
-    axes[0].hist(z3_dict['base'], bins=20, alpha=0.7, density=True)
-    axes[0].set_title('Distribution of base')
-    axes[0].set_xlabel('z3 Values')
-    axes[0].set_ylabel('Density')
+        axes[0].hist(z3_dict['base'], bins=20, alpha=0.7, density=True)
+        axes[0].set_title('Distribution of base')
+        axes[0].set_xlabel('z3 Values')
+        axes[0].set_ylabel('Density')
 
-    axes[1].hist(z3_dict['perturb1'], bins=20, alpha=0.7, density=True)
-    axes[1].set_title('Distribution of perturb1')
-    axes[1].set_xlabel('z3 Values')
+        axes[1].hist(z3_dict['perturb1'], bins=20, alpha=0.7, density=True)
+        axes[1].set_title('Distribution of perturb1')
+        axes[1].set_xlabel('z3 Values')
 
-    axes[2].hist(z3_dict['perturb2'], bins=20, alpha=0.7, density=True)
-    axes[2].set_title('Distribution of perturb2')
-    axes[2].set_xlabel('z3 Values')
+        axes[2].hist(z3_dict['perturb2'], bins=20, alpha=0.7, density=True)
+        axes[2].set_title('Distribution of perturb2')
+        axes[2].set_xlabel('z3 Values')
 
-    plt.tight_layout()
-    plt.savefig(f'{output_dir}/appendix1_three_z_set_separate.png')
-        
+        plt.tight_layout()
+        plt.savefig(f'{output_dir}/appendix1_three_z_set_separate.png')
+            
         
         
     if args.exp == 'synthetic':
