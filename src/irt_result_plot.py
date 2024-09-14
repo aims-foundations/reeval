@@ -88,8 +88,6 @@ if __name__ == "__main__":
             clean_file_path = os.path.join(Z_dir, filename.replace('.csv', '_clean.csv'))
             new_df.to_csv(clean_file_path, index=False)
 
-
-
     if args.exp == 'real_appendix1':
         all_z_df = pd.read_csv(f'{Z_dir}/all_1PL_Z_clean.csv')
         index_search_df = pd.read_csv(f'{response_matrix_dir}/index_search.csv')
