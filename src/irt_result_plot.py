@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 20})
 import subprocess
 import torch
 import numpy as np
@@ -21,8 +22,6 @@ def plot_hist(serial, data, color, para, perturb):
     plt.grid(True)
             
 if __name__ == "__main__":
-    plt.rcParams.update({'font.size': 20})
-    
     parser = argparse.ArgumentParser()
     parser.add_argument("--exp", type=str)
     args = parser.parse_args()

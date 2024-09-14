@@ -40,16 +40,12 @@ if __name__ == "__main__":
     test_error = mean_squared_error(y_test, y_test_pred)
     print(f'Test Set Error (MSE): {test_error}')
     
-    
-    
     y_mean_pred = np.mean(y_train)
     mean_pred_train_error = mean_squared_error(y_train, np.full_like(y_train, y_mean_pred))
     mean_pred_test_error = mean_squared_error(y_test, np.full_like(y_test, y_mean_pred))
 
     print(f'Mean Prediction Training Set Error (MSE): {mean_pred_train_error}')
     print(f'Mean Prediction Test Set Error (MSE): {mean_pred_test_error}')
-    
-    
     
     with open('../data/real/auto_gen/bayesian_ridge_model.pkl', 'wb') as f:
         pickle.dump(model, f)

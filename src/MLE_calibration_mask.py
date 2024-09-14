@@ -6,6 +6,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 plt.rcParams['text.usetex'] = True
+plt.rcParams.update({'font.size': 20})
+from matplotlib import gridspec
 
 def MLE_calibration_mask(response_matrix, device):
     theta_hat = torch.normal(
@@ -43,13 +45,41 @@ def MLE_calibration_mask(response_matrix, device):
 
     return theta_hat, z3
 
+def plot_scatter_with_histograms(z3_py, z3_r, save_path):
+    plt.figure(figsize=(10, 10))
+    gs = gridspec.GridSpec(2, 2, width_ratios=[4, 1], height_ratios=[1, 4], wspace=0.05, hspace=0.05)
+
+    # Scatter plot between z3_py and z3_r
+    ax_main = plt.subplot(gs[1, 0])
+    ax_main.scatter(z3_py, z3_r)
+    ax_main.set_xlabel(r'Our $z_3$')
+    ax_main.set_ylabel(r'mirt $z_3$')
+
+    # Calculate correlation and add title at the bottom
+    corr_np = np.corrcoef(z3_py, z3_r)[0, 1]
+    plt.figtext(0.5, 0.02, f'Correlation: {corr_np:.2f}', ha='center')
+
+    # Histogram for z3_py (top)
+    ax_xhist = plt.subplot(gs[0, 0], sharex=ax_main)
+    ax_xhist.hist(z3_py, bins=30, color='gray', alpha=0.7)
+    ax_xhist.axis('off')
+
+    # Histogram for z3_r (right)
+    ax_yhist = plt.subplot(gs[1, 1], sharey=ax_main)
+    ax_yhist.hist(z3_r, bins=30, color='gray', alpha=0.7, orientation='horizontal')
+    ax_yhist.axis('off')
+
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
 def main(
     y_df_path,
     z3_r_path,
     theta_r_path,
     save_z3_path,
     save_theta_path, 
-    fig_path,
+    fig_path_z,
+    fig_path_theta,
     device
 ):
     y_df = pd.read_csv(y_df_path, index_col=0)
@@ -68,37 +98,20 @@ def main(
     theta_r = pd.read_csv(theta_r_path)['F1']
     z3_py = z3_py_whole[:z3_r.shape[0]]
 
-    plt.figure(figsize=(10, 5))
-    plt.subplot(1, 2, 1)
-    plt.scatter(z3_py, z3_r)
-    plt.xlabel(r'Our $z_3$')
-    plt.ylabel(r'mirt $z_3$')
-    corr_np = np.corrcoef(z3_py, z3_r)[0, 1]
-    plt.title(f'Correlation: {corr_np:.2f}')
-    plt.xlim(-6, 6)
-    plt.ylim(-6, 6)
-    
-    plt.subplot(1, 2, 2)
-    plt.scatter(theta_py, theta_r)
-    plt.xlabel(r'Our $\theta$')
-    plt.ylabel(r'mirt $\theta$')
-    corr_np = np.corrcoef(theta_py, theta_r)[0, 1]
-    plt.title(f'Correlation: {corr_np:.2f}')
-    plt.xlim(-6, 6)
-    plt.ylim(-6, 6)
-
-    plt.savefig(fig_path, dpi=300, bbox_inches='tight')
+    plot_scatter_with_histograms(z3_py, z3_r, fig_path_z)
+    plot_scatter_with_histograms(theta_py, theta_r, fig_path_theta)
     
 if __name__ == "__main__":
     set_seed(42)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     main(
-        '../data/real/response_matrix/normal_syn_reason/mask_matrix.csv', 
-        '../data/real/irt_result/normal_syn_reason/Z/non_mask_1PL_Z_clean.csv',
-        '../data/real/irt_result/normal_syn_reason/theta/non_mask_1PL_theta.csv', 
-        '../data/real/irt_result/pyMLE_normal_syn_reason/Z/mask_1PL_Z.csv',
-        '../data/real/irt_result/pyMLE_normal_syn_reason/theta/mask_1PL_theta.csv',
-        '../plot/real/maskpy_unmaskr_calibration_comparison.png',
-        device
+        y_df_path='../data/real/response_matrix/normal_syn_reason/mask_matrix.csv', 
+        z3_r_path='../data/real/irt_result/normal_syn_reason/Z/non_mask_1PL_Z_clean.csv',
+        theta_r_path='../data/real/irt_result/normal_syn_reason/theta/non_mask_1PL_theta.csv', 
+        save_z3_path='../data/real/irt_result/pyMLE_normal_syn_reason/Z/mask_1PL_Z.csv',
+        save_theta_path='../data/real/irt_result/pyMLE_normal_syn_reason/theta/mask_1PL_theta.csv',
+        fig_path_z='../plot/real/maskpy_unmaskr_z.png',
+        fig_path_theta='../plot/real/maskpy_unmaskr_theta.png',
+        device=device
     )
