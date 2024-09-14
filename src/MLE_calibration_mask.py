@@ -3,15 +3,27 @@ from tqdm import tqdm
 from utils import item_response_fn_1PL, set_seed
 import torch.optim as optim
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
+plt.rcParams['text.usetex'] = True
 
 def MLE_calibration_mask(response_matrix, device):
-    theta_hat = torch.normal(mean=0.0, std=1.0, size=(response_matrix.size(0),), requires_grad=True, device=device)
-    z3 = torch.normal(mean=0.0, std=1.0, size=(response_matrix.size(1),), requires_grad=True, device=device)
+    theta_hat = torch.normal(
+        mean=0.0, std=1.0,
+        size=(response_matrix.size(0),),
+        requires_grad=True,
+        device=device
+    )
+    z3 = torch.normal(
+        mean=0.0, std=1.0,
+        size=(response_matrix.size(1),),
+        requires_grad=True,
+        device=device
+    )
 
     optimizer = optim.Adam([theta_hat, z3], lr=0.01)
     
-    pbar = tqdm(range(1000))
+    pbar = tqdm(range(3000))
     for _ in pbar:
         theta_hat_matrix = theta_hat.unsqueeze(1)
         z3_matrix = z3.unsqueeze(0)
@@ -54,27 +66,28 @@ def main(
     
     z3_r = pd.read_csv(z3_r_path)['z3']
     theta_r = pd.read_csv(theta_r_path)['F1']
-    
     z3_py = z3_py_whole[:z3_r.shape[0]]
 
     plt.figure(figsize=(10, 5))
-
     plt.subplot(1, 2, 1)
-    plt.scatter(z3_py, z3_r, label='Z values')
-    plt.xlabel('Py z3')
-    plt.ylabel('R z3')
-    plt.title('Comparison of z3 values')
-    plt.legend()
-
+    plt.scatter(z3_py, z3_r)
+    plt.xlabel(r'Our $z_3$')
+    plt.ylabel(r'mirt $z_3$')
+    corr_np = np.corrcoef(z3_py, z3_r)[0, 1]
+    plt.title(f'Correlation: {corr_np:.2f}')
+    plt.xlim(-6, 6)
+    plt.ylim(-6, 6)
+    
     plt.subplot(1, 2, 2)
-    plt.scatter(theta_py, theta_r, label='Theta values')
-    plt.xlabel('Py theta')
-    plt.ylabel('R theta')
-    plt.title('Comparison of Theta values')
-    plt.legend()
+    plt.scatter(theta_py, theta_r)
+    plt.xlabel(r'Our $\theta$')
+    plt.ylabel(r'mirt $\theta$')
+    corr_np = np.corrcoef(theta_py, theta_r)[0, 1]
+    plt.title(f'Correlation: {corr_np:.2f}')
+    plt.xlim(-6, 6)
+    plt.ylim(-6, 6)
 
-    plt.tight_layout()
-    plt.savefig(fig_path)
+    plt.savefig(fig_path, dpi=300, bbox_inches='tight')
     
 if __name__ == "__main__":
     set_seed(42)

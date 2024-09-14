@@ -59,9 +59,9 @@ if __name__ == "__main__":
 
 
 
-    # # run mirt.R
-    # print("running mirt.R")
-    # subprocess.run(f"conda run -n R Rscript fit_irt.R {args.exp}", shell=True, check=True)
+    # run mirt.R
+    print("running mirt.R")
+    subprocess.run(f"conda run -n R Rscript fit_irt.R {args.exp}", shell=True, check=True)
     
     # clean up item parameters inferred from IRT
     print("cleaning up item parameters inferred from IRT")
