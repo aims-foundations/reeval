@@ -95,6 +95,17 @@ if (data_type == "real_normal") {
                               "../data/real/irt_result/normal_syn_reason/theta/non_mask_2PL_theta.csv",
                               "../data/real/irt_result/normal_syn_reason/theta/non_mask_3PL_theta.csv")
   output_files_list_theta <- list(output_files_all_theta)
+} else if (data_type == "normal_syn_reason_clean") {
+  input_files <- c("../data/real/response_matrix/normal_syn_reason_clean/non_mask_matrix.csv")
+  output_files_all_Z <- c("../data/real/irt_result/normal_syn_reason_clean/Z/non_mask_1PL_Z.csv",
+                          "../data/real/irt_result/normal_syn_reason_clean/Z/non_mask_2PL_Z.csv",
+                          "../data/real/irt_result/normal_syn_reason_clean/Z/non_mask_3PL_Z.csv")
+  output_files_list_Z <- list(output_files_all_Z)
+
+  output_files_all_theta <- c("../data/real/irt_result/normal_syn_reason_clean/theta/non_mask_1PL_theta.csv",
+                              "../data/real/irt_result/normal_syn_reason_clean/theta/non_mask_2PL_theta.csv",
+                              "../data/real/irt_result/normal_syn_reason_clean/theta/non_mask_3PL_theta.csv")
+  output_files_list_theta <- list(output_files_all_theta)
 } else {
   stop("Invalid data type specified.")
 }

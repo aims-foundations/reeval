@@ -1,3 +1,4 @@
+import argparse
 import torch
 from tqdm import tqdm
 from utils import item_response_fn_1PL, set_seed
@@ -9,7 +10,7 @@ plt.rcParams['text.usetex'] = True
 plt.rcParams.update({'font.size': 20})
 from matplotlib import gridspec
 
-def MLE_calibration_mask(response_matrix, device):
+def MLE_calibration_mask(response_matrix, device, max_epoch=3000):
     theta_hat = torch.normal(
         mean=0.0, std=1.0,
         size=(response_matrix.size(0),),
@@ -25,7 +26,7 @@ def MLE_calibration_mask(response_matrix, device):
 
     optimizer = optim.Adam([theta_hat, z3], lr=0.01)
     
-    pbar = tqdm(range(3000))
+    pbar = tqdm(range(max_epoch))
     for _ in pbar:
         theta_hat_matrix = theta_hat.unsqueeze(1)
         z3_matrix = z3.unsqueeze(0)
@@ -80,12 +81,13 @@ def main(
     save_theta_path, 
     fig_path_z,
     fig_path_theta,
-    device
+    device,
+    max_epoch=3000
 ):
     y_df = pd.read_csv(y_df_path, index_col=0)
     response_matrix = torch.tensor(y_df.values, dtype=torch.float32, device=device)
     
-    theta_py, z3_py_whole = MLE_calibration_mask(response_matrix, device)
+    theta_py, z3_py_whole = MLE_calibration_mask(response_matrix, device, max_epoch=max_epoch)
     theta_py = theta_py.cpu().detach().numpy()
     z3_py_whole = z3_py_whole.cpu().detach().numpy()
     
@@ -102,16 +104,33 @@ def main(
     plot_scatter_with_histograms(theta_py, theta_r, fig_path_theta)
     
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--exp', type=str, default='airbench')
+    args = parser.parse_args()
+    
     set_seed(42)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    main(
-        y_df_path='../data/real/response_matrix/normal_syn_reason/mask_matrix.csv', 
-        z3_r_path='../data/real/irt_result/normal_syn_reason/Z/non_mask_1PL_Z_clean.csv',
-        theta_r_path='../data/real/irt_result/normal_syn_reason/theta/non_mask_1PL_theta.csv', 
-        save_z3_path='../data/real/irt_result/pyMLE_normal_syn_reason/Z/mask_1PL_Z.csv',
-        save_theta_path='../data/real/irt_result/pyMLE_normal_syn_reason/theta/mask_1PL_theta.csv',
-        fig_path_z='../plot/real/maskpy_unmaskr_z.png',
-        fig_path_theta='../plot/real/maskpy_unmaskr_theta.png',
-        device=device
-    )
+    if args.exp == 'normal_syn_reason':
+        main(
+            y_df_path='../data/real/response_matrix/normal_syn_reason/mask_matrix.csv', 
+            z3_r_path='../data/real/irt_result/normal_syn_reason/Z/non_mask_1PL_Z_clean.csv',
+            theta_r_path='../data/real/irt_result/normal_syn_reason/theta/non_mask_1PL_theta.csv', 
+            save_z3_path='../data/real/irt_result/pyMLE_normal_syn_reason/Z/mask_1PL_Z.csv',
+            save_theta_path='../data/real/irt_result/pyMLE_normal_syn_reason/theta/mask_1PL_theta.csv',
+            fig_path_z='../plot/real/maskpy_unmaskr_z.png',
+            fig_path_theta='../plot/real/maskpy_unmaskr_theta.png',
+            device=device
+        )
+    elif args.exp == 'normal_syn_reason_clean':
+        main(
+            y_df_path='../data/real/response_matrix/normal_syn_reason_clean/mask_matrix.csv', 
+            z3_r_path='../data/real/irt_result/normal_syn_reason_clean/Z/non_mask_1PL_Z_clean.csv',
+            theta_r_path='../data/real/irt_result/normal_syn_reason_clean/theta/non_mask_1PL_theta.csv', 
+            save_z3_path='../data/real/irt_result/pyMLE_normal_syn_reason_clean/Z/mask_1PL_Z.csv',
+            save_theta_path='../data/real/irt_result/pyMLE_normal_syn_reason_clean/theta/mask_1PL_theta.csv',
+            fig_path_z='../plot/real/maskpy_unmaskr_z_clean.png',
+            fig_path_theta='../plot/real/maskpy_unmaskr_theta_clean.png',
+            device=device,
+            max_epoch=1000
+        )
