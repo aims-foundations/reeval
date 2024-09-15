@@ -17,4 +17,6 @@ CAT_owen.py
 CAT_fisher.py
 wandb/
 save/
-.ipynb_checkpoints/
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+**/*.ipynb_checkpoints/
