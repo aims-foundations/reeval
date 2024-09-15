@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 if __name__ == "__main__":
-    exp = "lite"
+    exp = "mmlu"
     
     if exp == "classic":
         base_url = f'https://crfm.stanford.edu/helm/classic/latest/#/runs?q=&page='
@@ -18,6 +18,10 @@ if __name__ == "__main__":
         base_url = f'https://crfm.stanford.edu/helm/lite/latest/#/runs?page='
         total_pages = 21+1
         csv_file = f'../../data/real/crawl/crawl_dataset_name_lite.csv'
+    elif exp == "mmlu":
+        base_url = f'https://crfm.stanford.edu/helm/mmlu/latest/#/runs?page='
+        total_pages = 36+1
+        csv_file = f'../../data/real/crawl/crawl_dataset_name_mmlu.csv'
     
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
         

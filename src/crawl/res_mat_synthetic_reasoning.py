@@ -3,10 +3,11 @@ import json
 import pandas as pd
 
 if __name__ == "__main__":
+    # we delete the model T0pp (11B)
     json_dir = '../../data/real/crawl/synthetic_reasoning_json'
     output_dir = "../../data/real/response_matrix/normal_syn_reason"
     start_strings = [
-        "synthetic_reasoning:mode=induction", 
+        "synthetic_reasoning:mode=induction",
         "synthetic_reasoning:mode=pattern_match", 
         "synthetic_reasoning:mode=variable_substitution", 
         "synthetic_reasoning_natural:difficulty=easy", 
