@@ -110,5 +110,5 @@ if __name__ == "__main__":
                 'Learning Inductive Bias for Primitives of Mathematical Reasoning',
                 'Massive Multitask Language Understanding evaluations using standardized prompts'
             ],
-            hf_repo='stair-lab/combined-difficulty'
+            hf_repo='stair-lab/combine-difficulty'
         )
