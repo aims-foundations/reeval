@@ -1,28 +1,33 @@
+import warnings
 import pandas as pd
 import torch
 import numpy as np
 from utils import item_response_fn_1PL
 import matplotlib.pyplot as plt
 
-if __name__ == "__main__":
-    all_coef_1PL = pd.read_csv('../data/real/irt_result/Z/all_1PL_Z_clean.csv')
-    all_value_1PL = all_coef_1PL.iloc[:, 2].values
+def goodness_of_fit_1PL(
+    Z,
+    theta,
+    y_df,
+    plot_path,
+    bin_size=7,
+):
+    assert y_df.shape[1] == len(Z), f"Number of columns in y_df ({y_df.shape[1]}) does not match the length of all_value_1PL ({len(Z)})"
+    assert y_df.shape[0] == len(theta), f"Number of rows in y_df ({y_df.shape[0]}) does not match the length of theta_df ({len(theta)})"
 
-    theta_df = pd.read_csv('../data/real/irt_result/theta/all_1PL_theta.csv')
-    theta = torch.tensor(theta_df.iloc[:, 1].values, dtype=torch.float32)
-
-    y_df = pd.read_csv('../data/real/response_matrix/all_matrix.csv')
-
-    assert y_df.shape[1] == len(all_value_1PL), f"Number of columns in y_df ({y_df.shape[1]}) does not match the length of all_value_1PL ({len(all_value_1PL)})"
-    assert y_df.shape[0] == len(theta_df), f"Number of rows in y_df ({y_df.shape[0]}) does not match the length of theta_df ({len(theta_df)})"
-
-    bins = np.linspace(-3, 3, 7)
+    theta = torch.tensor(theta, dtype=torch.float32)
+    if torch.isnan(theta).any():
+        warnings.warn("Warning: 'theta' contains NaN values.")
+    theta_no_nan = theta[~torch.isnan(theta)]
+    bin_start = torch.min(theta_no_nan)
+    bin_end = torch.max(theta_no_nan)
+    bins = np.linspace(bin_start, bin_end, bin_size)
     print(bins)
     # [-3. -2. -1.  0.  1.  2.  3.]
 
     diff_list = []
-    for i in range(len(all_value_1PL)):
-        single_z3 = torch.tensor(all_value_1PL[i], dtype=torch.float32)
+    for i in range(len(Z)):
+        single_z3 = torch.tensor(Z[i], dtype=torch.float32)
 
         y_col = y_df.iloc[:, i].values
 
@@ -51,4 +56,16 @@ if __name__ == "__main__":
     plt.ylabel('Density')
     plt.title('Histogram of Differences (Empirical vs Theoretical)')
     plt.grid(True)
-    plt.savefig('../plot/real/goodness_of_fit.png')
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    
+
+if __name__ == "__main__":
+    Z_df = pd.read_csv('../data/real/irt_result/normal/Z/all_1PL_Z_clean.csv')
+    Z = Z_df.loc[:, "z3"].values
+
+    theta_df = pd.read_csv('../data/real/irt_result/normal/theta/all_1PL_theta.csv')
+    theta = theta_df.loc[:, "F1"].values
+
+    y_df = pd.read_csv('../data/real/response_matrix/normal/all_matrix.csv', index_col=0)
+
+    goodness_of_fit_1PL(Z, theta, y_df, plot_path='../plot/real/goodness_of_fit.png')

@@ -85,6 +85,9 @@ if __name__ == "__main__":
             asked_answer_list_2.append(testtaker2.ask(Z_2, i))
     
     elif args.data_type == "real":
+        anthropic/claude-3-haiku-20240307 (1)
+        google/gemini-1.5-pro-001
+        
         z3_df = pd.read_csv('../data/real/irt_result/appendix1/Z/all_1PL_Z_clean.csv')
         index_search_df = pd.read_csv('../data/real/response_matrix/appendix1/index_search.csv')
 
