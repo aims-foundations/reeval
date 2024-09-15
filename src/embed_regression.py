@@ -1,8 +1,9 @@
 import argparse
 import numpy as np
 from embed_text_package.embed_text import Embedder
+import pandas as pd
 from torch.utils.data import DataLoader
-from datasets import load_dataset
+from datasets import Dataset, DatasetDict, load_dataset
 from sklearn.linear_model import BayesianRidge
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
@@ -11,6 +12,7 @@ import pickle
 def main(
     hf_repo,
     save_path,
+    embed_repo=None,
     model_name = "meta-llama/Meta-Llama-3-8B",
     bs = 1024
 ):
@@ -24,6 +26,17 @@ def main(
         dataloader, model_name, cols_to_be_embded
     )
     
+    if embed_repo is not None:
+        embed_df = pd.DataFrame({
+            'question_text': dataset['question_text'],
+            'embeddings': emb['question_text']
+        })
+        embed_dataset = Dataset.from_pandas(embed_df)
+        embed_dataset_dict = DatasetDict({
+            "whole": embed_dataset,
+        })
+        embed_dataset_dict.push_to_hub(embed_repo)
+         
     X = emb['question_text']
     y = dataset['z3']
 
@@ -74,6 +87,7 @@ if __name__ == "__main__":
     elif args.exp == 'mmlu':
         main(
             hf_repo='stair-lab/mmlu-difficulty',
-            save_path='../data/real/ppo/mmlu/bayesian_ridge_model_mmlu.pkl'
+            save_path='../data/real/ppo/mmlu/bayesian_ridge_model_mmlu.pkl',
+            embed_repo='stair-lab/combine-embedding'
         )
     
