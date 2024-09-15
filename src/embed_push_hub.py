@@ -1,5 +1,5 @@
 import argparse
-from datasets import Dataset, DatasetDict
+from datasets import Dataset, DatasetDict, load_dataset
 import pandas as pd
 import os
 from huggingface_hub import login
@@ -52,6 +52,22 @@ def push_hub(search_path, Z_path, hf_repo):
     })
     dataset_dict.push_to_hub(hf_repo, private=True)
     
+def combine_and_push(combine_list, description_list, hf_repo):
+    combined_data = []
+    for i, dataset_name in enumerate(combine_list):
+        dataset = load_dataset(dataset_name, split="whole")
+        dataset = dataset.map(lambda x: {
+            'question_text': f"dataset description: {description_list[i]}, prompt: {x['question_text']}",
+            'z3': x['z3']
+        })
+        combined_data.append(pd.DataFrame(dataset))
+    combined_df = pd.concat(combined_data, ignore_index=True)
+    combined_dataset = Dataset.from_pandas(combined_df)
+    dataset_dict = DatasetDict({
+        "whole": combined_dataset,
+    })
+    dataset_dict.push_to_hub(hf_repo)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp', type=str)
@@ -82,3 +98,17 @@ if __name__ == "__main__":
             hf_repo='stair-lab/mmlu-difficulty'
         )
     
+    elif args.exp == 'combine':
+        combine_and_push(
+            combine_list=[
+                'stair-lab/airbench-difficulty',
+                'stair-lab/synthetic_reasoning-difficulty',
+                'stair-lab/mmlu-difficulty'
+            ],
+            description_list=[
+                'Safety benchmark based on emerging government requlations and company policies',
+                'Learning Inductive Bias for Primitives of Mathematical Reasoning',
+                'Massive Multitask Language Understanding evaluations using standardized prompts'
+            ],
+            hf_repo='stair-lab/combined-difficulty'
+        )
