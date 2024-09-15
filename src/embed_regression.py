@@ -8,6 +8,7 @@ from sklearn.linear_model import BayesianRidge
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 import pickle
+from datasets import load_dataset, Dataset
 
 def main(
     hf_repo,

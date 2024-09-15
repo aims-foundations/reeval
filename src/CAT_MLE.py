@@ -10,18 +10,15 @@ from testtaker import SimulatedTestTaker
 def CAT_owen(z3, unasked_question_list, theta_mean):
     z3_unasked = z3[unasked_question_list]
     z3_unasked = torch.tensor(z3_unasked)
-    diff = abs(z3_unasked - theta_mean)
+    diff = abs(-z3_unasked - theta_mean)
     return unasked_question_list[torch.argmin(diff)]
 
 def CAT_fisher(z3, unasked_question_list, theta_mean):
-    fisher_info_list = []
-    for unasked_question_index in unasked_question_list:
-        theta = torch.tensor(theta_mean.item(), requires_grad=True)
-        z_single = z3[unasked_question_index].clone().detach()    
-        prob = item_response_fn_1PL(z_single, theta)
-        hessian = prob * (1 - prob)
-        fisher_info_list.append(hessian)
-    index_with_max_fisher_info = torch.argmax(torch.tensor(fisher_info_list)).item()
+    theta = torch.tensor(theta_mean.item())
+    z_unasked = z3[unasked_question_list]
+    prob = item_response_fn_1PL(z_unasked, theta)
+    fisher_info = prob * (1 - prob)
+    index_with_max_fisher_info = torch.argmax(fisher_info).item()
     return unasked_question_list[index_with_max_fisher_info]
 
 def main(serial, strategy):
@@ -54,11 +51,11 @@ def main(serial, strategy):
     pbar = tqdm(range(subset_question_num), desc=f"true theta: {true_theta}; epoch")
     for i in pbar:
         log_prob = 0
-        for j, asked_question_index in enumerate(asked_question_list):
-            prob = item_response_fn_1PL(z3[asked_question_index], theta_hat)
-            bernoulli = torch.distributions.Bernoulli(prob)
-            log_prob = log_prob + bernoulli.log_prob(asked_answer_list[j])
-        
+        z3_selected = z3[asked_question_list]
+        prob = item_response_fn_1PL(z3_selected, theta_hat)
+        bernoulli = torch.distributions.Bernoulli(prob)
+        asked_answer_tensor = torch.tensor(asked_answer_list, dtype=torch.float32)
+        log_prob = bernoulli.log_prob(asked_answer_tensor).sum()
         loss = -log_prob / len(asked_question_list)
         loss.backward()
         optimizer.step()
@@ -74,13 +71,14 @@ def main(serial, strategy):
             new_question_index = random.choice(unasked_question_list)
         elif strategy == "fisher": # fisher
             new_question_index = CAT_fisher(z3, unasked_question_list, theta_hat)
-        # elif strategy=="owen":
-        #     new_question_index = CAT_owen(z3, unasked_question_list, mean_theta)
+        elif strategy=="owen":
+            new_question_index = CAT_owen(z3, unasked_question_list, theta_hat)
 
+        print(z3[new_question_index])
         asked_question_list.append(new_question_index)
         unasked_question_list.remove(new_question_index)
-        asked_answer_list.append(testtaker.ask(z3, new_question_index).cuda())
-    
+        asked_answer_list.append(testtaker.ask(z3, new_question_index).cpu())
+
     save_state(
         state_path, 
         asked_question_list=asked_question_list,
