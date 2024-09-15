@@ -87,7 +87,12 @@ if __name__ == "__main__":
     elif args.exp == 'mmlu':
         main(
             hf_repo='stair-lab/mmlu-difficulty',
-            save_path='../data/real/ppo/mmlu/bayesian_ridge_model_mmlu.pkl',
-            embed_repo='stair-lab/combine-embedding'
+            save_path='../data/real/ppo/mmlu/bayesian_ridge_model_mmlu.pkl'
         )
     
+    elif args.exp == 'combine':
+        main(
+            hf_repo='stair-lab/combine-embedding',
+            save_path='../data/real/ppo/combine/bayesian_ridge_model_combine.pkl',
+            embed_repo='stair-lab/combine-embedding'
+        )
