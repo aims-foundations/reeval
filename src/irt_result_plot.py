@@ -56,6 +56,12 @@ if __name__ == "__main__":
         theta_dir = f'../data/real/irt_result/normal_syn_reason_clean/theta'
         output_dir = '../plot/real'
         response_matrix_dir = '../data/real/response_matrix/normal_syn_reason_clean'
+    
+    elif args.exp == "normal_mmlu":
+        Z_dir = f'../data/real/irt_result/normal_mmlu/Z'
+        theta_dir = f'../data/real/irt_result/normal_mmlu/theta'
+        output_dir = '../plot/real'
+        response_matrix_dir = '../data/real/response_matrix/normal_mmlu'
         
     os.makedirs(Z_dir, exist_ok=True)
     os.makedirs(theta_dir, exist_ok=True)

@@ -105,7 +105,7 @@ def main(
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exp', type=str, default='airbench')
+    parser.add_argument('--exp', type=str)
     args = parser.parse_args()
     
     set_seed(42)
@@ -131,6 +131,18 @@ if __name__ == "__main__":
             save_theta_path='../data/real/irt_result/pyMLE_normal_syn_reason_clean/theta/mask_1PL_theta.csv',
             fig_path_z='../plot/real/maskpy_unmaskr_z_clean.png',
             fig_path_theta='../plot/real/maskpy_unmaskr_theta_clean.png',
+            device=device,
+            max_epoch=1000
+        )
+    elif args.exp == 'normal_mmlu':
+        main(
+            y_df_path='../data/real/response_matrix/normal_mmlu/non_mask_matrix.csv', 
+            z3_r_path='../data/real/irt_result/normal_mmlu/Z/non_mask_1PL_Z_clean.csv',
+            theta_r_path='../data/real/irt_result/normal_mmlu/theta/non_mask_1PL_theta.csv', 
+            save_z3_path='../data/real/irt_result/normal_mmlu/Z/pyMLE_mask_1PL_Z.csv',
+            save_theta_path='../data/real/irt_result/normal_mmlu/theta/pyMLE_mask_1PL_theta.csv',
+            fig_path_z='../plot/real/maskpy_unmaskr_z_mmlu.png',
+            fig_path_theta='../plot/real/maskpy_unmaskr_theta_mmlu.png',
             device=device,
             max_epoch=1000
         )

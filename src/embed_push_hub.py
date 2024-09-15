@@ -54,7 +54,7 @@ def push_hub(search_path, Z_path, hf_repo):
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exp', type=str, default='airbench')
+    parser.add_argument('--exp', type=str)
     args = parser.parse_args()
     
     load_dotenv()
@@ -74,5 +74,11 @@ if __name__ == "__main__":
             Z_path='../data/real/irt_result/pyMLE_normal_syn_reason/Z/mask_1PL_Z.csv',
             hf_repo='stair-lab/synthetic_reasoning-difficulty'
         )
-        
+    
+    elif args.exp == 'mmlu':
+        push_hub(
+            search_path='../data/real/response_matrix/normal_mmlu/non_mask_index_search.csv',
+            Z_path='../data/real/irt_result/normal_mmlu/Z/pyMLE_mask_1PL_Z.csv',
+            hf_repo='stair-lab/mmlu-difficulty'
+        )
     

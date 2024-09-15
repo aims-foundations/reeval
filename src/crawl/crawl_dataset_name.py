@@ -1,3 +1,4 @@
+import argparse
 import os
 import pandas as pd
 from selenium import webdriver
@@ -8,7 +9,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 if __name__ == "__main__":
-    exp = "mmlu"
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--exp', type=str)
+    args = parser.parse_args()
+    exp = args.exp
     
     if exp == "classic":
         base_url = f'https://crfm.stanford.edu/helm/classic/latest/#/runs?q=&page='

@@ -1,3 +1,4 @@
+import argparse
 import os
 import pandas as pd
 import re
@@ -14,6 +15,10 @@ def get_question_count(exp_string, exp):
     elif exp == "classic":
         base_url = 'https://storage.googleapis.com/crfm-helm-public/benchmark_output/runs/v0.'
         max_version = 4
+    elif exp == "mmlu":
+        base_url = 'https://storage.googleapis.com/crfm-helm-public/mmlu/benchmark_output/runs/v1.'
+        max_version = 8
+        
     version_found = False
     for i in range(max_version + 1):
         url = f'{base_url}{i}.0/{exp_string}/scenario_state.json'
@@ -28,9 +33,11 @@ def get_question_count(exp_string, exp):
         print(f"Could not retrieve data for {exp_string} from any version v1.0.0 to v1.{max_version}.0, return 0")
         return 0
 
-
 if __name__ == "__main__":
-    exp = "classic"
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--exp', type=str)
+    args = parser.parse_args()
+    exp = args.exp
 
     file_path = f'../../data/real/crawl/crawl_dataset_name_{exp}.csv'
     df = pd.read_csv(file_path)

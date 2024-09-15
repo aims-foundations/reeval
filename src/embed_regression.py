@@ -56,18 +56,24 @@ def main(
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exp', type=str, default='airbench')
+    parser.add_argument('--exp', type=str)
     args = parser.parse_args()
     
     if args.exp == 'airbench':
         main(
             hf_repo='stair-lab/airbench-difficulty',
-            save_path='../data/real/ppo/airbench/bayesian_ridge_model.pkl'
+            save_path='../data/real/ppo/airbench/bayesian_ridge_model_airbench.pkl'
         )
     
     elif args.exp == 'synthetic_reasoning':
         main(
             hf_repo='stair-lab/synthetic_reasoning-difficulty',
-            save_path='../data/real/ppo/synthetic_reasoning/bayesian_ridge_model.pkl'
+            save_path='../data/real/ppo/synthetic_reasoning/bayesian_ridge_model_synthetic_reasoning.pkl'
+        )
+        
+    elif args.exp == 'mmlu':
+        main(
+            hf_repo='stair-lab/mmlu-difficulty',
+            save_path='../data/real/ppo/mmlu/bayesian_ridge_model_mmlu.pkl'
         )
     
