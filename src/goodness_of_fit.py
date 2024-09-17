@@ -4,6 +4,10 @@ import torch
 import numpy as np
 from utils import item_response_fn_1PL
 import matplotlib.pyplot as plt
+from tueplots import bundles
+from tueplots import bundles
+plt.rcParams.update(bundles.icml2022())
+plt.style.use('seaborn-v0_8-paper')
 
 def goodness_of_fit_1PL(
     Z,
@@ -34,7 +38,7 @@ def goodness_of_fit_1PL(
         for j in range(len(bins) - 1):
             bin_mask = (theta >= bins[j]) & (theta < bins[j + 1])
             if bin_mask.sum() > 0: # bin not empty
-                y_empirical = y_col[bin_mask].mean()
+                y_empirical = y_col[(bin_mask) & (y_col != -1)].mean()
 
                 theta_mid = (bins[j] + bins[j + 1]) / 2
                 theta_mid_tensor = torch.tensor([theta_mid], dtype=torch.float32)
@@ -51,14 +55,11 @@ def goodness_of_fit_1PL(
     print(f'Standard deviation of differences: {std_diff}')
 
     plt.figure(figsize=(10, 6))
-    plt.hist(diff_list, bins=40, density=True, alpha=0.7, color='blue')
-    plt.xlabel('Difference')
-    plt.ylabel('Density')
-    plt.title('Histogram of Differences (Empirical vs Theoretical)')
-    plt.grid(True)
+    plt.hist(diff_list, bins=40, density=True, alpha=0.4)
+    plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
+    plt.tick_params(axis='both', labelsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     
-
 if __name__ == "__main__":
     Z_df = pd.read_csv('../data/real/irt_result/normal/Z/all_1PL_Z_clean.csv')
     Z = Z_df.loc[:, "z3"].values

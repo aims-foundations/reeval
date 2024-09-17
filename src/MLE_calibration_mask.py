@@ -1,4 +1,5 @@
 import argparse
+import os
 import torch
 from tqdm import tqdm
 from utils import item_response_fn_1PL, set_seed
@@ -46,15 +47,15 @@ def MLE_calibration_mask(response_matrix, device, max_epoch=3000):
 
     return theta_hat, z3
 
-def plot_scatter_with_histograms(z3_py, z3_r, save_path):
+def plot_scatter_with_histograms(z3_py, z3_r, save_path, x_label=r'Our $z_3$', y_label=r'mirt $z_3$'):
     plt.figure(figsize=(10, 10))
     gs = gridspec.GridSpec(2, 2, width_ratios=[4, 1], height_ratios=[1, 4], wspace=0.05, hspace=0.05)
 
     # Scatter plot between z3_py and z3_r
     ax_main = plt.subplot(gs[1, 0])
     ax_main.scatter(z3_py, z3_r)
-    ax_main.set_xlabel(r'Our $z_3$')
-    ax_main.set_ylabel(r'mirt $z_3$')
+    ax_main.set_xlabel(x_label)
+    ax_main.set_ylabel(y_label)
 
     # Calculate correlation and add title at the bottom
     corr_np = np.corrcoef(z3_py, z3_r)[0, 1]
@@ -75,15 +76,18 @@ def plot_scatter_with_histograms(z3_py, z3_r, save_path):
 
 def main(
     y_df_path,
-    z3_r_path,
-    theta_r_path,
+    device,
     save_z3_path,
     save_theta_path, 
-    fig_path_z,
-    fig_path_theta,
-    device,
+    z3_r_path=None,
+    theta_r_path=None,
+    fig_path_z=None,
+    fig_path_theta=None,
     max_epoch=3000
 ):
+    os.makedirs(os.path.dirname(save_z3_path), exist_ok=True)
+    os.makedirs(os.path.dirname(save_theta_path), exist_ok=True)
+    
     y_df = pd.read_csv(y_df_path, index_col=0)
     response_matrix = torch.tensor(y_df.values, dtype=torch.float32, device=device)
     
@@ -96,12 +100,15 @@ def main(
     theta_df = pd.DataFrame(theta_py, columns=["theta"])
     theta_df.to_csv(save_theta_path, index=False)
     
-    z3_r = pd.read_csv(z3_r_path)['z3']
-    theta_r = pd.read_csv(theta_r_path)['F1']
-    z3_py = z3_py_whole[:z3_r.shape[0]]
+    if fig_path_z is not None and fig_path_theta is not None\
+        and z3_r_path is not None and theta_r_path is not None:
+        
+        z3_r = pd.read_csv(z3_r_path)['z3']
+        theta_r = pd.read_csv(theta_r_path)['F1']
+        z3_py = z3_py_whole[:z3_r.shape[0]]
 
-    plot_scatter_with_histograms(z3_py, z3_r, fig_path_z)
-    plot_scatter_with_histograms(theta_py, theta_r, fig_path_theta)
+        plot_scatter_with_histograms(z3_py, z3_r, fig_path_z)
+        plot_scatter_with_histograms(theta_py, theta_r, fig_path_theta, x_label=r'Our $\theta$', y_label=r'mirt $\theta$')
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -118,9 +125,9 @@ if __name__ == "__main__":
             theta_r_path='../data/real/irt_result/normal_syn_reason/theta/non_mask_1PL_theta.csv', 
             save_z3_path='../data/real/irt_result/pyMLE_normal_syn_reason/Z/mask_1PL_Z.csv',
             save_theta_path='../data/real/irt_result/pyMLE_normal_syn_reason/theta/mask_1PL_theta.csv',
+            device=device,
             fig_path_z='../plot/real/maskpy_unmaskr_z.png',
             fig_path_theta='../plot/real/maskpy_unmaskr_theta.png',
-            device=device
         )
     elif args.exp == 'normal_syn_reason_clean':
         main(
@@ -129,10 +136,18 @@ if __name__ == "__main__":
             theta_r_path='../data/real/irt_result/normal_syn_reason_clean/theta/non_mask_1PL_theta.csv', 
             save_z3_path='../data/real/irt_result/pyMLE_normal_syn_reason_clean/Z/mask_1PL_Z.csv',
             save_theta_path='../data/real/irt_result/pyMLE_normal_syn_reason_clean/theta/mask_1PL_theta.csv',
+            device=device,
             fig_path_z='../plot/real/maskpy_unmaskr_z_clean.png',
             fig_path_theta='../plot/real/maskpy_unmaskr_theta_clean.png',
-            device=device,
             max_epoch=1000
+        )
+    elif args.exp == 'appendix1_syn_reason':
+        main(
+            y_df_path='../data/real/response_matrix/appendix1_syn_rea/mask_matrix.csv', 
+            save_z3_path='../data/real/irt_result/appendix1_syn_rea/Z/pyMLE_1PL_Z.csv',
+            save_theta_path='../data/real/irt_result/appendix1_syn_rea/theta/pyMLE_1PL_theta.csv',
+            device=device,
+            max_epoch=3000
         )
     elif args.exp == 'normal_mmlu':
         main(
@@ -141,8 +156,16 @@ if __name__ == "__main__":
             theta_r_path='../data/real/irt_result/normal_mmlu/theta/non_mask_1PL_theta.csv', 
             save_z3_path='../data/real/irt_result/normal_mmlu/Z/pyMLE_mask_1PL_Z.csv',
             save_theta_path='../data/real/irt_result/normal_mmlu/theta/pyMLE_mask_1PL_theta.csv',
+            device=device,
             fig_path_z='../plot/real/maskpy_unmaskr_z_mmlu.png',
             fig_path_theta='../plot/real/maskpy_unmaskr_theta_mmlu.png',
+            max_epoch=1000
+        )
+    elif args.exp == 'appendix1_mmlu':
+        main(
+            y_df_path='../data/real/response_matrix/appendix1_mmlu/non_mask_matrix.csv', 
+            save_z3_path='../data/real/irt_result/appendix1_mmlu/Z/pyMLE_1PL_Z.csv',
+            save_theta_path='../data/real/irt_result/appendix1_mmlu/theta/pyMLE_1PL_theta.csv',
             device=device,
             max_epoch=1000
         )
