@@ -18,7 +18,7 @@ def amortized_MLE_calibration(
     W_init_std=5e-5,
     lr_W=5e-6,
     # weight_decay=1, 
-    epochs=50000,
+    epochs=20000,
     # max_norm=1.0,
     # lr_decay_factor=0.8,  # Learning rate decay factor
     # lr_decay_step=50,    # Decay every 100 epochs
