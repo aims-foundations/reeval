@@ -87,7 +87,7 @@ if __name__ == "__main__":
     elif args.exp == "syn_rea":
         y_df = pd.read_csv('../data/real/response_matrix/normal_syn_reason/mask_matrix.csv', index_col=0)
         theta_corr_path = '../data/real/irt_result/pyMLE_normal_syn_reason/theta/mask_1PL_theta_manual.csv'
-        epochs=20000
+        epochs=50000
     
     z3_nonamor_train, z3_nonamor_test, z3_amor_train, z3_amor_test,\
         theta_nonamor, theta_amor_train, losses= main(
