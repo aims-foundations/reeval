@@ -59,6 +59,9 @@ def goodness_of_fit_1PL(
     plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
     plt.tick_params(axis='both', labelsize=25)
     plt.xlim(0, 1)
+    plt.axvline(mean_diff, linestyle='--')
+    plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f}', 
+            ha='center', va='bottom', fontsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     
 if __name__ == "__main__":
