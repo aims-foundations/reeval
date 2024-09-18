@@ -29,6 +29,13 @@ if __name__ == "__main__":
         # delete mmlu:subject=miscellaneous
         start_strings = start_strings[:-1]
     
+    elif exp == "civil_comment":
+        # we delete Palmyra X (43B)
+        json_dir = '../../data/real/crawl/civil_comment_json'
+        output_dir = "../../data/real/response_matrix/normal_civil_comment"
+        start_strings = pd.read_csv('../../data/real/crawl/dataset_info_stats_civil_comment.csv')['dataset_name'].tolist()
+        start_strings = [s.split(",data_augmentation")[0] for s in start_strings]
+    
     # non mask matrix
     all_responses_df = pd.DataFrame()
     min_lens = []
@@ -59,7 +66,7 @@ if __name__ == "__main__":
                 correct_answers = []
                 
                 for idx, question in enumerate(data['request_states']):
-                    if exp == "synthetic_reasoning":
+                    if exp == "synthetic_reasoning" or exp == "civil_comment":
                         predicted_answer = question['result']['completions'][0]['text'].strip()
                         true_answer = question['instance']['references'][0]['output']['text'].strip()
                         correct_answers.append(int(predicted_answer==true_answer))
