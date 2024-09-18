@@ -9,6 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from sklearn.neural_network import MLPRegressor
 import pickle
+import os
 import xgboost as xgb
 
 def main(
@@ -21,20 +22,20 @@ def main(
 ):
     dataset = load_dataset(hf_repo, split="whole")
     
-    # try:
-    #     emb = load_dataset(embed_repo, split="whole")
+    try:
+        emb_hf = load_dataset(embed_repo, split="whole")
+        X = emb_hf['embeddings']
         
-    # except:
-    cols_to_be_embded = ['question_text']
-    
-    embdr = Embedder()
-    embdr.load(model_name)
-    dataloader = DataLoader(dataset, batch_size=bs)
-    emb = embdr.get_embeddings(
-        dataloader, model_name, cols_to_be_embded
-    )
-
-    if embed_repo is not None:
+    except:
+        cols_to_be_embded = ['question_text']
+        
+        embdr = Embedder()
+        embdr.load(model_name)
+        dataloader = DataLoader(dataset, batch_size=bs)
+        emb = embdr.get_embeddings(
+            dataloader, model_name, cols_to_be_embded
+        )
+        
         embed_df = pd.DataFrame({
             'question_text': dataset['question_text'],
             'embeddings': emb['question_text'],
@@ -44,8 +45,9 @@ def main(
             "whole": embed_dataset,
         })
         embed_dataset_dict.push_to_hub(embed_repo)
-         
-    X = emb['embeddings']
+        
+        X = emb['question_text']
+        
     y = dataset['z3']
 
     X = np.array(X)
@@ -101,9 +103,10 @@ def main(
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exp', type=str)
+    parser.add_argument('--exp', type=str, required=True)
     parser.add_argument('--regression_model', type=str, default="bayridge")
     args = parser.parse_args()
+    os.makedirs(f'../data/real/ppo/{args.exp}', exist_ok=True)
     
     main(
         hf_repo=f'stair-lab/{args.exp}-difficulty',

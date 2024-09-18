@@ -112,7 +112,7 @@ def main(
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exp', type=str)
+    parser.add_argument('--exp', type=str, required=True)
     args = parser.parse_args()
     
     set_seed(42)
@@ -166,6 +166,14 @@ if __name__ == "__main__":
             y_df_path='../data/real/response_matrix/appendix1_mmlu/non_mask_matrix.csv', 
             save_z3_path='../data/real/irt_result/appendix1_mmlu/Z/pyMLE_1PL_Z.csv',
             save_theta_path='../data/real/irt_result/appendix1_mmlu/theta/pyMLE_1PL_theta.csv',
+            device=device,
+            max_epoch=1000
+        )
+    elif args.exp == 'normal_civil_comment':
+        main(
+            y_df_path='../data/real/response_matrix/normal_civil_comment/non_mask_matrix.csv', 
+            save_z3_path='../data/real/irt_result/normal_civil_comment/Z/pyMLE_non_mask_1PL_Z.csv',
+            save_theta_path='../data/real/irt_result/normal_civil_comment/theta/pyMLE_non_mask_1PL_theta.csv',
             device=device,
             max_epoch=1000
         )
