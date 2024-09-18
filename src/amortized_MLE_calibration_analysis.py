@@ -12,10 +12,26 @@ from amortized_MLE_calibration import amortized_MLE_calibration
 from MLE_calibration_mask import MLE_calibration_mask
 from goodness_of_fit import goodness_of_fit_1PL
 from helm_theta_correlation import theta_corr_plot
-    
+
+def z_corr_plot(
+    x,
+    y,
+    plot_path,
+):
+    corr = np.corrcoef(x, y)[0, 1]
+    mse = np.mean((x - y) ** 2)
+    plt.figure(figsize=(10, 10))
+    plt.scatter(x, y)
+    plt.xlabel(r'$z$ from amortized IRT calibration', fontsize=45)
+    plt.ylabel(r'$z$ from non-amortized IRT calibration', fontsize=45)
+    plt.title(f'Correlation: {corr:.2f}, MSE: {mse:.2f}', fontsize=45)
+    plt.tick_params(axis='both', labelsize=35)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+
 def main(
     exp,
     y_df,
+    epochs=20000
 ):
     set_seed(42)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -42,6 +58,7 @@ def main(
         response_matrix_train,
         emb_train,
         device,
+        epochs=epochs
     )
     
     z3_amor_train = z3_amor_train.cpu().detach().numpy()
@@ -62,17 +79,21 @@ if __name__ == "__main__":
     if args.exp == "airbench":
         y_df = pd.read_csv('../data/real/response_matrix/normal/all_matrix.csv', index_col=0)
         theta_corr_path = '../data/real/irt_result/normal/theta/all_1PL_theta_manual.csv'
+        epochs=20000
     elif args.exp == "mmlu":
         y_df = pd.read_csv('../data/real/response_matrix/normal_mmlu/non_mask_matrix.csv', index_col=0)
         theta_corr_path = '../data/real/irt_result/normal_mmlu/theta/pyMLE_mask_1PL_theta_manual.csv'
+        epochs=50000
     elif args.exp == "syn_rea":
         y_df = pd.read_csv('../data/real/response_matrix/normal_syn_reason/mask_matrix.csv', index_col=0)
         theta_corr_path = '../data/real/irt_result/pyMLE_normal_syn_reason/theta/mask_1PL_theta_manual.csv'
+        epochs=20000
     
     z3_nonamor_train, z3_nonamor_test, z3_amor_train, z3_amor_test,\
         theta_nonamor, theta_amor_train, losses= main(
             exp=args.exp,
             y_df=y_df,
+            epochs=epochs,
     )
         
     y_df_train = y_df.iloc[:, :z3_nonamor_train.shape[0]]
@@ -103,39 +124,22 @@ if __name__ == "__main__":
         plot_path=f'../plot/real/{args.exp}_amor_theta_corr.png',
     )
     
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(10, 10))
     plt.plot(losses)
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.title('Losses during training')
-    plt.savefig(f'../plot/real/{args.exp}_amor_losses.png')
+    plt.xlabel(r'Epochs', fontsize=45)
+    plt.ylabel(r'Loss', fontsize=45)
+    plt.tick_params(axis='both', labelsize=35)
+    plt.savefig(f'../plot/real/{args.exp}_amor_losses.png', dpi=300, bbox_inches='tight')
     
-    # plt.figure(figsize=(10, 5))
-
-    # plt.subplot(1, 2, 1)
-    # plt.scatter(z3_nonamor_train, z3_amor_train, label='Train Z values')
-    # plt.xlabel('z3_nonamor_train')
-    # plt.ylabel('z3_amor_train')
-    # plt.title('Training: Non-amortized vs Amortized Z3')
-    # plt.legend()
-
-    # plt.subplot(1, 2, 2)
-    # plt.scatter(z3_nonamor_test, z3_amor_test, label='Test Z values')
-    # plt.xlabel('z3_nonamor_test')
-    # plt.ylabel('z3_amor_test')
-    # plt.title('Test: Non-amortized vs Amortized Z3')
-    # plt.legend()
-
-    # plt.tight_layout()
-    # plt.savefig('../plot/real/amor_nonamor_train_test_comparison.png')
-
-    # corr_train = np.corrcoef(z3_nonamor_train, z3_amor_train)[0, 1]
-    # corr_test = np.corrcoef(z3_nonamor_test, z3_amor_test)[0, 1]
-    # print(f"Correlation between non-amortized and amortized Z3 values in training set: {corr_train}")
-    # print(f"Correlation between non-amortized and amortized Z3 values in test set: {corr_test}")
+    z_corr_plot(
+        x=z3_amor_train,
+        y=z3_nonamor_train,
+        plot_path=f'../plot/real/{args.exp}_amor_z_corr_train.png',
+    )
     
-    # mse_train = np.mean((z3_nonamor_train - z3_amor_train) ** 2)
-    # mse_test = np.mean((z3_nonamor_test - z3_amor_test) ** 2)
-    # print(f"MSE between non-amortized and amortized Z3 values in training set: {mse_train}")
-    # print(f"MSE between non-amortized and amortized Z3 values in test set: {mse_test}")
-    
+    z_corr_plot(
+        x=z3_amor_test,
+        y=z3_nonamor_test,
+        plot_path=f'../plot/real/{args.exp}_amor_z_corr_test.png',
+    )
+   

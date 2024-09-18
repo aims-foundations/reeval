@@ -25,7 +25,10 @@ if __name__ == "__main__":
     elif args.exp == "mmlu":
         y_df = pd.read_csv('../data/real/response_matrix/normal_mmlu/non_mask_matrix.csv', index_col=0)
         theta = pd.read_csv('../data/real/irt_result/normal_mmlu/theta/pyMLE_mask_1PL_theta.csv')['theta'].values
-    
+    elif args.exp == "syn_rea":
+        y_df = pd.read_csv('../data/real/response_matrix/normal_syn_reason/mask_matrix.csv', index_col=0)
+        theta = pd.read_csv('../data/real/irt_result/pyMLE_normal_syn_reason/theta/mask_1PL_theta.csv')['theta'].values
+
     save_path=f'../data/real/ppo/{args.exp}/{args.regression_model}_model.pkl'
     embed_repo=f'stair-lab/{args.exp}-embedding'
 

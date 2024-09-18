@@ -120,13 +120,13 @@ if __name__ == "__main__":
     parser.add_argument("--max_norm", type=float)
     args = parser.parse_args()
     
-    z3_nonamor_train, z3_nonamor_test, z3_amor_train, z3_amor_test = main(
-        lr=args.lr,
-        weight_decay=args.weight_decay,
-        epochs=args.epochs,
-        W_init_std=args.W_init_std,
-        max_norm=args.max_norm
-    )
+    # z3_nonamor_train, z3_nonamor_test, z3_amor_train, z3_amor_test = main(
+    #     lr=args.lr,
+    #     weight_decay=args.weight_decay,
+    #     epochs=args.epochs,
+    #     W_init_std=args.W_init_std,
+    #     max_norm=args.max_norm
+    # )
     
     # assert z3_amor_train.shape == z3_nonamor_train.shape
     # assert z3_amor_test.shape == z3_nonamor_test.shape
