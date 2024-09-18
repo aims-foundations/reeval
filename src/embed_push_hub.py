@@ -112,3 +112,12 @@ if __name__ == "__main__":
             ],
             hf_repo='stair-lab/combine-difficulty'
         )
+        
+    elif args.exp == 'civil_comment':
+        push_hub(
+            search_path='../data/real/response_matrix/normal_civil_comment/non_mask_index_search.csv',
+            Z_path='../data/real/irt_result/normal_civil_comment/Z/pyMLE_non_mask_1PL_Z.csv',
+            hf_repo='stair-lab/civil_comment-difficulty'
+        )
+
+    
