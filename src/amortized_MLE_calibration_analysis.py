@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
-from MLE_calibration import MLE_calibration
 from datasets import load_dataset
 from amortized_MLE_calibration import amortized_MLE_calibration
+from MLE_calibration_mask import MLE_calibration_mask
 from goodness_of_fit import goodness_of_fit_1PL
 from helm_theta_correlation import theta_corr_plot
     
@@ -22,7 +22,7 @@ def main(
     response_matrix = torch.tensor(y_df.values, dtype=torch.float32, device=device)
     train_size = int(0.8 * response_matrix.shape[1])
     
-    theta_nonamor, z3_nonamor = MLE_calibration(response_matrix, device)
+    theta_nonamor, z3_nonamor = MLE_calibration_mask(response_matrix, device)
     z3_nonamor_train = z3_nonamor[:train_size]
     z3_nonamor_train = z3_nonamor_train.cpu().detach().numpy()
     z3_nonamor_test = z3_nonamor[train_size:]
@@ -65,7 +65,9 @@ if __name__ == "__main__":
     elif args.exp == "mmlu":
         y_df = pd.read_csv('../data/real/response_matrix/normal_mmlu/non_mask_matrix.csv', index_col=0)
         theta_corr_path = '../data/real/irt_result/normal_mmlu/theta/pyMLE_mask_1PL_theta_manual.csv'
-    
+    elif args.exp == "syn_rea":
+        y_df = pd.read_csv('../data/real/response_matrix/normal_syn_reason/mask_matrix.csv', index_col=0)
+        theta_corr_path = '../data/real/irt_result/pyMLE_normal_syn_reason/theta/mask_1PL_theta_manual.csv'
     
     z3_nonamor_train, z3_nonamor_test, z3_amor_train, z3_amor_test,\
         theta_nonamor, theta_amor_train, losses= main(

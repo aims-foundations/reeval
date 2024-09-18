@@ -16,8 +16,8 @@ def goodness_of_fit_1PL(
     plot_path,
     bin_size=7,
 ):
-    assert y_df.shape[1] == len(Z), f"Number of columns in y_df ({y_df.shape[1]}) does not match the length of all_value_1PL ({len(Z)})"
-    assert y_df.shape[0] == len(theta), f"Number of rows in y_df ({y_df.shape[0]}) does not match the length of theta_df ({len(theta)})"
+    assert y_df.shape[1] == len(Z), f"Number of columns in y_df ({y_df.shape[1]}) does not match the length of Z ({len(Z)})"
+    assert y_df.shape[0] == len(theta), f"Number of rows in y_df ({y_df.shape[0]}) does not match the length of theta ({len(theta)})"
 
     theta = torch.tensor(theta, dtype=torch.float32)
     if torch.isnan(theta).any():

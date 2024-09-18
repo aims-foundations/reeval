@@ -1,6 +1,7 @@
 
 import argparse
 from datasets import load_dataset
+import numpy as np
 import pandas as pd
 from sklearn.linear_model import BayesianRidge
 import xgboost as xgb
@@ -20,13 +21,15 @@ if __name__ == "__main__":
     
     if args.exp == "airbench":
         y_df = pd.read_csv('../data/real/response_matrix/normal/all_matrix.csv', index_col=0)
-        theta = pd.read_csv('../data/real/irt_result/appendix1/theta/all_1PL_theta.csv')['F1'].to_numpy()
-    # elif args.exp == "mmlu":
+        theta = pd.read_csv('../data/real/irt_result/normal/theta/all_1PL_theta.csv')['F1'].values
+    elif args.exp == "mmlu":
+        y_df = pd.read_csv('../data/real/response_matrix/normal_mmlu/non_mask_matrix.csv', index_col=0)
+        theta = pd.read_csv('../data/real/irt_result/normal_mmlu/theta/pyMLE_mask_1PL_theta.csv')['theta'].values
     
-    save_path=f'../data/real/ppo/{args.exp}/{args.regression_model}_model.pkl',
-    embed_repo=f'stair-lab/{args.exp}-embedding',
+    save_path=f'../data/real/ppo/{args.exp}/{args.regression_model}_model.pkl'
+    embed_repo=f'stair-lab/{args.exp}-embedding'
 
-    with open('../../data/real/ppo/bayesian_ridge_model.pkl', 'rb') as f:
+    with open(save_path, 'rb') as f:
         model = pickle.load(f)
     
     emb_hf = load_dataset(embed_repo, split="whole")
@@ -37,7 +40,7 @@ if __name__ == "__main__":
         Z=Z,
         theta=theta,
         y_df=y_df,
-        plot_path=f'../plot/real/{args.dataset}_pyMLE_goodness_of_fit.png',
+        plot_path=f'../plot/real/{args.exp}_plugin_goodness_of_fit.png',
         bin_size=7,
     )
    

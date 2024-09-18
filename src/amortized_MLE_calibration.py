@@ -40,11 +40,15 @@ def amortized_MLE_calibration(
         z3 = torch.matmul(embedding, W) # z3 [959]
         theta_hat_matrix = theta_hat.unsqueeze(1) # (n, 1)
         z3_matrix = z3.unsqueeze(0) # (1, m)
-        
         prob_matrix = item_response_fn_1PL(z3_matrix, theta_hat_matrix)
-        berns = torch.distributions.Bernoulli(prob_matrix.flatten())
         
-        loss = -berns.log_prob(response_matrix.flatten()).mean()
+        mask = response_matrix != -1
+        masked_response_matrix = response_matrix.flatten()[mask.flatten()]
+        masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
+        
+        berns = torch.distributions.Bernoulli(masked_prob_matrix)
+        
+        loss = -berns.log_prob(masked_response_matrix).mean()
         loss.backward()
         optimizer_theta.step()
         optimizer_W.step()

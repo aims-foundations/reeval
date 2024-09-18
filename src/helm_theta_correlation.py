@@ -14,7 +14,6 @@ def theta_corr_plot(
     plot_path,
 ):
     corr = np.corrcoef(x, y)[0, 1]
-    
     plt.figure(figsize=(10, 10))
     plt.scatter(x, y)
     plt.xlabel(r'$\theta$ from IRT calibration', fontsize=45)
@@ -49,8 +48,9 @@ if __name__ == "__main__":
         theta_col_name = "theta"
     
     df = pd.read_csv(theta_corr_path)
-    x = df.loc[:, theta_col_name].to_numpy()
-    y = df.loc[:, "score"].to_numpy()
+    x = df.loc[:, theta_col_name].values
+    y = df.loc[:, "score"].values
+    x = np.nan_to_num(x, nan=0)
     
     theta_corr_plot(
         x=x,
