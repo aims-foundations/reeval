@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import jax.random as random
 import torch
 from utils import item_response_fn_1PL_cheat, set_seed, perform_t_test
-from testtaker import CheatingTestTaker
+from testtaker import CheatingTestTaker, RealTestTaker
 import matplotlib.pyplot as plt
 
 def model(Z, asked_question_list, asked_answer_list, contamination):
@@ -49,10 +49,10 @@ def fit_cheat_theta_mcmc(
     return mean_theta_true, std_theta_true, theta_true_samples, \
         mean_theta_cheat, std_theta_cheat, theta_cheat_samples
         
-def main(testtaker_true_theta, testtaker_cheat_gain, z3, contamination, asked_question_list):
+def synthetic_main(testtaker_true_theta, testtaker_cheat_gain, z3, contamination, asked_question_list):
     testtaker = CheatingTestTaker(
         true_theta=testtaker_true_theta, cheat_gain=testtaker_cheat_gain, model="1PL"
-        )
+    )
     true_theta, cheat_theta = testtaker.get_ability()
     print(f"true theta: {true_theta}")
     print(f"cheat theta: {cheat_theta}")
@@ -88,6 +88,31 @@ def main(testtaker_true_theta, testtaker_cheat_gain, z3, contamination, asked_qu
     
     return asked_answer_list, theta_true_samples, theta_cheat_samples
 
+def real_main():
+    z3_df = pd.read_csv('../data/real/irt_result/appendix1/Z/all_1PL_Z_clean.csv')
+    index_search_df = pd.read_csv('../data/real/response_matrix/appendix1/index_search.csv')
+
+    z3_list = z3_df['z3'].tolist()
+    filtered_index_search_df = index_search_df[index_search_df['is_deleted'] != 1]
+    text_list = filtered_index_search_df['text'].tolist()
+    assert len(z3_list) == len(text_list)
+    
+    Z_1, subset1_text_list, Z_2, subset2_text_list = \
+        sample_real_subsets(text_list, z3_list, args.Y_bar, args.subset_size)
+        
+    testtaker1 = RealTestTaker(subset1_text_list, model_string="Qwen_Qwen2-72B-Instruct")
+    testtaker2 = RealTestTaker(subset2_text_list, model_string="meta_llama-3-8b-chat")
+    
+    asked_question_list = list(range(args.subset_size))
+    
+    asked_answer_list_1 = []
+    for i in range(args.subset_size):
+        asked_answer_list_1.append(testtaker1.ask(Z_1, i))
+    
+    asked_answer_list_2 = []
+    for i in range(args.subset_size):
+        asked_answer_list_2.append(testtaker2.ask(Z_2, i))
+    
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--seed", type=int, default=10)
@@ -113,7 +138,7 @@ if __name__ == "__main__":
     contamination = contamination[torch.randperm(args.question_num)]
     
     print("Test Taker 1")
-    asked_answer_list_1, theta_true_samples_1, theta_cheat_samples_1 = main(
+    asked_answer_list_1, theta_true_samples_1, theta_cheat_samples_1 = synthetic_main(
         args.testtaker1_true_theta, 
         args.testtaker1_cheat_gain, 
         z3, 
@@ -122,7 +147,7 @@ if __name__ == "__main__":
     )
     
     print("\n\n\nTest Taker 2")
-    asked_answer_list_2, theta_true_samples_2, theta_cheat_samples_2 = main(
+    asked_answer_list_2, theta_true_samples_2, theta_cheat_samples_2 = synthetic_main(
         args.testtaker2_true_theta, 
         args.testtaker2_cheat_gain,
         z3,

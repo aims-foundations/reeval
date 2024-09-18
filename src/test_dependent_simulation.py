@@ -62,7 +62,7 @@ if __name__ == "__main__":
     parser.add_argument("--theta_1", type=float, default=1)
     parser.add_argument("--theta_2", type=float, default=2)
     # real data
-    parser.add_argument("--subset_size", type=int, default=100)
+    parser.add_argument("--subset_size", type=int, default=500)
     args = parser.parse_args()
 
     set_seed(args.seed)

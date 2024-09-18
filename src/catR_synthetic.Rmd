@@ -46,7 +46,7 @@ b <- rnorm(ni, mean=0, sd=1)
 
 item.bank <- data.frame(
   a = rep(1, ni),
-  b = b,
+  b = b,       
   c = rep(0.5, ni),
   d = rep(1, ni)
 )
@@ -236,8 +236,7 @@ g.bias.all <- ggplot(df.aggregrate.learning.curve.all, mapping = aes(x = trialNu
 ```{r fig.width=30,fig.height=12}
 g.reliability.all + g.mse.all + g.bias.all
 
-ggsave("../plots/roar_cat_study2_figure2.png")
-ggsave("../plots/roar_cat_study2_figure2.pdf")
+ggsave("../plot/synthetic/catR.png")
 ```
 
 
