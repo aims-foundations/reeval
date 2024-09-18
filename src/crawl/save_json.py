@@ -9,10 +9,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     exp = args.exp
     
-    file_path = f'../../data/real/crawl/crawl_dataset_name_{exp}.csv'
-    df = pd.read_csv(file_path)
     
     if exp == "synthetic_reasoning":
+        file_path = f'../../data/real/crawl/crawl_dataset_name_classic.csv'
         start_strings = [
             "synthetic_reasoning:mode=induction", 
             "synthetic_reasoning:mode=pattern_match",
@@ -21,8 +20,10 @@ if __name__ == "__main__":
             "synthetic_reasoning_natural:difficulty=hard"
         ]
     elif exp == "mmlu":
+        file_path = f'../../data/real/crawl/crawl_dataset_name_mmlu.csv'
         start_strings = pd.read_csv('../../data/real/crawl/dataset_info_stats_mmlu.csv')['dataset_name'].tolist()
     elif exp == "civil_comment":
+        file_path = f'../../data/real/crawl/crawl_dataset_name_classic.csv'
         start_strings = [
             "civil_comments:demographic=LGBTQ", 
             "civil_comments:demographic=all",
@@ -35,6 +36,7 @@ if __name__ == "__main__":
             "civil_comments:demographic=white"
         ]
         
+    df = pd.read_csv(file_path)
     for start_string in tqdm(start_strings):
         if exp == "synthetic_reasoning" or "civil_comment":
             filtered_df = df[df['Run'].str.startswith(start_string)]
