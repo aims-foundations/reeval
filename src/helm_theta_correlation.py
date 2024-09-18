@@ -1,4 +1,5 @@
 import argparse
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from tueplots import bundles
@@ -7,6 +8,21 @@ plt.style.use('seaborn-v0_8-paper')
 from goodness_of_fit import goodness_of_fit_1PL
 from utils import set_seed
 
+def theta_corr_plot(
+    x,
+    y,
+    plot_path,
+):
+    corr = np.corrcoef(x, y)[0, 1]
+    
+    plt.figure(figsize=(10, 10))
+    plt.scatter(x, y)
+    plt.xlabel(r'$\theta$ from IRT calibration', fontsize=45)
+    plt.ylabel(r'CTT score from leaderboard', fontsize=45)
+    plt.title(f'Correlation: {corr:.2f}', fontsize=45)
+    plt.tick_params(axis='both', labelsize=35)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str)
@@ -33,17 +49,14 @@ if __name__ == "__main__":
         theta_col_name = "theta"
     
     df = pd.read_csv(theta_corr_path)
-    x = df.loc[:, theta_col_name]
-    y = df.loc[:, "score"]
-    corr = x.corr(y)
+    x = df.loc[:, theta_col_name].to_numpy()
+    y = df.loc[:, "score"].to_numpy()
     
-    plt.figure(figsize=(10, 10))
-    plt.scatter(x, y)
-    plt.xlabel(r'$\theta$ from IRT calibration', fontsize=45)
-    plt.ylabel(r'CTT score from leaderboard', fontsize=45)
-    plt.title(f'Correlation: {corr:.2f}', fontsize=45)
-    plt.tick_params(axis='both', labelsize=35)
-    plt.savefig(f'../plot/real/{args.dataset}_theta_corr_pyMLE.png', dpi=300, bbox_inches='tight')
+    theta_corr_plot(
+        x=x,
+        y=y,
+        plot_path=f'../plot/real/{args.dataset}_theta_corr.png',
+    )
 
     # Goodness of fit
     Z_df = pd.read_csv(Z_path)
