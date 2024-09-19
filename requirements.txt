@@ -5,3 +5,4 @@ torch
 datasets
 xgboost
 transformers
+pandas
