@@ -120,7 +120,7 @@ if __name__ == "__main__":
             z3_df = pd.read_csv('../data/real/irt_result/appendix1_mmlu/Z/pyMLE_1PL_Z.csv')
             index_search_df = pd.read_csv('../data/real/response_matrix/appendix1_mmlu/non_mask_index_search.csv')
             testtaker1_string = "anthropic/claude-3-haiku-20240307"
-            testtaker2_string = "google/gemini-1.5-pro-001"
+            testtaker2_string = "meta/llama-3-70b"
             
             z3_list = z3_df['z3'].tolist()
             filtered_index_search_df = index_search_df[index_search_df['is_deleted'] != 1]

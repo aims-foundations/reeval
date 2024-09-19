@@ -2,69 +2,38 @@ import argparse
 import pandas as pd
 import requests
 from tqdm import tqdm
+import os
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exp', type=str)
+    parser.add_argument('--exp', type=str, required=True)
     args = parser.parse_args()
-    exp = args.exp
+  
+    full_strings_all = pd.read_csv(f'../../data/real/crawl/crawl_dataset_name_{args.exp}.csv')['Run'].tolist()
+    stats_strings = pd.read_csv(f'../../data/real/crawl/dataset_info_stats_{args.exp}.csv')['dataset_name'].tolist()
+    start_strings = set([s.split(":")[0] for s in stats_strings])
     
-    
-    if exp == "synthetic_reasoning":
-        file_path = f'../../data/real/crawl/crawl_dataset_name_classic.csv'
-        start_strings = [
-            "synthetic_reasoning:mode=induction", 
-            "synthetic_reasoning:mode=pattern_match",
-            "synthetic_reasoning:mode=variable_substitution",
-            "synthetic_reasoning_natural:difficulty=easy",
-            "synthetic_reasoning_natural:difficulty=hard"
-        ]
-    elif exp == "mmlu":
-        file_path = f'../../data/real/crawl/crawl_dataset_name_mmlu.csv'
-        start_strings = pd.read_csv('../../data/real/crawl/dataset_info_stats_mmlu.csv')['dataset_name'].tolist()
-    elif exp == "civil_comment":
-        file_path = f'../../data/real/crawl/crawl_dataset_name_classic.csv'
-        start_strings = [
-            "civil_comments:demographic=LGBTQ", 
-            "civil_comments:demographic=all",
-            "civil_comments:demographic=black",
-            "civil_comments:demographic=christian",
-            "civil_comments:demographic=female",
-            "civil_comments:demographic=male",
-            "civil_comments:demographic=muslim",
-            "civil_comments:demographic=other_religions",
-            "civil_comments:demographic=white"
-        ]
-        
-    df = pd.read_csv(file_path)
     for start_string in tqdm(start_strings):
-        if exp == "synthetic_reasoning" or "civil_comment":
-            filtered_df = df[df['Run'].str.startswith(start_string)]
-        elif exp == "mmlu":
-            start_string_2 = start_string.split(",eval_split")[0]
-            filtered_df = df[df['Run'].str.startswith(start_string_2)]
-        
-        for i, row in filtered_df.iterrows():
-            exp_string = row['Run']
-            if exp == "synthetic_reasoning" or "civil_comment":
+        save_path = f'../../data/real/crawl/{start_string}_json'
+        os.makedirs(save_path, exist_ok=True)
+        full_strings = [f for f in full_strings_all if f.startswith(start_string)]
+        for full_string in full_strings:
+            if args.exp == "classic":
                 base_url = 'https://storage.googleapis.com/crfm-helm-public/benchmark_output/runs/v0.'
                 max_version = 4
-            elif exp == "mmlu":
+            elif args.exp == "mmlu":
                 base_url = 'https://storage.googleapis.com/crfm-helm-public/mmlu/benchmark_output/runs/v1.'
                 max_version = 8
             version_found = False
             
             for i in range(max_version + 1):
-                url = f'{base_url}{i}.0/{exp_string}/scenario_state.json'
+                url = f'{base_url}{i}.0/{full_string}/scenario_state.json'
                 response = requests.get(url)
                 if response.status_code == 200:
-                    file_name = f'../../data/real/crawl/{exp}_json/{exp_string}.json'
-                        
-                    with open(file_name, 'wb') as file:
+                    with open(f'{save_path}/{full_string}.json', 'wb') as file:
                         file.write(response.content)
-                        
                     version_found = True
                     break
-               
+        
             if not version_found:
-                print(f'Failed to download the file for {exp_string}. Status code:', response.status_code)
+                print(f'Failed to download the file for {full_string}. Status code:', response.status_code)
