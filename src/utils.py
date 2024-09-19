@@ -1,68 +1,21 @@
+import warnings
 import torch
 import numpy as np
-from scipy.stats import wasserstein_distance, wasserstein_distance_nd
-import jax.numpy as jnp
 import random
-import gc
-import sys
 from scipy.stats import ttest_ind
 import os
-
-# overleaf/R_library: z1/g, z2/a1, z3/d
-def item_response_fn_3PL(z1, z2, z3, theta, datatype="torch"):
-    if datatype == "torch":
-        return z1 + (1 - z1) / (1 + torch.exp(-(z2 * theta + z3)))
-    elif datatype == "numpy":
-        return z1 + (1 - z1) / (1 + np.exp(-(z2 * theta + z3)))
-    elif datatype == "jnp":
-        return z1 + (1 - z1) / (1 + jnp.exp(-(z2 * theta + z3)))
-
-def item_response_fn_2PL(z2, z3, theta):
-    return 1 / (1 + torch.exp(-(z2 * theta + z3)))
+import matplotlib.pyplot as plt
+from tueplots import bundles
+plt.rcParams.update(bundles.icml2022())
+plt.style.use('seaborn-v0_8-paper')
 
 def item_response_fn_1PL(z3, theta, datatype="torch"):
     if datatype == "torch":
         return 1 / (1 + torch.exp(-(theta + z3)))
     elif datatype == "numpy":
         return 1 / (1 + np.exp(-(theta + z3)))
-    elif datatype == "jnp":
-        return 1 / (1 + jnp.exp(-(theta + z3)))
     else:
-        raise ValueError("datatype should be 'torch' or 'numpy' or 'jnp'")
-    
-def item_response_fn_1PL_cheat(z3, contamination, theta_true, theta_cheat, datatype="torch"):
-    # z3, contamination: vector/scalar; theta_true, theta_cheat: scalar
-    bool_cheat = (theta_true < theta_cheat)
-    
-    if datatype == "torch":
-        return item_response_fn_1PL(z3, theta_true)**(1-bool_cheat) \
-            * ((1-contamination) * item_response_fn_1PL(z3, theta_true) \
-            + contamination * item_response_fn_1PL(z3, theta_cheat))**bool_cheat
-    elif datatype == "jnp":
-        return item_response_fn_1PL(z3, theta_true, datatype="jnp")**(1-bool_cheat) \
-            * ((1-contamination) * item_response_fn_1PL(z3, theta_true, datatype="jnp") \
-            + contamination * item_response_fn_1PL(z3, theta_cheat, datatype="jnp"))**bool_cheat        
-
-def calculate_1d_wasserstein_distance(vector1, vector2):
-    return wasserstein_distance(vector1, vector2)
-
-def calculate_3d_wasserstein_distance(matrix1, matrix2):
-    return wasserstein_distance_nd(matrix1, matrix2)
-
-def clear_caches():
-    modules = list(sys.modules.items())  # Create a list of items to avoid runtime errors
-    for module_name, module in modules:
-        if module_name.startswith("jax"):
-            if module_name not in ["jax.interpreters.partial_eval"]:
-                for obj_name in dir(module):
-                    obj = getattr(module, obj_name)
-                    if hasattr(obj, "cache_clear"):
-                        try:
-                            obj.cache_clear()
-                        except:
-                            pass
-    gc.collect()
-    print("cache cleared")
+        raise ValueError("datatype should be 'torch' or 'numpy'")
     
 def set_seed(seed):
     random.seed(seed)
@@ -97,8 +50,6 @@ def perform_t_test(sample_1, sample_2, label=""):
     else:
         print(f"Fail to reject the null hypothesis for {label}.")
 
-import numpy as np
-
 def bootstrap_mean_variance(data_list):
     num_samples=1000
     ratio = 0.9
@@ -111,28 +62,86 @@ def bootstrap_mean_variance(data_list):
     variance_bootstrap = np.var(bootstrap_means)
     return mean_bootstrap, variance_bootstrap
 
-if __name__ == "__main__":
-    print(calculate_1d_wasserstein_distance([0, 1, 3], [5, 6, 8]))
-    print(calculate_1d_wasserstein_distance([1, 1, 3], [5, 6, 8]))
+def goodness_of_fit_1PL(
+    Z,
+    theta,
+    y_df,
+    plot_path,
+    bin_size=7,
+):
+    assert y_df.shape[1] == len(Z), f"Number of columns in y_df ({y_df.shape[1]}) does not match the length of Z ({len(Z)})"
+    assert y_df.shape[0] == len(theta), f"Number of rows in y_df ({y_df.shape[0]}) does not match the length of theta ({len(theta)})"
+
+    theta = torch.tensor(theta, dtype=torch.float32)
+    if torch.isnan(theta).any():
+        warnings.warn("Warning: 'theta' contains NaN values.")
+    theta_no_nan = theta[~torch.isnan(theta)]
+    bin_start = torch.min(theta_no_nan)
+    bin_end = torch.max(theta_no_nan)
+    bins = np.linspace(bin_start, bin_end, bin_size)
+    print(bins)
+    # [-3. -2. -1.  0.  1.  2.  3.]
+
+    diff_list = []
+    for i in range(len(Z)):
+        single_z3 = torch.tensor(Z[i], dtype=torch.float32)
+
+        y_col = y_df.iloc[:, i].values
+
+        for j in range(len(bins) - 1):
+            bin_mask = (theta >= bins[j]) & (theta < bins[j + 1])
+            if bin_mask.sum() > 0: # bin not empty
+                y_empirical = y_col[(bin_mask) & (y_col != -1)].mean()
+
+                theta_mid = (bins[j] + bins[j + 1]) / 2
+                theta_mid_tensor = torch.tensor([theta_mid], dtype=torch.float32)
+                y_theoretical = item_response_fn_1PL(theta_mid_tensor, single_z3).item()
+
+                diff = abs(y_empirical - y_theoretical)
+                diff_list.append(diff)
+
+    diff_array = np.array(diff_list)
+    mean_diff = diff_array.mean()
+    std_diff = diff_array.std()
+
+    print(f'Mean of differences: {mean_diff}')
+    print(f'Standard deviation of differences: {std_diff}')
+
+    plt.figure(figsize=(10, 6))
+    plt.hist(diff_list, bins=40, density=True, alpha=0.4)
+    plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
+    plt.tick_params(axis='both', labelsize=25)
+    plt.xlim(0, 1)
+    plt.axvline(mean_diff, linestyle='--')
+    plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f}', 
+            ha='center', va='bottom', fontsize=25)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     
-    mean_1 = 1
-    mean_2 = 3
-    size = 10000
-    diff = mean_2 - mean_1
+def z_corr_plot(
+    x,
+    y,
+    plot_path,
+):
+    corr = np.corrcoef(x, y)[0, 1]
+    mse = np.mean((x - y) ** 2)
+    plt.figure(figsize=(10, 10))
+    plt.scatter(x, y)
+    plt.xlabel(r'$z$ from amortized IRT calibration', fontsize=45)
+    plt.ylabel(r'$z$ from non-amortized IRT calibration', fontsize=45)
+    plt.title(f'Correlation: {corr:.2f}, MSE: {mse:.2f}', fontsize=45)
+    plt.tick_params(axis='both', labelsize=35)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     
-    samples_1 = np.random.normal(loc=mean_1, scale=1, size=size)
-    samples_2 = np.random.normal(loc=mean_2, scale=1, size=size)
-    
-    wd = calculate_1d_wasserstein_distance(samples_1, samples_2)
-    print(f'Wasserstein Distance: {wd}')
-    print(f'error rate: {(wd - diff)/diff}')
-    
-    mean_1 = 0.7
-    mean_2 = 0.3
-    samples_1 = np.random.binomial(n=1, p=mean_1, size=size)
-    samples_2 = np.random.binomial(n=1, p=mean_2, size=size)
-    wd = calculate_1d_wasserstein_distance(samples_1, samples_2)
-    diff = samples_1.mean() - samples_2.mean()
-    print(wd)
-    print(diff)
-    
+def theta_corr_plot(
+    x,
+    y,
+    plot_path,
+):
+    corr = np.corrcoef(x, y)[0, 1]
+    plt.figure(figsize=(10, 10))
+    plt.scatter(x, y)
+    plt.xlabel(r'$\theta$ from IRT calibration', fontsize=45)
+    plt.ylabel(r'CTT score from leaderboard', fontsize=45)
+    plt.title(f'Correlation: {corr:.2f}', fontsize=45)
+    plt.tick_params(axis='both', labelsize=35)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')

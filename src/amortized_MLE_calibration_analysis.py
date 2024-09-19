@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
 import torch
-from utils import set_seed
+from utils import set_seed, goodness_of_fit_1PL, z_corr_plot
 import pandas as pd
 import matplotlib.pyplot as plt
 from tueplots import bundles
@@ -10,23 +10,7 @@ plt.style.use('seaborn-v0_8-paper')
 from datasets import load_dataset
 from amortized_MLE_calibration import amortized_MLE_calibration
 from MLE_calibration_mask import MLE_calibration_mask
-from goodness_of_fit import goodness_of_fit_1PL
 from helm_theta_correlation import theta_corr_plot
-
-def z_corr_plot(
-    x,
-    y,
-    plot_path,
-):
-    corr = np.corrcoef(x, y)[0, 1]
-    mse = np.mean((x - y) ** 2)
-    plt.figure(figsize=(10, 10))
-    plt.scatter(x, y)
-    plt.xlabel(r'$z$ from amortized IRT calibration', fontsize=45)
-    plt.ylabel(r'$z$ from non-amortized IRT calibration', fontsize=45)
-    plt.title(f'Correlation: {corr:.2f}, MSE: {mse:.2f}', fontsize=45)
-    plt.tick_params(axis='both', labelsize=35)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
 
 def main(
     exp,

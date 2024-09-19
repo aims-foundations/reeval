@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 import torch
 from testtaker import SimulatedTestTaker, RealTestTaker
-from fit_theta import fit_theta_mcmc
+from algo import fit_theta_mcmc
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from tueplots import bundles

@@ -11,42 +11,6 @@ plt.rcParams['text.usetex'] = True
 plt.rcParams.update({'font.size': 20})
 from matplotlib import gridspec
 
-def MLE_calibration_mask(response_matrix, device, max_epoch=3000):
-    theta_hat = torch.normal(
-        mean=0.0, std=1.0,
-        size=(response_matrix.size(0),),
-        requires_grad=True,
-        device=device
-    )
-    z3 = torch.normal(
-        mean=0.0, std=1.0,
-        size=(response_matrix.size(1),),
-        requires_grad=True,
-        device=device
-    )
-
-    optimizer = optim.Adam([theta_hat, z3], lr=0.01)
-    
-    pbar = tqdm(range(max_epoch))
-    for _ in pbar:
-        theta_hat_matrix = theta_hat.unsqueeze(1)
-        z3_matrix = z3.unsqueeze(0)
-        prob_matrix = item_response_fn_1PL(z3_matrix, theta_hat_matrix)
-        
-        mask = response_matrix != -1
-        masked_response_matrix = response_matrix.flatten()[mask.flatten()]
-        masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
-
-        berns = torch.distributions.Bernoulli(masked_prob_matrix)
-        loss = -berns.log_prob(masked_response_matrix).mean()
-        loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
-
-        pbar.set_postfix({'loss': loss.item()})
-
-    return theta_hat, z3
-
 def plot_scatter_with_histograms(z3_py, z3_r, save_path, x_label=r'Our $z_3$', y_label=r'mirt $z_3$'):
     plt.figure(figsize=(10, 10))
     gs = gridspec.GridSpec(2, 2, width_ratios=[4, 1], height_ratios=[1, 4], wspace=0.05, hspace=0.05)
