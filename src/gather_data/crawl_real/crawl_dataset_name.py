@@ -15,7 +15,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     base_url = f'https://crfm.stanford.edu/{args.leaderboard}/classic/latest/#/runs?page='
-    save_path = f'../../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv'
+    output_dir = "../../../data/real/crawl"
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = f'{output_dir}/crawl_dataset_name_{args.leaderboard}.csv'
     if args.leaderboard == "classic":
         total_pages = 86+1
     elif args.leaderboard == "lite":
@@ -45,12 +47,12 @@ if __name__ == "__main__":
             df_new = pd.DataFrame(runs, columns=['Run'])
 
             if page == 1:
-                df_updated = df_new
+                df_output = df_new
             else:
-                df_existing = pd.read_csv(save_path)
-                df_updated = pd.concat([df_existing, df_new], ignore_index=True)
+                df_exist = pd.read_csv(output_path)
+                df_output = pd.concat([df_exist, df_new], ignore_index=True)
 
-            df_updated.to_csv(save_path, index=False)
+            df_output.to_csv(output_path, index=False)
 
         except Exception as e:
             print(f"Error on page {page}: {e}")

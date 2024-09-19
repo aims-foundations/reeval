@@ -21,7 +21,6 @@ parameters:
     - raft
     - ice
     - wikifact
-    - mmlu
     - babi_qa
     - bold
     - gsm

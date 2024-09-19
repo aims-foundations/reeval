@@ -18,18 +18,15 @@ def get_question_count(exp_string, leaderboard):
         base_url = 'https://storage.googleapis.com/crfm-helm-public/mmlu/benchmark_output/runs/v1.'
         max_version = 8
         
-    version_found = False
     for i in range(max_version + 1):
         url = f'{base_url}{i}.0/{exp_string}/scenario_state.json'
         response = requests.get(url)
         if response.status_code == 200:
             json_data = response.json()
             question_count = len(json_data.get('request_states', []))
-            version_found = True
             return question_count
-           
-    if not version_found:
-        print(f"Could not retrieve data for {exp_string} from any version v1.0.0 to v1.{max_version}.0, return 0")
+        
+        print(f"Could not retrieve data for {exp_string} from any version, return 0")
         return 0
 
 if __name__ == "__main__":
@@ -37,13 +34,13 @@ if __name__ == "__main__":
     parser.add_argument('--leaderboard', type=str, required=True) # classic, lite, mmlu
     args = parser.parse_args()
 
-    file_path = f'../../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv'
-    df = pd.read_csv(file_path)
+    input_path = f'../../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv'
+    df_input = pd.read_csv(input_path)
 
-    df['cleaned_run'] = df['Run'].apply(clean_dataset_name)
-    dataset_names = df['cleaned_run'].unique().tolist()
-    model_counts = df.groupby('cleaned_run').size().tolist()
-    first_run_list = df.groupby('cleaned_run')['Run'].first().tolist()
+    df_input['cleaned_run'] = df_input['Run'].apply(clean_dataset_name)
+    dataset_names = df_input['cleaned_run'].unique().tolist()
+    model_counts = df_input.groupby('cleaned_run').size().tolist()
+    first_run_list = df_input.groupby('cleaned_run')['Run'].first().tolist()
     
     output_path = f'../../../data/real/crawl/dataset_info_stats_{args.leaderboard}.csv'
 
@@ -56,15 +53,15 @@ if __name__ == "__main__":
         }])
 
         if i == 0:
-            df_updated = df_new
+            df_output = df_new
         else:
-            df_existing = pd.read_csv(output_path)
-            df_updated = pd.concat([df_existing, df_new], ignore_index=True)
+            df_exist = pd.read_csv(output_path)
+            df_output = pd.concat([df_exist, df_new], ignore_index=True)
     
-        df_updated = df_updated.sort_values(
+        df_output = df_output.sort_values(
             by=['model_count', 'question_count'], ascending=[False, False]
         )
-        df_updated.to_csv(output_path, index=False)    
+        df_output.to_csv(output_path, index=False)    
         
 
 

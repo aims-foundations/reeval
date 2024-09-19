@@ -7,8 +7,8 @@ import wandb
 if __name__ == "__main__":
     wandb.init(mode = "offline")
     parser = argparse.ArgumentParser()
-    parser.add_argument('--leaderboard', type=str, required=True)
-    parser.add_argument('--start_string', type=str, required=True)
+    parser.add_argument('--leaderboard', type=str, required=True) # classic, mmlu
+    parser.add_argument('--start_string', type=str, required=True) # use wandb sweep, mmlu
     args = parser.parse_args()
   
     full_strings_all = pd.read_csv(f'../../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv')['Run'].tolist()
@@ -28,15 +28,12 @@ if __name__ == "__main__":
             base_url = 'https://storage.googleapis.com/crfm-helm-public/mmlu/benchmark_output/runs/v1.'
             max_version = 8
         
-        version_found = False
         for i in range(max_version + 1):
             url = f'{base_url}{i}.0/{full_string}/scenario_state.json'
             response = requests.get(url)
             if response.status_code == 200:
                 with open(save_path, 'wb') as file:
                     file.write(response.content)
-                version_found = True
                 break
     
-        if not version_found:
             print(f'Failed to download the file for {full_string}. Status code:', response.status_code)

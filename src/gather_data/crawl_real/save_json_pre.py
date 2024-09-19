@@ -4,11 +4,12 @@ import yaml
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--leaderboard', type=str, required=True)
+    parser.add_argument('--leaderboard', type=str, required=True) # classic, mmlu
     args = parser.parse_args()
   
     stats_strings = pd.read_csv(f'../../../data/real/crawl/dataset_info_stats_{args.leaderboard}.csv')['dataset_name'].tolist()
     start_strings = list(set([s.split(":")[0].split(",")[0] for s in stats_strings]))
+    start_strings = [s for s in start_strings if s != "mmlu"]
     
     yaml_content = {
         'program': 'save_json.py',
