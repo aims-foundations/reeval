@@ -1,26 +1,16 @@
-from datasets import Dataset, DatasetDict
+import argparse
+from datasets import Dataset, DatasetDict, load_dataset
 import pandas as pd
 import os
 from huggingface_hub import login
 from dotenv import load_dotenv
-         
-if __name__ == "__main__":
-    load_dotenv()
-    hf_token = os.getenv('HF_TOKEN')
-    login(token=hf_token)
-
-    search_df = pd.read_csv('/Users/tyhhh/Desktop/certified-eval/data/real/response_matrix/insex_search.csv')
-    Z_path = "/Users/tyhhh/Desktop/certified-eval/data/real/irt_result/Z/all_1PL_Z_clean.csv"
+       
+def push_hub_with_perturb(search_path, Z_path, hf_repo):
+    search_df = pd.read_csv(search_path)
+    Z_df = pd.read_csv(Z_path, usecols=["z3"])
+    same_value_columns_indices = search_df[search_df.loc[:, "is_deleted"] == 1].index.tolist()
     
-    question_df = search_df.iloc[:, [1, 2]]  # Second column for question text, third column for perturb label
-    Z_df = pd.read_csv(Z_path, usecols=[2])
-
-    print(f"len(question_df): {len(question_df)}")
-    print(f"len(Z_df): {len(Z_df)}")
-    
-    same_value_columns_indices = search_df[search_df.iloc[:, -1] == 1].index.tolist()
-    print(f"len(same_value_columns_indices): {len(same_value_columns_indices)}")
-    
+    question_df = search_df.loc[:, ["text", "perturb"]]
     question_df = question_df.drop(same_value_columns_indices).reset_index(drop=True)
     assert len(question_df) == len(Z_df), "The lengths of question_df and Z_df must be the same after filtering."
     
@@ -42,5 +32,92 @@ if __name__ == "__main__":
         "perturb1": perturb1_dataset,
         "perturb2": perturb2_dataset
     })
+    dataset_dict.push_to_hub(hf_repo, private=True)
 
-    dataset_dict.push_to_hub("stair-lab/airbench-difficulty", private=True)
+def push_hub(search_path, Z_path, hf_repo):
+    search_df = pd.read_csv(search_path)
+    Z_df = pd.read_csv(Z_path, usecols=["z3"])
+    same_value_columns_indices = search_df[search_df.loc[:, "is_deleted"] == 1].index.tolist()
+    
+    question_df = search_df.loc[:, ["text"]]
+    question_df = question_df.drop(same_value_columns_indices).reset_index(drop=True)
+    assert len(question_df) == len(Z_df), "The lengths of question_df and Z_df must be the same after filtering."
+    
+    combined_df = pd.concat([question_df, Z_df], axis=1)
+    combined_df.columns = ['question_text', 'z3']
+    
+    all_dataset = Dataset.from_pandas(combined_df)
+    dataset_dict = DatasetDict({
+        "whole": all_dataset,
+    })
+    dataset_dict.push_to_hub(hf_repo, private=True)
+    
+def combine_and_push(combine_list, description_list, hf_repo):
+    combined_data = []
+    for i, dataset_name in enumerate(combine_list):
+        dataset = load_dataset(dataset_name, split="whole")
+        dataset = dataset.map(lambda x: {
+            'question_text': f"dataset description: {description_list[i]}, prompt: {x['question_text']}",
+            'z3': x['z3']
+        })
+        combined_data.append(pd.DataFrame(dataset))
+    combined_df = pd.concat(combined_data, ignore_index=True)
+    combined_dataset = Dataset.from_pandas(combined_df)
+    dataset_dict = DatasetDict({
+        "whole": combined_dataset,
+    })
+    dataset_dict.push_to_hub(hf_repo)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--exp', type=str)
+    args = parser.parse_args()
+    
+    load_dotenv()
+    hf_token = os.getenv('HF_TOKEN')
+    login(token=hf_token)
+
+    if args.exp == 'airbench':
+        push_hub_with_perturb(
+            search_path='../data/real/response_matrix/normal/index_search.csv',
+            Z_path='../data/real/irt_result/normal/Z/all_1PL_Z_clean.csv',
+            hf_repo='stair-lab/airbench-difficulty'
+        )
+    
+    elif args.exp == 'synthetic_reasoning':
+        push_hub(
+            search_path='../data/real/response_matrix/normal_syn_reason/mask_index_search.csv',
+            Z_path='../data/real/irt_result/pyMLE_normal_syn_reason/Z/mask_1PL_Z.csv',
+            hf_repo='stair-lab/synthetic_reasoning-difficulty'
+        )
+    
+    elif args.exp == 'mmlu':
+        push_hub(
+            search_path='../data/real/response_matrix/normal_mmlu/non_mask_index_search.csv',
+            Z_path='../data/real/irt_result/normal_mmlu/Z/pyMLE_mask_1PL_Z.csv',
+            hf_repo='stair-lab/mmlu-difficulty'
+        )
+    
+    elif args.exp == 'combine':
+        combine_and_push(
+            combine_list=[
+                'stair-lab/airbench-difficulty',
+                'stair-lab/synthetic_reasoning-difficulty',
+                'stair-lab/mmlu-difficulty'
+            ],
+            description_list=[
+                'Safety benchmark based on emerging government requlations and company policies',
+                'Learning Inductive Bias for Primitives of Mathematical Reasoning',
+                'Massive Multitask Language Understanding evaluations using standardized prompts'
+            ],
+            hf_repo='stair-lab/combine-difficulty'
+        )
+        
+    elif args.exp == 'civil_comment':
+        push_hub(
+            search_path='../data/real/response_matrix/normal_civil_comment/non_mask_index_search.csv',
+            Z_path='../data/real/irt_result/normal_civil_comment/Z/pyMLE_non_mask_1PL_Z.csv',
+            hf_repo='stair-lab/civil_comment-difficulty'
+        )
+
+    

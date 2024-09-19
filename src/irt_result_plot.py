@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 20})
 import subprocess
 import torch
 import numpy as np
@@ -21,10 +22,8 @@ def plot_hist(serial, data, color, para, perturb):
     plt.grid(True)
             
 if __name__ == "__main__":
-    plt.rcParams.update({'font.size': 20})
-    
     parser = argparse.ArgumentParser()
-    parser.add_argument("--exp", type=str, help="synthetic or real_normal or real_appendix1")
+    parser.add_argument("--exp", type=str)
     args = parser.parse_args()
     
     if args.exp == "synthetic":
@@ -45,6 +44,24 @@ if __name__ == "__main__":
         theta_dir = f'../data/real/irt_result/appendix1/theta'
         output_dir = '../plot/real'
         response_matrix_dir = '../data/real/response_matrix/appendix1'
+        
+    elif args.exp == "normal_syn_reason":
+        Z_dir = f'../data/real/irt_result/normal_syn_reason/Z'
+        theta_dir = f'../data/real/irt_result/normal_syn_reason/theta'
+        output_dir = '../plot/real'
+        response_matrix_dir = '../data/real/response_matrix/normal_syn_reason'
+    
+    elif args.exp == "normal_syn_reason_clean":
+        Z_dir = f'../data/real/irt_result/normal_syn_reason_clean/Z'
+        theta_dir = f'../data/real/irt_result/normal_syn_reason_clean/theta'
+        output_dir = '../plot/real'
+        response_matrix_dir = '../data/real/response_matrix/normal_syn_reason_clean'
+    
+    elif args.exp == "normal_mmlu":
+        Z_dir = f'../data/real/irt_result/normal_mmlu/Z'
+        theta_dir = f'../data/real/irt_result/normal_mmlu/theta'
+        output_dir = '../plot/real'
+        response_matrix_dir = '../data/real/response_matrix/normal_mmlu'
         
     os.makedirs(Z_dir, exist_ok=True)
     os.makedirs(theta_dir, exist_ok=True)
@@ -82,8 +99,6 @@ if __name__ == "__main__":
             clean_file_path = os.path.join(Z_dir, filename.replace('.csv', '_clean.csv'))
             new_df.to_csv(clean_file_path, index=False)
 
-
-
     if args.exp == 'real_appendix1':
         all_z_df = pd.read_csv(f'{Z_dir}/all_1PL_Z_clean.csv')
         index_search_df = pd.read_csv(f'{response_matrix_dir}/index_search.csv')
@@ -103,22 +118,22 @@ if __name__ == "__main__":
 
         fig, axes = plt.subplots(1, 3, figsize=(18, 6), sharey=True)
 
-    axes[0].hist(z3_dict['base'], bins=20, alpha=0.7, density=True)
-    axes[0].set_title('Distribution of base')
-    axes[0].set_xlabel('z3 Values')
-    axes[0].set_ylabel('Density')
+        axes[0].hist(z3_dict['base'], bins=20, alpha=0.7, density=True)
+        axes[0].set_title('Distribution of base')
+        axes[0].set_xlabel('z3 Values')
+        axes[0].set_ylabel('Density')
 
-    axes[1].hist(z3_dict['perturb1'], bins=20, alpha=0.7, density=True)
-    axes[1].set_title('Distribution of perturb1')
-    axes[1].set_xlabel('z3 Values')
+        axes[1].hist(z3_dict['perturb1'], bins=20, alpha=0.7, density=True)
+        axes[1].set_title('Distribution of perturb1')
+        axes[1].set_xlabel('z3 Values')
 
-    axes[2].hist(z3_dict['perturb2'], bins=20, alpha=0.7, density=True)
-    axes[2].set_title('Distribution of perturb2')
-    axes[2].set_xlabel('z3 Values')
+        axes[2].hist(z3_dict['perturb2'], bins=20, alpha=0.7, density=True)
+        axes[2].set_title('Distribution of perturb2')
+        axes[2].set_xlabel('z3 Values')
 
-    plt.tight_layout()
-    plt.savefig(f'{output_dir}/appendix1_three_z_set_separate.png')
-        
+        plt.tight_layout()
+        plt.savefig(f'{output_dir}/appendix1_three_z_set_separate.png')
+            
         
         
     if args.exp == 'synthetic':

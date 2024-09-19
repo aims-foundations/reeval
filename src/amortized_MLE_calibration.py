@@ -14,36 +14,52 @@ def amortized_MLE_calibration(
     response_matrix,
     embedding, 
     device,
-    lr=0.001,
-    weight_decay=1,
-    epochs=1000,
-    W_init_std=0.01,
-    max_norm=1.0,
+    lr_theta=0.01,
+    W_init_std=5e-5,
+    lr_W=5e-6,
+    # weight_decay=1, 
+    epochs=20000,
+    # max_norm=1.0,
+    # lr_decay_factor=0.8,  # Learning rate decay factor
+    # lr_decay_step=50,    # Decay every 100 epochs
 ):
     # response_matrix [69, 959]; embedding [959, 4096]
     theta_hat = torch.normal(mean=0.0, std=1.0, size=(response_matrix.size(0),), requires_grad=True, device=device)
     W = torch.normal(mean=0.0, std=W_init_std, size=(embedding.size(1),), requires_grad=True, device=device)
     
-    optimizer = optim.Adam([W, theta_hat], lr=lr, weight_decay=weight_decay)
-    torch.nn.utils.clip_grad_norm_([W, theta_hat], max_norm=max_norm)
+    # optimizer = optim.Adam([W, theta_hat], lr=lr, weight_decay=weight_decay)
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=lr_decay_step, gamma=lr_decay_factor)
+    # torch.nn.utils.clip_grad_norm_([W, theta_hat], max_norm=max_norm)
     
+    optimizer_theta = optim.Adam([theta_hat], lr=lr_theta)
+    optimizer_W = optim.Adam([W], lr=lr_W)
+    
+    losses = []
     pbar = tqdm(range(epochs))
     for _ in pbar:
         z3 = torch.matmul(embedding, W) # z3 [959]
         theta_hat_matrix = theta_hat.unsqueeze(1) # (n, 1)
         z3_matrix = z3.unsqueeze(0) # (1, m)
-        
         prob_matrix = item_response_fn_1PL(z3_matrix, theta_hat_matrix)
-        berns = torch.distributions.Bernoulli(prob_matrix.flatten())
         
-        loss = -berns.log_prob(response_matrix.flatten()).mean()
+        mask = response_matrix != -1
+        masked_response_matrix = response_matrix.flatten()[mask.flatten()]
+        masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
+        
+        berns = torch.distributions.Bernoulli(masked_prob_matrix)
+        
+        loss = -berns.log_prob(masked_response_matrix).mean()
         loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
+        optimizer_theta.step()
+        optimizer_W.step()
+        # scheduler.step()
+        optimizer_theta.zero_grad()
+        optimizer_W.zero_grad()
         
+        losses.append(loss.item())
         pbar.set_postfix({'loss': loss.item()})
 
-    return theta_hat, z3, W
+    return theta_hat, z3, W, losses
     
 def main(
     lr,
@@ -64,8 +80,8 @@ def main(
     z3_nonamor_test = z3_nonamor[train_size:]
     z3_nonamor_test = z3_nonamor_test.cpu().detach().numpy()
     
-    dataset = load_dataset("stair-lab/airbench-embedding", split="train")
-    embeddings = dataset['embedding']
+    dataset = load_dataset("stair-lab/airbench-embedding", split="whole")
+    embeddings = dataset['embeddings']
     emb_tensor = torch.tensor(embeddings).to(device) # [1199, 4096]
     
     assert response_matrix.shape[1] == emb_tensor.shape[0]
@@ -74,7 +90,7 @@ def main(
     emb_train = emb_tensor[:train_size]
     emb_test = emb_tensor[train_size:]
     
-    theta_amor_train, z3_amor_train, W_train = amortized_MLE_calibration(
+    theta_amor_train, z3_amor_train, W_train, _ = amortized_MLE_calibration(
         response_matrix_train,
         emb_train,
         device,
@@ -104,13 +120,13 @@ if __name__ == "__main__":
     parser.add_argument("--max_norm", type=float)
     args = parser.parse_args()
     
-    z3_nonamor_train, z3_nonamor_test, z3_amor_train, z3_amor_test = main(
-        lr=args.lr,
-        weight_decay=args.weight_decay,
-        epochs=args.epochs,
-        W_init_std=args.W_init_std,
-        max_norm=args.max_norm
-    )
+    # z3_nonamor_train, z3_nonamor_test, z3_amor_train, z3_amor_test = main(
+    #     lr=args.lr,
+    #     weight_decay=args.weight_decay,
+    #     epochs=args.epochs,
+    #     W_init_std=args.W_init_std,
+    #     max_norm=args.max_norm
+    # )
     
     # assert z3_amor_train.shape == z3_nonamor_train.shape
     # assert z3_amor_test.shape == z3_nonamor_test.shape

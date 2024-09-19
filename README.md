@@ -143,4 +143,3 @@ To run the code:
 # real appendix 1
 ```
 python get_response_matrix.py --exp appendix1
-```
