@@ -39,11 +39,23 @@ if __name__ == "__main__":
     X = emb_hf['embeddings']
     Z = model.predict(X).tolist()
     
+    train_size = int(len(Z) * 0.8)
+    Z_train, Z_test = Z[:train_size], Z[train_size:]
+    y_df_train, y_df_test = y_df.iloc[:, :train_size], y_df.iloc[:, train_size:]
+    
     goodness_of_fit_1PL(
-        Z=Z,
+        Z=Z_train,
         theta=theta,
-        y_df=y_df,
-        plot_path=f'../plot/real/{args.exp}_plugin_goodness_of_fit.png',
+        y_df=y_df_train,
+        plot_path=f'../plot/real/{args.exp}_plugin_goodness_of_fit_train.png',
+        bin_size=7,
+    )
+    
+    goodness_of_fit_1PL(
+        Z=Z_test,
+        theta=theta,
+        y_df=y_df_test,
+        plot_path=f'../plot/real/{args.exp}_plugin_goodness_of_fit_test.png',
         bin_size=7,
     )
    

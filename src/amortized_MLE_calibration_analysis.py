@@ -142,4 +142,4 @@ if __name__ == "__main__":
         y=z3_nonamor_test,
         plot_path=f'../plot/real/{args.exp}_amor_z_corr_test.png',
     )
-   
+    
