@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# wandb sweep save_json.yaml
+
 NUM_AGENTS=8
 HOSTNAME=$(hostname)
 

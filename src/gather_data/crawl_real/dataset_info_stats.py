@@ -4,8 +4,8 @@ import re
 import requests
 from tqdm import tqdm
 
-def clean_dataset_name(name):
-    return re.sub(r'model=[^,]*,?', '', name).strip(',')
+def delete_model_name(filename):
+    return re.sub(r'model=[^,]*,?', '', filename).strip(',')
 
 def get_question_count(exp_string, leaderboard):
     if leaderboard == "lite":
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     input_path = f'../../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv'
     df_input = pd.read_csv(input_path)
 
-    df_input['cleaned_run'] = df_input['Run'].apply(clean_dataset_name)
+    df_input['cleaned_run'] = df_input['Run'].apply(delete_model_name)
     dataset_names = df_input['cleaned_run'].unique().tolist()
     model_counts = df_input.groupby('cleaned_run').size().tolist()
     first_run_list = df_input.groupby('cleaned_run')['Run'].first().tolist()

@@ -1,7 +1,13 @@
 import argparse
 import os
 import json
+import re
 import pandas as pd
+from dataset_info_stats import delete_model_name
+
+def extract_model_name(filename):
+    match = re.search(r'model=[^,]*', filename)
+    return match.group(0)
 
 def get_bool_answers(data):
     bool_answers = []
@@ -37,90 +43,79 @@ if __name__ == "__main__":
     parser.add_argument('--start_string', type=str, required=True) # use wandb sweep, mmlu
     args = parser.parse_args()
   
-    full_strings_all = pd.read_csv(f'../../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv')['Run'].tolist()
+    input_dir = f'../../../data/real/crawl/{args.start_string}_json'
+    output_dir = f'../../../data/real/response_matrix/{args.start_string}'
+    os.makedirs(output_dir, exist_ok=True)
     
-    save_dir = f'../../../data/real/crawl/{args.start_string}_json'
-    os.makedirs(save_dir, exist_ok=True)
+    full_strings_all = pd.read_csv(f'../../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv')['Run'].tolist()
     full_strings = [f for f in full_strings_all if f.startswith(args.start_string)]
-    for full_string in full_strings:
-        save_path = f'{save_dir}/{full_string}.json'
+    all_model_names = list(set([extract_model_name(f) for f in full_strings]))
+    all_model_names = sorted(all_model_names, key=lambda x: x[0])
+    
+    non_model_strings = list(set([delete_model_name(f) for f in full_strings]))
         
-    if args.leaderboard == "mmlu":
-        json_dir = '../../../data/real/crawl/mmlu_json'
-        output_dir = "../../../data/real/response_matrix/normal_mmlu"
-        start_strings = pd.read_csv('../../../data/real/crawl/dataset_info_stats_mmlu.csv')['dataset_name'].tolist()
-        start_strings = [s.split(",eval_split")[0] for s in start_strings]
-
-    # mask matrix
-    all_responses_df = pd.DataFrame()
     max_lens = []
     max_len_file_names = []
-    
-    for start_string in start_strings:
-        max_length = 0
-        max_file_names = []
-        for json_file in os.listdir(json_dir):
-            if json_file.endswith('.json') and json_file.startswith(start_string):
-                with open(f"{json_dir}/{json_file}", 'r') as f:
-                    data = json.load(f)
-                len_q = len(data['request_states'])
-                max_file_names.append((json_file, len_q))
-                if len_q > max_length:
-                    max_length = len_q
-        print(f"dataset {start_string}, max length {max_length}")
-        max_lens.append(max_length)
-        max_len_file_names.append(max(max_file_names, key=lambda x: x[1])[0])
+    for i, non_model_string in enumerate(non_model_strings):
+        max_len = 0
+        max_len_file_name = ""
+        single_matrix = {name: [] for name in all_model_names}
         
-        response_matrix = {}
-        for json_file in os.listdir(json_dir):
-            if json_file.endswith('.json') and json_file.startswith(start_string):
-                with open(f"{json_dir}/{json_file}", 'r') as f:
+        for filename in os.listdir(input_dir):
+            if filename.endswith('.json') and (delete_model_name(filename) == f"{non_model_string}.json"):
+                model_name = extract_model_name(filename)
+                with open(f"{input_dir}/{filename}", 'r') as f:
                     data = json.load(f)
-                
+                    
+                len_q = len(data['request_states'])
+                if len_q > max_len:
+                    max_len = len_q
+                    max_len_file_name = filename
+                    
                 model_name = data['adapter_spec']['model']
                 bool_answers = get_bool_answers(data)
 
-                if len(bool_answers) < max_length:
-                    bool_answers.extend([-1] * (max_length - len(bool_answers)))
-                response_matrix[model_name] = bool_answers
-           
-        response_df = pd.DataFrame(response_matrix).T
-        response_df = response_df.sort_index(axis=0)
+                single_matrix[model_name] = bool_answers
         
-        if all_responses_df.empty:
-            all_responses_df = response_df
+        for model_name, bool_answers in single_matrix.items():
+            single_matrix[model_name] += [-1] * (max_len - len(single_matrix[model_name]))
+        
+        max_lens.append(max_len)
+        max_len_file_names.append(max_len_file_name)
+           
+        single_matrix_df = pd.DataFrame(single_matrix).T
+        single_matrix_df.columns = [f"{j}_{non_model_string}" for j in range(max_len)]
+        
+        if i == 0:
+            all_matrix_df = single_matrix_df
         else:
-            assert (all_responses_df.index == response_df.index).all(), "Model names do not match!"
-            all_responses_df = pd.concat([all_responses_df, response_df], axis=1)
+            assert (all_matrix_df.index == single_matrix_df.index).all()
+            all_matrix_df = pd.concat([all_matrix_df, single_matrix_df], axis=1)
             
-    all_responses_df.columns = [f'{i}' for i in range(all_responses_df.shape[1])]
     
-    bool_delete_list = []
-    for col_name, col_data in all_responses_df.items():
-        if set(col_data.unique()).issubset({0, -1}) or set(col_data.unique()).issubset({1, -1}):
-            all_responses_df = all_responses_df.drop(columns=[col_name])
-            bool_delete_list.append(1)
-        else:
-            bool_delete_list.append(0)
+    # bool_delete_list = []
+    # for col_name, col_data in all_matrix_df.items():
+    #     if set(col_data.unique()).issubset({0, -1}) or set(col_data.unique()).issubset({1, -1}):
+    #         all_responses_df = all_responses_df.drop(columns=[col_name])
+    #         bool_delete_list.append(1)
+    #     else:
+    #         bool_delete_list.append(0)
 
-    # index search file
-    output_file = f"{output_dir}/mask_index_search.csv"
-    output_data = []
-    base_idx = 0
-    for i, start_string in enumerate(start_strings):
-        input_file = f"{json_dir}/{max_len_file_names[i]}"
-        with open(input_file, 'r') as f:
-            data = json.load(f)
-        for j, question in enumerate(data['request_states']):
-            text = question['instance']['input']['text']
-            output_data.append([base_idx+j, text, bool_delete_list[base_idx+j]])
-        base_idx += max_lens[i]
+    # # index search file
+    # output_file = f"{output_dir}/mask_index_search.csv"
+    # output_data = []
+    # base_idx = 0
+    # for i, start_string in enumerate(start_strings):
+    #     input_file = f"{json_dir}/{max_len_file_names[i]}"
+    #     with open(input_file, 'r') as f:
+    #         data = json.load(f)
+    #     for j, question in enumerate(data['request_states']):
+    #         text = question['instance']['input']['text']
+    #         output_data.append([base_idx+j, text, bool_delete_list[base_idx+j]])
+    #     base_idx += max_lens[i]
 
-    output_df = pd.DataFrame(output_data, columns=["idx", "text", "is_deleted"])
-    output_df.to_csv(output_file, index=False)
+    # output_df = pd.DataFrame(output_data, columns=["idx", "text", "is_deleted"])
+    # output_df.to_csv(output_file, index=False)
 
-    all_responses_df.columns = [f'{i}' for i in range(all_responses_df.shape[1])]
-    all_responses_df.to_csv(f'{output_dir}/mask_matrix.csv', index_label=None)
-
-    if min_lens == max_lens:
-        print("min_lens == max_lens, non_mask_matrix and mask_matrix are the same")
+    # all_responses_df.columns = [f'{i}' for i in range(all_responses_df.shape[1])]
+    # all_responses_df.to_csv(f'{output_dir}/mask_matrix.csv', index_label=None)
