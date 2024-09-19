@@ -6,31 +6,27 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from tqdm import tqdm
 from webdriver_manager.chrome import ChromeDriverManager
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exp', type=str)
+    parser.add_argument('--leaderboard', type=str, required=True) # classic, lite, mmlu
     args = parser.parse_args()
-    exp = args.exp
     
-    if exp == "classic":
-        base_url = f'https://crfm.stanford.edu/helm/classic/latest/#/runs?q=&page='
+    base_url = f'https://crfm.stanford.edu/{args.leaderboard}/classic/latest/#/runs?page='
+    save_path = f'../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv'
+    if args.leaderboard == "classic":
         total_pages = 86+1
-        csv_file = f'../../data/real/crawl/crawl_dataset_name_classic.csv'
-    elif exp == "lite":
-        base_url = f'https://crfm.stanford.edu/helm/lite/latest/#/runs?page='
+    elif args.leaderboard == "lite":
         total_pages = 21+1
-        csv_file = f'../../data/real/crawl/crawl_dataset_name_lite.csv'
-    elif exp == "mmlu":
-        base_url = f'https://crfm.stanford.edu/helm/mmlu/latest/#/runs?page='
+    elif args.leaderboard == "mmlu":
         total_pages = 36+1
-        csv_file = f'../../data/real/crawl/crawl_dataset_name_mmlu.csv'
     
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-        
+    
     failed_pages = []
-    for page in range(1, total_pages):
+    for page in tqdm(range(1, total_pages)):
         try:
             url = f'{base_url}{page}'
             driver.get(url)
@@ -48,14 +44,13 @@ if __name__ == "__main__":
 
             df_new = pd.DataFrame(runs, columns=['Run'])
 
-            if os.path.exists(csv_file):
-                df_existing = pd.read_csv(csv_file)
-                df_updated = pd.concat([df_existing, df_new], ignore_index=True)
-            else:
+            if page == 1:
                 df_updated = df_new
+            else:
+                df_existing = pd.read_csv(save_path)
+                df_updated = pd.concat([df_existing, df_new], ignore_index=True)
 
-            df_updated.to_csv(csv_file, index=False)
-            print(f"Page {page} scraped and saved.")
+            df_updated.to_csv(save_path, index=False)
 
         except Exception as e:
             print(f"Error on page {page}: {e}")

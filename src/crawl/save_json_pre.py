@@ -4,10 +4,10 @@ import yaml
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exp', type=str, required=True)
+    parser.add_argument('--leaderboard', type=str, required=True)
     args = parser.parse_args()
   
-    stats_strings = pd.read_csv(f'../../data/real/crawl/dataset_info_stats_{args.exp}.csv')['dataset_name'].tolist()
+    stats_strings = pd.read_csv(f'../../data/real/crawl/dataset_info_stats_{args.leaderboard}.csv')['dataset_name'].tolist()
     start_strings = list(set([s.split(":")[0].split(",")[0] for s in stats_strings]))
     
     yaml_content = {
@@ -15,8 +15,8 @@ if __name__ == "__main__":
         'project': 'save_json',
         'method': 'grid',
         'parameters': {
-            'exp': {
-                'values': [args.exp]
+            'leaderboard': {
+                'values': [args.leaderboard]
             },
             'start_string': {
                 'values': start_strings

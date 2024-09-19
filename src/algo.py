@@ -49,17 +49,20 @@ def nonamor_calibration(response_matrix, device, max_epoch=3000):
     return theta_hat, z3
 
 def amor_calibration(
-    response_matrix,
-    embedding, 
+    response_matrix, # response_matrix [69, 959]
+    embedding, # embedding [959, 4096]
     device,
     lr_theta=0.01,
     W_init_std=5e-5,
     lr_W=5e-6,
     epochs=20000,
 ):
-    # response_matrix [69, 959]; embedding [959, 4096]
-    theta_hat = torch.normal(mean=0.0, std=1.0, size=(response_matrix.size(0),), requires_grad=True, device=device)
-    W = torch.normal(mean=0.0, std=W_init_std, size=(embedding.size(1),), requires_grad=True, device=device)
+    theta_hat = torch.normal(
+        mean=0.0, std=1.0, size=(response_matrix.size(0),), requires_grad=True, device=device
+    )
+    W = torch.normal(
+        mean=0.0, std=W_init_std, size=(embedding.size(1),), requires_grad=True, device=device
+    )
     
     optimizer_theta = optim.Adam([theta_hat], lr=lr_theta)
     optimizer_W = optim.Adam([W], lr=lr_W)
