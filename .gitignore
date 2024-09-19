@@ -1,3 +1,6 @@
+save/
+.ipynb_checkpoints/
+wandb/
 .env
 *.pyc
 __pycache__/*
