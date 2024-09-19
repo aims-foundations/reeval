@@ -21,29 +21,44 @@ def plot_hist(serial, data, color, para, perturb):
     plt.grid(True)
             
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("experiment_type", type=str, help="real or synthetic")
-    # args = parser.parse_args()
-    
-    true_Z_path = f'../data/synthetic/response_matrix/true_Z.csv'
-    true_theta_path = f'../data/synthetic/response_matrix/true_theta.csv'
-
-    experiment_type = 'real'
-    Z_dir = f'../data/{experiment_type}/irt_result/Z/'
-    theta_dir = f'../data/{experiment_type}/irt_result/theta/'
-    
     plt.rcParams.update({'font.size': 20})
     
-    perturb_list = ["base", "perturb1", "perturb2", "all"]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--exp", type=str, help="synthetic or real_normal or real_appendix1")
+    args = parser.parse_args()
+    
+    if args.exp == "synthetic":
+        true_Z_path = f'../data/synthetic/response_matrix/true_Z.csv'
+        true_theta_path = f'../data/synthetic/response_matrix/true_theta.csv'
+        Z_dir = f'../data/synthetic/irt_result/Z'
+        theta_dir = f'../data/synthetic/irt_result/theta'
+        output_dir = '../plot/synthetic'
+
+    elif args.exp == "real_normal":
+        Z_dir = f'../data/real/irt_result/normal/Z'
+        theta_dir = f'../data/real/irt_result/normal/theta'
+        output_dir = '../plot/real'
+        response_matrix_dir = '../data/real/response_matrix/normal'
+    
+    elif args.exp == "real_appendix1":
+        Z_dir = f'../data/real/irt_result/appendix1/Z'
+        theta_dir = f'../data/real/irt_result/appendix1/theta'
+        output_dir = '../plot/real'
+        response_matrix_dir = '../data/real/response_matrix/appendix1'
+        
+    os.makedirs(Z_dir, exist_ok=True)
+    os.makedirs(theta_dir, exist_ok=True)
+    
     model_list = ["1PL", "2PL", "3PL"]
 
 
 
     # run mirt.R
-    subprocess.run(f"conda run -n R Rscript fit_irt.R {experiment_type}", shell=True, check=True)
-    print("finished running mirt.R")
+    print("running mirt.R")
+    subprocess.run(f"conda run -n R Rscript fit_irt.R {args.exp}", shell=True, check=True)
     
     # clean up item parameters inferred from IRT
+    print("cleaning up item parameters inferred from IRT")
     for filename in os.listdir(Z_dir):
         if filename.endswith('_Z.csv'):
             file_path = os.path.join(Z_dir, filename)
@@ -66,13 +81,50 @@ if __name__ == "__main__":
             # Save the cleaned data to a new CSV file
             clean_file_path = os.path.join(Z_dir, filename.replace('.csv', '_clean.csv'))
             new_df.to_csv(clean_file_path, index=False)
-    print("finished cleaning up item parameters inferred from IRT")
 
 
 
-    if experiment_type == 'synthetic':
-        # mse of Z and theta, only synthetic 
-        mse_output_path = '../plot/synthetic/mse.txt'
+    if args.exp == 'real_appendix1':
+        all_z_df = pd.read_csv(f'{Z_dir}/all_1PL_Z_clean.csv')
+        index_search_df = pd.read_csv(f'{response_matrix_dir}/index_search.csv')
+
+        z3_values = all_z_df['z3']
+        index_search_df = index_search_df[index_search_df['is_deleted'] != 1]
+
+        assert len(index_search_df) == len(all_z_df)
+
+        index_search_df['z3'] = z3_values.values
+
+        z3_dict = {
+            'base': index_search_df[index_search_df['perturb'] == 'base']['z3'].tolist(),
+            'perturb1': index_search_df[index_search_df['perturb'] == 'perturb1']['z3'].tolist(),
+            'perturb2': index_search_df[index_search_df['perturb'] == 'perturb2']['z3'].tolist()
+        }
+
+        fig, axes = plt.subplots(1, 3, figsize=(18, 6), sharey=True)
+
+    axes[0].hist(z3_dict['base'], bins=20, alpha=0.7, density=True)
+    axes[0].set_title('Distribution of base')
+    axes[0].set_xlabel('z3 Values')
+    axes[0].set_ylabel('Density')
+
+    axes[1].hist(z3_dict['perturb1'], bins=20, alpha=0.7, density=True)
+    axes[1].set_title('Distribution of perturb1')
+    axes[1].set_xlabel('z3 Values')
+
+    axes[2].hist(z3_dict['perturb2'], bins=20, alpha=0.7, density=True)
+    axes[2].set_title('Distribution of perturb2')
+    axes[2].set_xlabel('z3 Values')
+
+    plt.tight_layout()
+    plt.savefig(f'{output_dir}/appendix1_three_z_set_separate.png')
+        
+        
+        
+    if args.exp == 'synthetic':
+        # synthetic only, mse of Z and theta
+        print("synthetic only, mse of Z and theta")
+        mse_output_path = f'{output_dir}/mse.txt'
         with open(mse_output_path, 'w') as f:
             f.write('MSE of Z\n')
             for filename in os.listdir(Z_dir):
@@ -93,159 +145,159 @@ if __name__ == "__main__":
                     mse_theta = mean_squared_error(true_theta, synthetic_theta)
                     model = filename.split('_theta.csv')[0].split('synthetic_')[1]
                     f.write(f'{model}: {mse_theta}\n')
-        print("finished mse of Z and theta, only synthetic")
     
     
     
-    # 3D plot of [z1, z2, z3], only 3PL
-    base_coef = pd.read_csv(f'../data/real/irt_result/Z/base_3PL_Z_clean.csv')
-    perturb1_coef = pd.read_csv(f'../data/real/irt_result/Z/perturb1_3PL_Z_clean.csv')
-    perturb2_coef = pd.read_csv(f'../data/real/irt_result/Z/perturb2_3PL_Z_clean.csv')
+    if args.exp == 'real_normal':
+        # real_normal only, 3PL only, 3D plot of [z1, z2, z3]
+        print("real_normal only, 3PL only, 3D plot of [z1, z2, z3]")
+        base_coef = pd.read_csv(f'{Z_dir}/base_3PL_Z_clean.csv')
+        perturb1_coef = pd.read_csv(f'{Z_dir}/perturb1_3PL_Z_clean.csv')
+        perturb2_coef = pd.read_csv(f'{Z_dir}/perturb2_3PL_Z_clean.csv')
 
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111, projection='3d')
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot(111, projection='3d')
 
-    ax.scatter(base_coef.iloc[:, 0], base_coef.iloc[:, 1], base_coef.iloc[:, 2], c='r', label='Base Z')
-    ax.scatter(perturb1_coef.iloc[:, 0], perturb1_coef.iloc[:, 1], perturb1_coef.iloc[:, 2], c='g', label='Perturb1 Z')
-    ax.scatter(perturb2_coef.iloc[:, 0], perturb2_coef.iloc[:, 1], perturb2_coef.iloc[:, 2], c='b', label='Perturb2 Z')
+        ax.scatter(base_coef.iloc[:, 0], base_coef.iloc[:, 1], base_coef.iloc[:, 2], c='r', label='Base Z')
+        ax.scatter(perturb1_coef.iloc[:, 0], perturb1_coef.iloc[:, 1], perturb1_coef.iloc[:, 2], c='g', label='Perturb1 Z')
+        ax.scatter(perturb2_coef.iloc[:, 0], perturb2_coef.iloc[:, 1], perturb2_coef.iloc[:, 2], c='b', label='Perturb2 Z')
 
-    ax.set_xlabel(r'$z_1$')
-    ax.xaxis.labelpad = 20
-    ax.set_ylabel(r'$z_2$')
-    ax.yaxis.labelpad = 20
-    ax.set_zlabel(r'$z_3$')
-    ax.zaxis.labelpad = 20
+        ax.set_xlabel(r'$z_1$')
+        ax.xaxis.labelpad = 20
+        ax.set_ylabel(r'$z_2$')
+        ax.yaxis.labelpad = 20
+        ax.set_zlabel(r'$z_3$')
+        ax.zaxis.labelpad = 20
 
-    # ax.set_xlim(-3, 3)
-    # ax.set_ylim(-3, 3)
-    # ax.set_zlim(-3, 3)
+        # ax.set_xlim(-3, 3)
+        # ax.set_ylim(-3, 3)
+        # ax.set_zlim(-3, 3)
 
-    ax.legend()
-    plt.savefig('../plot/real/3d3pl.png')
-    print("finished 3D plot of [z1, z2, z3], only 3PL")
-
+        ax.legend()
+        plt.savefig(f'{output_dir}/3d3pl.png')
 
 
-    # plot Z distribution (density histogram)
-    for i, model in enumerate(model_list):
-        base_coef = pd.read_csv(f'../data/real/irt_result/Z/base_{model}_Z_clean.csv')
-        perturb1_coef = pd.read_csv(f'../data/real/irt_result/Z/perturb1_{model}_Z_clean.csv')
-        perturb2_coef = pd.read_csv(f'../data/real/irt_result/Z/perturb2_{model}_Z_clean.csv')
+        # real_normal only, plot Z distribution (density histogram)
+        print("real_normal only, plot Z distribution (density histogram)")
+        for i, model in enumerate(model_list):
+            base_coef = pd.read_csv(f'{Z_dir}/base_{model}_Z_clean.csv')
+            perturb1_coef = pd.read_csv(f'{Z_dir}/perturb1_{model}_Z_clean.csv')
+            perturb2_coef = pd.read_csv(f'{Z_dir}/perturb2_{model}_Z_clean.csv')
 
-        base_value = [base_coef.iloc[:, i] for i in range(3)]
-        perturb1_value = [perturb1_coef.iloc[:, i] for i in range(3)]
-        perturb2_value = [perturb2_coef.iloc[:, i] for i in range(3)]
+            base_value = [base_coef.iloc[:, i] for i in range(3)]
+            perturb1_value = [perturb1_coef.iloc[:, i] for i in range(3)]
+            perturb2_value = [perturb2_coef.iloc[:, i] for i in range(3)]
 
-        plt.figure(figsize=(25, 25))
+            plt.figure(figsize=(25, 25))
 
-        plot_hist(1, base_value[0], 'r', 'z1', 'base')
-        plot_hist(2, base_value[1], 'r', 'z2', 'base')
-        plot_hist(3, base_value[2], 'r', 'z3', 'base')   
+            plot_hist(1, base_value[0], 'r', 'z1', 'base')
+            plot_hist(2, base_value[1], 'r', 'z2', 'base')
+            plot_hist(3, base_value[2], 'r', 'z3', 'base')   
 
-        plot_hist(4, perturb1_value[0], 'g', 'z1', 'perturb1')
-        plot_hist(5, perturb1_value[1], 'g', 'z2', 'perturb1')
-        plot_hist(6, perturb1_value[2], 'g', 'z3', 'perturb1')   
+            plot_hist(4, perturb1_value[0], 'g', 'z1', 'perturb1')
+            plot_hist(5, perturb1_value[1], 'g', 'z2', 'perturb1')
+            plot_hist(6, perturb1_value[2], 'g', 'z3', 'perturb1')   
 
-        plot_hist(7, perturb2_value[0], 'b', 'z1', 'perturb2')
-        plot_hist(8, perturb2_value[1], 'b', 'z2', 'perturb2')
-        plot_hist(9, perturb2_value[2], 'b', 'z3', 'perturb2')   
+            plot_hist(7, perturb2_value[0], 'b', 'z1', 'perturb2')
+            plot_hist(8, perturb2_value[1], 'b', 'z2', 'perturb2')
+            plot_hist(9, perturb2_value[2], 'b', 'z3', 'perturb2')   
 
-        plt.savefig(f'../plot/real/iparams{i+1}pl.png')
-    print("finished plot Z distribution (density histogram)")
+            plt.savefig(f'{output_dir}/iparams{i+1}pl.png')
     
 
+        # real_normal only, 1D Wasserstein Distance of Z
+        print("real_normal only, 1D Wasserstein Distance of Z")
+        with open(f"{output_dir}/1D_Wasserstein_Distance.txt", "w", encoding="utf-8") as f:
+            for model in model_list:
+                f.write(f"{model}\n")
+                base_path = f"{Z_dir}/base_{model}_Z_clean.csv"
+                perturb1_path = f"{Z_dir}/perturb1_{model}_Z_clean.csv"
+                perturb2_path = f"{Z_dir}/perturb2_{model}_Z_clean.csv"
 
-    # 1D Wasserstein Distance of Z
-    with open("../plot/real/1D_Wasserstein_Distance.txt", "w", encoding="utf-8") as f:
-        for model in model_list:
-            f.write(f"{model}\n")
-            base_path = f"../data/real/irt_result/Z/base_{model}_Z_clean.csv"
-            perturb1_path = f"../data/real/irt_result/Z/perturb1_{model}_Z_clean.csv"
-            perturb2_path = f"../data/real/irt_result/Z/perturb2_{model}_Z_clean.csv"
+                para_list =  ['z1', 'z2', 'z3']
+                for para in para_list:
+                    base_coef = pd.read_csv(base_path, usecols=[para]).values.flatten()
+                    perturb1_coef = pd.read_csv(perturb1_path, usecols=[para]).values.flatten()
+                    perturb2_coef = pd.read_csv(perturb2_path, usecols=[para]).values.flatten()
 
-            para_list =  ['z1', 'z2', 'z3']
-            for para in para_list:
-                base_coef = pd.read_csv(base_path, usecols=[para]).values.flatten()
-                perturb1_coef = pd.read_csv(perturb1_path, usecols=[para]).values.flatten()
-                perturb2_coef = pd.read_csv(perturb2_path, usecols=[para]).values.flatten()
+                    distance_1_2 = calculate_1d_wasserstein_distance(base_coef, perturb1_coef)
+                    distance_1_3 = calculate_1d_wasserstein_distance(base_coef, perturb2_coef)
+                    distance_2_3 = calculate_1d_wasserstein_distance(perturb1_coef, perturb2_coef)
+                    
+                    f.write(f"Parameter {para}\n")
+                    f.write(f"Distance between base and perturb1: {distance_1_2}\n")
+                    f.write(f"Distance between base and perturb2: {distance_1_3}\n")
+                    f.write(f"Distance between perturb1 and perturb2: {distance_2_3}\n")
+                    f.write("\n")
+        
 
-                distance_1_2 = calculate_1d_wasserstein_distance(base_coef, perturb1_coef)
-                distance_1_3 = calculate_1d_wasserstein_distance(base_coef, perturb2_coef)
-                distance_2_3 = calculate_1d_wasserstein_distance(perturb1_coef, perturb2_coef)
+
+        # real_normal only, 3D Wasserstein Distance of Z
+        print("real_normal only, 3D Wasserstein Distance of Z")
+        with open(f"{output_dir}/3D_Wasserstein_Distance.txt", "w", encoding="utf-8") as f:
+            for model in model_list:
+                f.write(f"{model}\n")
+
+                base_path = f"{Z_dir}/base_{model}_Z_clean.csv"
+                perturb1_path = f"{Z_dir}/perturb1_{model}_Z_clean.csv"
+                perturb2_path = f"{Z_dir}/perturb2_{model}_Z_clean.csv"
+
+                base_matrix = pd.read_csv(base_path).values
+                perturb1_matrix = pd.read_csv(perturb1_path).values
+                perturb2_matrix = pd.read_csv(perturb2_path).values
                 
-                f.write(f"Parameter {para}\n")
-                f.write(f"Distance between base and perturb1: {distance_1_2}\n")
-                f.write(f"Distance between base and perturb2: {distance_1_3}\n")
-                f.write(f"Distance between perturb1 and perturb2: {distance_2_3}\n")
+                # min_size = min(base_matrix.shape[0], perturb1_matrix.shape[0], perturb2_matrix.shape[0])
+                # base_matrix = base_matrix[:min_size, :]
+                # perturb1_matrix = perturb1_matrix[:min_size, :]
+                # perturb2_matrix = perturb2_matrix[:min_size, :]
+
+                distance_1_2 = calculate_3d_wasserstein_distance(base_matrix, perturb1_matrix)
+                distance_1_3 = calculate_3d_wasserstein_distance(base_matrix, perturb2_matrix)
+                distance_2_3 = calculate_3d_wasserstein_distance(perturb1_matrix, perturb2_matrix)
+
+                f.write(f"Distance between base_matrix and perturb1_matrix: {distance_1_2}\n")
+                f.write(f"Distance between base_matrix and perturb2_matrix: {distance_1_3}\n")
+                f.write(f"Distance between perturb1_matrix and perturb2_matrix: {distance_2_3}\n")
                 f.write("\n")
-    print("finished 1D Wasserstein Distance of Z")
-    
+        
 
 
-    # 3D Wasserstein Distance of Z
-    with open("../plot/real/3D_Wasserstein_Distance.txt", "w", encoding="utf-8") as f:
-        for model in model_list:
-            f.write(f"{model}\n")
+        # real_normal only, irt curve & scattar plot, only 1PL base
+        print("real_normal only, irt curve & scattar plot, only 1PL base")
+        base_coef_1PL = pd.read_csv(f'{Z_dir}/base_1PL_Z_clean.csv')
+        base_value_1PL = base_coef_1PL.iloc[:, 2].values
 
-            base_path = f"../data/real/irt_result/Z/base_{model}_Z_clean.csv"
-            perturb1_path = f"../data/real/irt_result/Z/perturb1_{model}_Z_clean.csv"
-            perturb2_path = f"../data/real/irt_result/Z/perturb2_{model}_Z_clean.csv"
-
-            base_matrix = pd.read_csv(base_path).values
-            perturb1_matrix = pd.read_csv(perturb1_path).values
-            perturb2_matrix = pd.read_csv(perturb2_path).values
+        target_points = [-3, -1.5, 0, 1.5, 3]
+        
+        closest_points = {}
+        closest_points_indices = {}
+        for target in target_points:
+            abs_diff = np.abs(base_value_1PL - target)
+            min_index = abs_diff.argmin()
+            closest_points_indices[target] = min_index
+            closest_points[target] = base_value_1PL[min_index]
             
-            # min_size = min(base_matrix.shape[0], perturb1_matrix.shape[0], perturb2_matrix.shape[0])
-            # base_matrix = base_matrix[:min_size, :]
-            # perturb1_matrix = perturb1_matrix[:min_size, :]
-            # perturb2_matrix = perturb2_matrix[:min_size, :]
-
-            distance_1_2 = calculate_3d_wasserstein_distance(base_matrix, perturb1_matrix)
-            distance_1_3 = calculate_3d_wasserstein_distance(base_matrix, perturb2_matrix)
-            distance_2_3 = calculate_3d_wasserstein_distance(perturb1_matrix, perturb2_matrix)
-
-            f.write(f"Distance between base_matrix and perturb1_matrix: {distance_1_2}\n")
-            f.write(f"Distance between base_matrix and perturb2_matrix: {distance_1_3}\n")
-            f.write(f"Distance between perturb1_matrix and perturb2_matrix: {distance_2_3}\n")
-            f.write("\n")
-    print("finished 3D Wasserstein Distance of Z")
-    
-
-
-    # irt curve & scattar plot, only 1PL base
-    base_coef_1PL = pd.read_csv('../data/real/irt_result/Z/base_1PL_Z_clean.csv')
-    base_value_1PL = base_coef_1PL.iloc[:, 2].values
-
-    target_points = [-3, -1.5, 0, 1.5, 3]
-    
-    closest_points = {}
-    closest_points_indices = {}
-    for target in target_points:
-        abs_diff = np.abs(base_value_1PL - target)
-        min_index = abs_diff.argmin()
-        closest_points_indices[target] = min_index
-        closest_points[target] = base_value_1PL[min_index]
+        theta_df = pd.read_csv(f'{theta_dir}/base_1PL_theta.csv')
+        theta = torch.tensor(theta_df.iloc[:, 1].values, dtype=torch.float32)
         
-    theta_df = pd.read_csv('../data/real/irt_result/theta/base_1PL_theta.csv')
-    theta = torch.tensor(theta_df.iloc[:, 1].values, dtype=torch.float32)
+        y_df = pd.read_csv(f"{response_matrix_dir}/base_matrix.csv", index_col=0)
+        assert len(base_value_1PL) == len(y_df.columns)
 
-    for i, target in enumerate(closest_points.keys()):
-        z3 = torch.tensor(closest_points[target], dtype=torch.float32)
-        indice = closest_points_indices[target]
+        for i, target in enumerate(closest_points.keys()):
+            z3 = torch.tensor(closest_points[target], dtype=torch.float32)
+            indice = closest_points_indices[target]
 
-        y_df = pd.read_csv('../data/real/response_matrix/base_matrix.csv', index_col=0)
-        y = y_df.iloc[:, indice].values
+            y = y_df.iloc[:, indice].values
 
-        plt.figure(figsize=(10, 6))
+            plt.figure(figsize=(10, 6))
 
-        plt.scatter(theta.numpy(), y)
-        
-        theta_range = torch.linspace(min(theta).item(), max(theta).item(), 500)
-        y_curve = item_response_fn_1PL(theta_range, z3)
-        plt.plot(theta_range.numpy(), y_curve.numpy())
-        
-        plt.xlabel('Theta')
-        plt.ylabel('Pr(y=1)')
-        plt.title(f'Scatter Plot and 1PL Model Curve for d around {target}')
-        plt.savefig(f'../plot/real/empiricalvsestimated{i+1}.png')
-    print("finished irt curve & scattar plot, only 1PL base")
+            plt.scatter(theta.numpy(), y)
+            
+            theta_range = torch.linspace(min(theta).item(), max(theta).item(), 500)
+            y_curve = item_response_fn_1PL(theta_range, z3)
+            plt.plot(theta_range.numpy(), y_curve.numpy())
+            
+            plt.xlabel('Theta')
+            plt.ylabel('Pr(y=1)')
+            plt.title(f'Scatter Plot and 1PL Model Curve for d around {target}')
+            plt.savefig(f'{output_dir}/empiricalvsestimated{i+1}.png')

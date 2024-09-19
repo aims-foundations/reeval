@@ -1,8 +1,8 @@
 import os
+import numpy as np
 import pandas as pd
 import torch
 from utils import item_response_fn_3PL, item_response_fn_2PL, item_response_fn_1PL, item_response_fn_1PL_cheat
-import numpy as np
 
 class SimulatedTestTaker():
     def __init__(self, theta=None, model="1PL"):
@@ -45,6 +45,17 @@ class CheatingTestTaker():
     
     def get_ability(self):
         return self.true_ability, self.cheat_ability
+
+class RealTestTaker():
+    def __init__(self, question_text_list, model_string):
+        data_df = pd.read_csv(f"../data/real/pre_irt_data/eval/eval_{model_string}_result.csv")
+        prompt_score_dict = dict(zip(data_df['prompt'], data_df['score']))
+        self.score_list = [prompt_score_dict.get(text, None) for text in question_text_list]
+        assert None not in self.score_list
+
+    def ask(self, Z, question_index):
+        assert len(Z) == len(self.score_list)
+        return torch.tensor(self.score_list[question_index])
     
 if __name__ == "__main__":
     torch.manual_seed(42)

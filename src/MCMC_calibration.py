@@ -54,21 +54,21 @@ def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=9000, num
     return theta_samples, z1_samples, z2_samples, z3_samples
     
 if __name__ == "__main__":
-    experiment_type = "real"
+    data_type = "real"
     set_seed(10)
     
-    if experiment_type == "synthetic":
+    if data_type == "synthetic":
         y_df = pd.read_csv('../data/synthetic/response_matrix/synthetic_matrix_3PL.csv', index_col=0)
-    elif experiment_type == "real":
+    elif data_type == "real":
         y_df = pd.read_csv('../data/real/response_matrix/all_matrix.csv', index_col=0)
     
     response_matrix = y_df.values
     testtaker_num, question_num = response_matrix.shape
 
-    theta_file = f'../data/synthetic/MCMC_3PL/theta_samples_{experiment_type}.npy'
-    z1_file = f'../data/synthetic/MCMC_3PL/z1_samples_{experiment_type}.npy'
-    z2_file = f'../data/synthetic/MCMC_3PL/z2_samples_{experiment_type}.npy'
-    z3_file = f'../data/synthetic/MCMC_3PL/z3_samples_{experiment_type}.npy'
+    theta_file = f'../data/synthetic/MCMC_3PL/theta_samples_{data_type}.npy'
+    z1_file = f'../data/synthetic/MCMC_3PL/z1_samples_{data_type}.npy'
+    z2_file = f'../data/synthetic/MCMC_3PL/z2_samples_{data_type}.npy'
+    z3_file = f'../data/synthetic/MCMC_3PL/z3_samples_{data_type}.npy'
 
     if os.path.exists(theta_file) and os.path.exists(z1_file) \
         and os.path.exists(z2_file) and os.path.exists(z3_file):
@@ -142,4 +142,4 @@ if __name__ == "__main__":
     plt.title('Histogram of Differences (Empirical vs Theoretical)')
     plt.xlim(0, 1)
     plt.grid(True)
-    plt.savefig(f'../plot/synthetic/MCMC_3pl_{experiment_type}.png')
+    plt.savefig(f'../plot/synthetic/MCMC_3pl_{data_type}.png')

@@ -1,6 +1,6 @@
 import torch
 import random
-from synthetic_testtaker import SimulatedTestTaker
+from testtaker import SimulatedTestTaker
 from fit_theta import fit_theta_mcmc
 import jax.numpy as jnp
 from utils import item_response_fn_1PL, clear_caches, set_seed, save_state, load_state
@@ -8,9 +8,6 @@ import numpy as np
 from argparse import ArgumentParser
 import os
 
-# export JAX_PLATFORM_NAME=cpu
-# nohup python CAT.py > /scratch/yuhengtu/workspace/certified-eval/src/CAT.log 2>&1 &
-  
 def CAT_owen(z3, unasked_question_list, theta_mean):
     z3_unasked = z3[unasked_question_list]
     z3_unasked = jnp.array(z3_unasked)
@@ -126,8 +123,6 @@ def main(question_num, new_testtaker, strategy, subset_question_num, warmup, sta
         clear_caches()
         
 if __name__ == "__main__":
-    # debug python CAT.py --subset_question_num 5
-    
     parser = ArgumentParser()
     parser.add_argument("--seed", type=int, default=10)
     parser.add_argument("--algo", type=str, default="fisher")
@@ -149,4 +144,4 @@ if __name__ == "__main__":
         subset_question_num=args.subset_question_num, 
         warmup=args.warmup,
         state_dir = state_dir
-        )
+    )
