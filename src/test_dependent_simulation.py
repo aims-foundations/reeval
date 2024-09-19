@@ -4,6 +4,9 @@ from testtaker import SimulatedTestTaker, RealTestTaker
 from fit_theta import fit_theta_mcmc
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+from tueplots import bundles
+plt.rcParams.update(bundles.icml2022())
+plt.style.use('seaborn-v0_8-paper')
 from utils import set_seed, perform_t_test
 import pandas as pd
 
@@ -49,16 +52,17 @@ def sample_real_subsets(text_list, z3_list, Y_bar, subset_size):
     subset1_text_list = [text_sorted[i] for i in subset1_indices]
     subset2_text_list = [text_sorted[i] for i in subset2_indices]
 
-    return subset1_z3_list, subset1_text_list, subset2_z3_list, subset2_text_list
+    return subset1_z3_list, subset1_text_list, subset2_z3_list, subset2_text_list, subset1_indices, subset2_indices
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--data_type", type=str, default="synthetic") # synthetic or real
+    parser.add_argument("--data_type", type=str, required=True) # synthetic or real
+    parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--Y_bar", type=float, default=0.7)
     # synthetic data
     parser.add_argument("--question_num", type=int, default=1000)
-    parser.add_argument("--Y_bar", type=float, default=0.7)
     parser.add_argument("--theta_1", type=float, default=1)
     parser.add_argument("--theta_2", type=float, default=2)
     # real data
@@ -85,30 +89,85 @@ if __name__ == "__main__":
             asked_answer_list_2.append(testtaker2.ask(Z_2, i))
     
     elif args.data_type == "real":
-        z3_df = pd.read_csv('../data/real/irt_result/appendix1/Z/all_1PL_Z_clean.csv')
-        index_search_df = pd.read_csv('../data/real/response_matrix/appendix1/index_search.csv')
+        if args.dataset == "airbench":
+            z3_df = pd.read_csv('../data/real/irt_result/appendix1/Z/all_1PL_Z_clean.csv')
+            index_search_df = pd.read_csv('../data/real/response_matrix/appendix1/index_search.csv')
+            testtaker1_string = "Qwen_Qwen2-72B-Instruct"
+            testtaker2_string = "meta_llama-3-8b-chat"
+            
+            z3_list = z3_df['z3'].tolist()
+            filtered_index_search_df = index_search_df[index_search_df['is_deleted'] != 1]
+            text_list = filtered_index_search_df['text'].tolist()
+            assert len(z3_list) == len(text_list)
+            
+            Z_1, subset1_text_list, Z_2, subset2_text_list, _, _ = \
+                sample_real_subsets(text_list, z3_list, args.Y_bar, args.subset_size)
+                
+            testtaker1 = RealTestTaker(subset1_text_list, model_string=testtaker1_string)
+            testtaker2 = RealTestTaker(subset2_text_list, model_string=testtaker2_string)
+            
+            asked_question_list = list(range(args.subset_size))
+            
+            asked_answer_list_1 = []
+            for i in range(args.subset_size):
+                asked_answer_list_1.append(testtaker1.ask(Z_1, i))
+            
+            asked_answer_list_2 = []
+            for i in range(args.subset_size):
+                asked_answer_list_2.append(testtaker2.ask(Z_2, i))
+                
+        elif args.dataset == "mmlu":
+            z3_df = pd.read_csv('../data/real/irt_result/appendix1_mmlu/Z/pyMLE_1PL_Z.csv')
+            index_search_df = pd.read_csv('../data/real/response_matrix/appendix1_mmlu/non_mask_index_search.csv')
+            testtaker1_string = "anthropic/claude-3-haiku-20240307"
+            testtaker2_string = "meta/llama-3-70b"
+            
+            z3_list = z3_df['z3'].tolist()
+            filtered_index_search_df = index_search_df[index_search_df['is_deleted'] != 1]
+            text_list = filtered_index_search_df['text'].tolist()
+            assert len(z3_list) == len(text_list)
+            
+            Z_1, _, Z_2, _, subset1_indices, subset2_indices = \
+                sample_real_subsets(text_list, z3_list, args.Y_bar, args.subset_size)
+            
+            subset1_indices = subset1_indices.numpy()
+            subset2_indices = subset2_indices.numpy()
+            
+            asked_question_list = list(range(args.subset_size))
+            
+            df = pd.read_csv('../data/real/response_matrix/appendix1_mmlu/two_model_answer.csv')
+            asked_answer_list_1 = df.iloc[subset1_indices, 0].tolist()
+            asked_answer_list_2 = df.iloc[subset2_indices, 1].tolist()
+            asked_answer_list_1 = [torch.tensor(v, dtype=torch.float32) for v in asked_answer_list_1]
+            asked_answer_list_2 = [torch.tensor(v, dtype=torch.float32) for v in asked_answer_list_2]
+            assert len(asked_answer_list_1) == len(asked_answer_list_2) == len(asked_question_list)
+        
+        elif args.dataset == "syn_rea":
+            z3_df = pd.read_csv('../data/real/irt_result/appendix1_syn_rea/Z/pyMLE_1PL_Z.csv')
+            index_search_df = pd.read_csv('../data/real/response_matrix/appendix1_syn_rea/mask_index_search.csv')
+            testtaker1_string = "openai/code-cushman-001"
+            testtaker2_string = "ai21/j2-jumbo"
+            
+            z3_list = z3_df['z3'].tolist()
+            filtered_index_search_df = index_search_df[index_search_df['is_deleted'] != 1]
+            text_list = filtered_index_search_df['text'].tolist()
+            assert len(z3_list) == len(text_list)
+            
+            Z_1, _, Z_2, _, subset1_indices, subset2_indices = \
+                sample_real_subsets(text_list, z3_list, args.Y_bar, args.subset_size)
+            
+            subset1_indices = subset1_indices.numpy()
+            subset2_indices = subset2_indices.numpy()
+            
+            asked_question_list = list(range(args.subset_size))
+            
+            df = pd.read_csv('../data/real/response_matrix/appendix1_syn_rea/two_model_answer.csv')
+            asked_answer_list_1 = df.iloc[subset1_indices, 0].tolist()
+            asked_answer_list_2 = df.iloc[subset2_indices, 1].tolist()
+            asked_answer_list_1 = [torch.tensor(v, dtype=torch.float32) for v in asked_answer_list_1]
+            asked_answer_list_2 = [torch.tensor(v, dtype=torch.float32) for v in asked_answer_list_2]
+            assert len(asked_answer_list_1) == len(asked_answer_list_2) == len(asked_question_list)
 
-        z3_list = z3_df['z3'].tolist()
-        filtered_index_search_df = index_search_df[index_search_df['is_deleted'] != 1]
-        text_list = filtered_index_search_df['text'].tolist()
-        assert len(z3_list) == len(text_list)
-        
-        Z_1, subset1_text_list, Z_2, subset2_text_list = \
-            sample_real_subsets(text_list, z3_list, args.Y_bar, args.subset_size)
-            
-        testtaker1 = RealTestTaker(subset1_text_list, model_string="Qwen_Qwen2-72B-Instruct")
-        testtaker2 = RealTestTaker(subset2_text_list, model_string="meta_llama-3-8b-chat")
-        
-        asked_question_list = list(range(args.subset_size))
-        
-        asked_answer_list_1 = []
-        for i in range(args.subset_size):
-            asked_answer_list_1.append(testtaker1.ask(Z_1, i))
-        
-        asked_answer_list_2 = []
-        for i in range(args.subset_size):
-            asked_answer_list_2.append(testtaker2.ask(Z_2, i))
-            
     # CTT
     print("CTT")
     CTT_1_mean = sum(asked_answer_list_1) / len(asked_answer_list_1)
@@ -144,20 +203,19 @@ if __name__ == "__main__":
     plt.figure(figsize=(12, 6))
 
     plt.subplot(1, 2, 1)
-    plt.hist(theta_1_samples, bins=30, density=True, alpha=0.6, color='blue', label='theta_1_samples')
-    plt.hist(theta_2_samples, bins=30, density=True, alpha=0.6, color='green', label='theta_2_samples')
-    plt.title('Histogram of Theta Samples')
-    plt.xlabel('Theta')
-    plt.ylabel('Density')
-    plt.legend()
+    plt.hist(theta_1_samples, bins=30, density=True, alpha=0.4)
+    plt.hist(theta_2_samples, bins=30, density=True, alpha=0.4)
+    plt.xlabel(r'$\theta$', fontsize=25)
+    plt.tick_params(axis='both', labelsize=16)
 
     plt.subplot(1, 2, 2)
-    plt.hist(Z_1, bins=30, density=True, alpha=0.6, color='red', label='Z_1')
-    plt.hist(Z_2, bins=30, density=True, alpha=0.6, color='orange', label='Z_2')
-    plt.title('Histogram of Z')
-    plt.xlabel('Z')
-    plt.ylabel('Density')
-    plt.legend()
+    plt.hist(Z_1, bins=30, density=True, alpha=0.4)
+    plt.hist(Z_2, bins=30, density=True, alpha=0.4)
+    plt.xlabel(r'$z$')
+    plt.xlabel(r'$z$', fontsize=25)
+    plt.tick_params(axis='both', labelsize=16)
 
-    fig_dir = f'../plot/{args.data_type}'
-    plt.savefig(f'{fig_dir}/test_dependent_simulation.png')
+    if args.data_type == "synthetic":
+        plt.savefig(f'../plot/synthetic/test_dependent_simulation.png', dpi=300, bbox_inches='tight')
+    elif args.data_type == "real":
+        plt.savefig(f'../plot/real/{args.dataset}_test_dependent_simulation.png', dpi=300, bbox_inches='tight')

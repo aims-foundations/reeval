@@ -74,6 +74,7 @@ def main(serial, strategy):
         elif strategy=="owen":
             new_question_index = CAT_owen(z3, unasked_question_list, theta_hat)
 
+        print(z3[new_question_index])
         asked_question_list.append(new_question_index)
         unasked_question_list.remove(new_question_index)
         asked_answer_list.append(testtaker.ask(z3, new_question_index).cpu())

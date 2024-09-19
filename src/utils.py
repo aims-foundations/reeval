@@ -97,6 +97,20 @@ def perform_t_test(sample_1, sample_2, label=""):
     else:
         print(f"Fail to reject the null hypothesis for {label}.")
 
+import numpy as np
+
+def bootstrap_mean_variance(data_list):
+    num_samples=1000
+    ratio = 0.9
+    data = np.array(data_list)
+    bootstrap_means = []
+    for _ in range(num_samples):
+        bootstrap_sample = np.random.choice(data, size=ratio * len(data_list), replace=True)
+        bootstrap_means.append(np.mean(bootstrap_sample))
+    mean_bootstrap = np.mean(bootstrap_means)
+    variance_bootstrap = np.var(bootstrap_means)
+    return mean_bootstrap, variance_bootstrap
+
 if __name__ == "__main__":
     print(calculate_1d_wasserstein_distance([0, 1, 3], [5, 6, 8]))
     print(calculate_1d_wasserstein_distance([1, 1, 3], [5, 6, 8]))

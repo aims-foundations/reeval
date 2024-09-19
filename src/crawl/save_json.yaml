@@ -1,0 +1,44 @@
+method: grid
+parameters:
+  exp:
+    values:
+    - classic
+  start_string:
+    values:
+    - boolq
+    - narrative_qa
+    - synthetic_efficiency
+    - real_toxicity_prompts
+    - msmarco
+    - summarization_xsum
+    - synthetic_reasoning
+    - twitter_aae
+    - commonsense
+    - disinfo
+    - summarization_cnndm
+    - entity_data_imputation
+    - entity_matching
+    - raft
+    - ice
+    - wikifact
+    - mmlu
+    - babi_qa
+    - bold
+    - gsm
+    - math
+    - blimp
+    - copyright
+    - bbq
+    - dyck_language_np=3
+    - the_pile
+    - synthetic_reasoning_natural
+    - lsat_qa
+    - natural_qa
+    - imdb
+    - quac
+    - legal_support
+    - code
+    - civil_comments
+    - truthful_qa
+program: save_json.py
+project: save_json
