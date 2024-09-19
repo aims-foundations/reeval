@@ -3,16 +3,17 @@ import os
 import json
 import pandas as pd
 
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--exp', type=str, required=True)
+    parser.add_argument('--leaderboard', type=str, required=True)
     args = parser.parse_args()
-    exp = args.exp
     
-    if exp == "synthetic_reasoning":
+    if args.leaderboard == "synthetic_reasoning":
         # we delete the model T0pp (11B)
-        json_dir = '../../data/real/crawl/synthetic_reasoning_json'
-        output_dir = "../../data/real/response_matrix/normal_syn_reason"
+        json_dir = '../../../data/real/crawl/synthetic_reasoning_json'
+        output_dir = "../../../data/real/response_matrix/normal_syn_reason"
         start_strings = [
             "synthetic_reasoning:mode=induction",
             "synthetic_reasoning:mode=pattern_match", 
@@ -21,18 +22,18 @@ if __name__ == "__main__":
             "synthetic_reasoning_natural:difficulty=hard"
         ]
         
-    elif exp == "mmlu":
-        json_dir = '../../data/real/crawl/mmlu_json'
-        output_dir = "../../data/real/response_matrix/normal_mmlu"
-        start_strings = pd.read_csv('../../data/real/crawl/dataset_info_stats_mmlu.csv')['dataset_name'].tolist()
+    elif args.leaderboard == "mmlu":
+        json_dir = '../../../data/real/crawl/mmlu_json'
+        output_dir = "../../../data/real/response_matrix/normal_mmlu"
+        start_strings = pd.read_csv('../../../data/real/crawl/dataset_info_stats_mmlu.csv')['dataset_name'].tolist()
         start_strings = [s.split(",eval_split")[0] for s in start_strings]
         # delete mmlu:subject=miscellaneous
         start_strings = start_strings[:-1]
     
-    elif exp == "civil_comment":
+    elif args.leaderboard == "civil_comment":
         # we delete Palmyra X (43B)
-        json_dir = '../../data/real/crawl/civil_comment_json'
-        output_dir = "../../data/real/response_matrix/normal_civil_comment"
+        json_dir = '../../../data/real/crawl/civil_comment_json'
+        output_dir = "../../../data/real/response_matrix/normal_civil_comment"
         start_strings = [
             "civil_comments:demographic=LGBTQ",
             "civil_comments:demographic=all",
@@ -76,12 +77,12 @@ if __name__ == "__main__":
                 correct_answers = []
                 
                 for idx, question in enumerate(data['request_states']):
-                    if exp == "synthetic_reasoning" or exp == "civil_comment":
+                    if args.leaderboard == "synthetic_reasoning" or args.leaderboard == "civil_comment":
                         predicted_answer = question['result']['completions'][0]['text'].strip()
                         true_answer = question['instance']['references'][0]['output']['text'].strip()
                         correct_answers.append(int(predicted_answer==true_answer))
                         
-                    elif exp == "mmlu":
+                    elif args.leaderboard == "mmlu":
                          # Step 1: Get the predicted answer from the model output, e.g., "B"
                         predicted_answer = question['result']['completions'][0]['text'].strip()  # e.g., "B"
                         # Step 2: Get the corresponding text for the predicted answer, Maps "B" to the actual text answer
@@ -178,12 +179,12 @@ if __name__ == "__main__":
                 correct_answers = []
                 
                 for idx, question in enumerate(data['request_states']):
-                    if exp == "synthetic_reasoning" or exp == "civil_comment":
+                    if args.leaderboard == "synthetic_reasoning" or args.leaderboard == "civil_comment":
                         predicted_answer = question['result']['completions'][0]['text'].strip()
                         true_answer = question['instance']['references'][0]['output']['text'].strip()
                         correct_answers.append(int(predicted_answer==true_answer))
                         
-                    elif exp == "mmlu":
+                    elif args.leaderboard == "mmlu":
                          # Step 1: Get the predicted answer from the model output, e.g., "B"
                         predicted_answer = question['result']['completions'][0]['text'].strip()  # e.g., "B"
                         # Step 2: Get the corresponding text for the predicted answer, Maps "B" to the actual text answer

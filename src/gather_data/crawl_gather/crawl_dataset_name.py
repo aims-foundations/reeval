@@ -15,7 +15,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     base_url = f'https://crfm.stanford.edu/{args.leaderboard}/classic/latest/#/runs?page='
-    save_path = f'../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv'
+    save_path = f'../../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv'
     if args.leaderboard == "classic":
         total_pages = 86+1
     elif args.leaderboard == "lite":

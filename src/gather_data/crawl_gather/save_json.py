@@ -11,9 +11,9 @@ if __name__ == "__main__":
     parser.add_argument('--start_string', type=str, required=True)
     args = parser.parse_args()
   
-    full_strings_all = pd.read_csv(f'../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv')['Run'].tolist()
+    full_strings_all = pd.read_csv(f'../../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv')['Run'].tolist()
     
-    save_dir = f'../../data/real/crawl/{args.start_string}_json'
+    save_dir = f'../../../data/real/crawl/{args.start_string}_json'
     os.makedirs(save_dir, exist_ok=True)
     full_strings = [f for f in full_strings_all if f.startswith(args.start_string)]
     for full_string in full_strings:

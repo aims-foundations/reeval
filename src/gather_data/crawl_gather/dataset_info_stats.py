@@ -37,7 +37,7 @@ if __name__ == "__main__":
     parser.add_argument('--leaderboard', type=str, required=True) # classic, lite, mmlu
     args = parser.parse_args()
 
-    file_path = f'../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv'
+    file_path = f'../../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv'
     df = pd.read_csv(file_path)
 
     df['cleaned_run'] = df['Run'].apply(clean_dataset_name)
@@ -45,28 +45,26 @@ if __name__ == "__main__":
     model_counts = df.groupby('cleaned_run').size().tolist()
     first_run_list = df.groupby('cleaned_run')['Run'].first().tolist()
     
-    output_path = f'../../data/real/crawl/dataset_info_stats_{args.leaderboard}.csv'
+    output_path = f'../../../data/real/crawl/dataset_info_stats_{args.leaderboard}.csv'
 
     for i, exp_string in enumerate(tqdm(first_run_list)):
-        if i == 0:
-            existing_df = pd.DataFrame(
-                columns=['dataset_name', 'model_count', 'question_count']
-            )
-        else:
-            existing_df = pd.read_csv(output_path)
-
         question_count = get_question_count(exp_string, args.leaderboard)
-        new_data = pd.DataFrame([{
+        df_new = pd.DataFrame([{
             'dataset_name': dataset_names[i],
             'model_count': model_counts[i],
             'question_count': question_count
         }])
 
-        existing_df = pd.concat([existing_df, new_data], ignore_index=True)
-        existing_df = existing_df.sort_values(
+        if i == 0:
+            df_updated = df_new
+        else:
+            df_existing = pd.read_csv(output_path)
+            df_updated = pd.concat([df_existing, df_new], ignore_index=True)
+    
+        df_updated = df_updated.sort_values(
             by=['model_count', 'question_count'], ascending=[False, False]
         )
-        existing_df.to_csv(output_path, index=False)
-
+        df_updated.to_csv(output_path, index=False)    
+        
 
 
