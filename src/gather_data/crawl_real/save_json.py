@@ -21,7 +21,6 @@ if __name__ == "__main__":
         if os.path.exists(save_path):
             continue
 
-        print(f"new: {save_path}")
         if args.leaderboard == "classic":
             base_url = 'https://storage.googleapis.com/crfm-helm-public/benchmark_output/runs/v0.'
             max_version = 4

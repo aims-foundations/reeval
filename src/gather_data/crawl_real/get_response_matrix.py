@@ -50,7 +50,7 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     
     full_strings_all = pd.read_csv(f'../../../data/gather_data/crawl_real/crawl_dataset_name_{args.leaderboard}.csv')['Run'].tolist()
-    full_strings = [f for f in full_strings_all if f.startswith(args.start_string)]
+    full_strings = [f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.start_string)]
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])
     non_model_strings = list(set([delete_model_name(f) for f in full_strings]))
@@ -64,9 +64,9 @@ if __name__ == "__main__":
         single_matrix = {name: [] for name in all_model_names}
         
         for filename in os.listdir(input_dir):
-            file_name_withou_json = filename.replace(".json", "")
-            if filename.endswith('.json') and (delete_model_name(file_name_withou_json) == non_model_string):
-                model_name = extract_model_name(file_name_withou_json)
+            file_name_without_json = filename.replace(".json", "")
+            if filename.endswith('.json') and (delete_model_name(file_name_without_json) == non_model_string):
+                model_name = extract_model_name(file_name_without_json)
                 with open(f"{input_dir}/{filename}", 'r') as f:
                     data = json.load(f)
                 
