@@ -4,7 +4,7 @@ import yaml
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--leaderboard', type=str, required=True) # classic
+    parser.add_argument('--leaderboard', type=str, default="classic") # classic
     args = parser.parse_args()
   
     stats_strings = pd.read_csv(f'../../../data/gather_data/crawl_real/dataset_info_stats_{args.leaderboard}.csv')['dataset_name'].tolist()

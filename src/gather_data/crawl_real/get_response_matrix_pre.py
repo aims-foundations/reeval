@@ -4,7 +4,7 @@ import yaml
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--leaderboard', type=str, required=True) # classic
+    parser.add_argument('--leaderboard', type=str, default="classic") # classic
     args = parser.parse_args()
   
     stats_strings = pd.read_csv(f'../../../data/gather_data/crawl_real/dataset_info_stats_{args.leaderboard}.csv')['dataset_name'].tolist()
@@ -25,5 +25,5 @@ if __name__ == "__main__":
         }
     }
 
-    with open('save_json.yaml', 'w') as yaml_file:
+    with open('get_response_matrix.yaml', 'w') as yaml_file:
         yaml.dump(yaml_content, yaml_file, default_flow_style=False)

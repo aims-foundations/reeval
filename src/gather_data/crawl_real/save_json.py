@@ -7,7 +7,7 @@ import wandb
 if __name__ == "__main__":
     wandb.init(mode = "offline")
     parser = argparse.ArgumentParser()
-    parser.add_argument('--leaderboard', type=str, required=True) # classic, mmlu
+    parser.add_argument('--leaderboard', type=str, default="classic") # classic, mmlu
     parser.add_argument('--start_string', type=str, required=True) # use wandb sweep, mmlu
     args = parser.parse_args()
   
