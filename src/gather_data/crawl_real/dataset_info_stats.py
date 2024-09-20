@@ -17,7 +17,7 @@ def get_question_count(exp_string, leaderboard):
     elif leaderboard == "mmlu":
         base_url = 'https://storage.googleapis.com/crfm-helm-public/mmlu/benchmark_output/runs/v1.'
         max_version = 8
-        
+
     for i in range(max_version + 1):
         url = f'{base_url}{i}.0/{exp_string}/scenario_state.json'
         response = requests.get(url)
@@ -25,9 +25,9 @@ def get_question_count(exp_string, leaderboard):
             json_data = response.json()
             question_count = len(json_data.get('request_states', []))
             return question_count
-        
-        print(f"Could not retrieve data for {exp_string} from any version, return 0")
-        return 0
+
+    print(f"Could not retrieve data for {exp_string} from any version, return 0")
+    return 0
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

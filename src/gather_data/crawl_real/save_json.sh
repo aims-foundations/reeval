@@ -2,7 +2,7 @@
 
 # wandb sweep save_json.yaml
 
-NUM_AGENTS=8
+NUM_AGENTS=2
 HOSTNAME=$(hostname)
 
 for agent_num in $(seq 1 $NUM_AGENTS); do

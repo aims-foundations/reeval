@@ -39,7 +39,7 @@ def get_bool_answers(data):
     return bool_answers
 
 if __name__ == "__main__":
-    wandb.init(mode = "offline")
+    wandb.init()
     parser = argparse.ArgumentParser()
     parser.add_argument('--leaderboard', type=str, default="classic") # classic, mmlu
     parser.add_argument('--start_string', type=str, required=True) # use wandb sweep, mmlu
@@ -53,7 +53,6 @@ if __name__ == "__main__":
     full_strings = [f for f in full_strings_all if f.startswith(args.start_string)]
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])
-    
     non_model_strings = list(set([delete_model_name(f) for f in full_strings]))
     
     # response matrix
@@ -65,11 +64,12 @@ if __name__ == "__main__":
         single_matrix = {name: [] for name in all_model_names}
         
         for filename in os.listdir(input_dir):
-            if filename.endswith('.json') and (delete_model_name(filename) == f"{non_model_string}.json"):
-                model_name = extract_model_name(filename)
+            file_name_withou_json = filename.replace(".json", "")
+            if filename.endswith('.json') and (delete_model_name(file_name_withou_json) == non_model_string):
+                model_name = extract_model_name(file_name_withou_json)
                 with open(f"{input_dir}/{filename}", 'r') as f:
                     data = json.load(f)
-                    
+                
                 len_q = len(data['request_states'])
                 if len_q > max_len:
                     max_len = len_q
@@ -77,6 +77,7 @@ if __name__ == "__main__":
                     
                 bool_answers = get_bool_answers(data)
                 single_matrix[model_name] = bool_answers
+            
         for model_name, bool_answers in single_matrix.items():
             single_matrix[model_name] += [-1] * (max_len - len(single_matrix[model_name]))
         
@@ -89,9 +90,10 @@ if __name__ == "__main__":
         if i == 0:
             all_matrix_df = single_matrix_df
         else:
-            assert (all_matrix_df.index == single_matrix_df.index).all()
             all_matrix_df = pd.concat([all_matrix_df, single_matrix_df], axis=1)
-    
+
+    assert all_matrix_df.shape[0] == len(all_model_names)
+
     bool_delete_list = []
     for col_name, col_data in all_matrix_df.items():
         if set(col_data.unique()).issubset({0, -1}) or set(col_data.unique()).issubset({1, -1}):
@@ -113,5 +115,5 @@ if __name__ == "__main__":
         base_idx += max_lens[i]
 
     search_df = pd.DataFrame(search_list, columns=["idx", "text", "is_deleted"])
-    search_df.to_csv(f"{output_dir}/search.csv", index=False)
+    search_df.to_csv(f"{output_dir}/search.csv", index=False, escapechar='\\')
 
