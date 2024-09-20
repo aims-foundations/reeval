@@ -5,39 +5,39 @@ parameters:
     - classic
   start_string:
     values:
-    - the_pile
-    - civil_comments
-    - twitter_aae
-    - disinfo
-    - truthful_qa
-    - legal_support
-    - gsm
-    - natural_qa
-    - real_toxicity_prompts
-    - imdb
-    - dyck_language_np=3
-    - math
-    - summarization_cnndm
-    - commonsense
-    - entity_data_imputation
-    - raft
-    - ice
-    - quac
-    - wikifact
-    - copyright
-    - lsat_qa
-    - synthetic_reasoning_natural
-    - synthetic_reasoning
     - narrative_qa
-    - bold
     - code
-    - blimp
-    - summarization_xsum
-    - entity_matching
-    - synthetic_efficiency
-    - msmarco
-    - bbq
-    - boolq
+    - synthetic_reasoning
+    - summarization_cnndm
+    - natural_qa
+    - civil_comments
+    - disinfo
+    - gsm
     - babi_qa
+    - imdb
+    - bbq
+    - dyck_language_np=3
+    - legal_support
+    - math
+    - twitter_aae
+    - synthetic_reasoning_natural
+    - lsat_qa
+    - entity_matching
+    - wikifact
+    - ice
+    - commonsense
+    - copyright
+    - blimp
+    - entity_data_imputation
+    - boolq
+    - truthful_qa
+    - quac
+    - summarization_xsum
+    - the_pile
+    - real_toxicity_prompts
+    - bold
+    - msmarco
+    - raft
+    - synthetic_efficiency
 program: save_json.py
 project: save_json

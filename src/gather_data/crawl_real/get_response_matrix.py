@@ -45,7 +45,7 @@ if __name__ == "__main__":
     parser.add_argument('--start_string', type=str, required=True) # use wandb sweep, mmlu
     args = parser.parse_args()
   
-    input_dir = f'../../../data/gather_data/crawl_real/{args.start_string}_json'
+    input_dir = f'../../../data/gather_data/crawl_real/jsons/{args.start_string}_json'
     output_dir = f'../../../data/pre_calibration/{args.start_string}'
     os.makedirs(output_dir, exist_ok=True)
     
@@ -95,11 +95,11 @@ if __name__ == "__main__":
     bool_delete_list = []
     for col_name, col_data in all_matrix_df.items():
         if set(col_data.unique()).issubset({0, -1}) or set(col_data.unique()).issubset({1, -1}):
-            all_responses_df = all_responses_df.drop(columns=[col_name])
+            all_matrix_df = all_matrix_df.drop(columns=[col_name])
             bool_delete_list.append(1)
         else:
             bool_delete_list.append(0)
-    all_responses_df.to_csv(f'{output_dir}/matrix.csv', index_label=None)
+    all_matrix_df.to_csv(f'{output_dir}/matrix.csv', index_label=None)
 
     # index search
     search_list = []
