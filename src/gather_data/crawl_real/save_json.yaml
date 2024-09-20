@@ -1,43 +1,43 @@
 method: grid
 parameters:
-  exp:
+  leaderboard:
     values:
     - classic
   start_string:
     values:
-    - boolq
-    - narrative_qa
-    - synthetic_efficiency
-    - real_toxicity_prompts
-    - msmarco
-    - summarization_xsum
-    - synthetic_reasoning
+    - the_pile
+    - civil_comments
     - twitter_aae
-    - commonsense
     - disinfo
+    - truthful_qa
+    - legal_support
+    - gsm
+    - natural_qa
+    - real_toxicity_prompts
+    - imdb
+    - dyck_language_np=3
+    - math
     - summarization_cnndm
+    - commonsense
     - entity_data_imputation
-    - entity_matching
     - raft
     - ice
-    - wikifact
-    - babi_qa
-    - bold
-    - gsm
-    - math
-    - blimp
-    - copyright
-    - bbq
-    - dyck_language_np=3
-    - the_pile
-    - synthetic_reasoning_natural
-    - lsat_qa
-    - natural_qa
-    - imdb
     - quac
-    - legal_support
+    - wikifact
+    - copyright
+    - lsat_qa
+    - synthetic_reasoning_natural
+    - synthetic_reasoning
+    - narrative_qa
+    - bold
     - code
-    - civil_comments
-    - truthful_qa
+    - blimp
+    - summarization_xsum
+    - entity_matching
+    - synthetic_efficiency
+    - msmarco
+    - bbq
+    - boolq
+    - babi_qa
 program: save_json.py
 project: save_json
