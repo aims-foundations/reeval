@@ -1,7 +1,7 @@
 import argparse
 import pandas as pd
 import requests
-import osxs
+import os
 import wandb
 
 if __name__ == "__main__":
