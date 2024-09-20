@@ -6,7 +6,7 @@ import pandas as pd
 from dataset_info_stats import delete_model_name
 
 def extract_model_name(filename):
-    match = re.search(r'model=[^,]*', filename)
+    match = re.search(r'model=([^,]*)', filename)
     return match.group(0)
 
 def get_bool_answers(data):
@@ -51,9 +51,11 @@ if __name__ == "__main__":
     full_strings = [f for f in full_strings_all if f.startswith(args.start_string)]
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])
+    print(f"all_model_names:{all_model_names}\n")
     
     non_model_strings = list(set([delete_model_name(f) for f in full_strings]))
-        
+    print(f"non_model_strings:{non_model_strings}\n")
+    
     max_lens = []
     max_len_file_names = []
     for i, non_model_string in enumerate(non_model_strings):
@@ -72,17 +74,16 @@ if __name__ == "__main__":
                     max_len = len_q
                     max_len_file_name = filename
                     
-                model_name = data['adapter_spec']['model']
                 bool_answers = get_bool_answers(data)
-
                 single_matrix[model_name] = bool_answers
-        
+        print(single_matrix)
         for model_name, bool_answers in single_matrix.items():
             single_matrix[model_name] += [-1] * (max_len - len(single_matrix[model_name]))
+        print(f"single_matrix:{single_matrix}\n")
         
         max_lens.append(max_len)
         max_len_file_names.append(max_len_file_name)
-           
+        
         single_matrix_df = pd.DataFrame(single_matrix).T
         single_matrix_df.columns = [f"{j}_{non_model_string}" for j in range(max_len)]
         
@@ -91,7 +92,7 @@ if __name__ == "__main__":
         else:
             assert (all_matrix_df.index == single_matrix_df.index).all()
             all_matrix_df = pd.concat([all_matrix_df, single_matrix_df], axis=1)
-            
+        print(f"all_matrix_df:{all_matrix_df}\n")
     
     # bool_delete_list = []
     # for col_name, col_data in all_matrix_df.items():
