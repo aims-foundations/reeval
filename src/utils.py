@@ -1,4 +1,5 @@
 import warnings
+from matplotlib import gridspec
 import torch
 import numpy as np
 import random
@@ -145,3 +146,30 @@ def theta_corr_plot(
     plt.title(f'Correlation: {corr:.2f}', fontsize=45)
     plt.tick_params(axis='both', labelsize=35)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    
+def plot_scatter_with_histograms(z3_py, z3_r, save_path, x_label=r'Our $z_3$', y_label=r'mirt $z_3$'):
+    plt.figure(figsize=(10, 10))
+    gs = gridspec.GridSpec(2, 2, width_ratios=[4, 1], height_ratios=[1, 4], wspace=0.05, hspace=0.05)
+
+    # Scatter plot between z3_py and z3_r
+    ax_main = plt.subplot(gs[1, 0])
+    ax_main.scatter(z3_py, z3_r)
+    ax_main.set_xlabel(x_label)
+    ax_main.set_ylabel(y_label)
+
+    # Calculate correlation and add title at the bottom
+    corr_np = np.corrcoef(z3_py, z3_r)[0, 1]
+    plt.figtext(0.5, 0.02, f'Correlation: {corr_np:.2f}', ha='center')
+
+    # Histogram for z3_py (top)
+    ax_xhist = plt.subplot(gs[0, 0], sharex=ax_main)
+    ax_xhist.hist(z3_py, bins=30, color='gray', alpha=0.7)
+    ax_xhist.axis('off')
+
+    # Histogram for z3_r (right)
+    ax_yhist = plt.subplot(gs[1, 1], sharey=ax_main)
+    ax_yhist.hist(z3_r, bins=30, color='gray', alpha=0.7, orientation='horizontal')
+    ax_yhist.axis('off')
+
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()

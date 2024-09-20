@@ -11,11 +11,11 @@ if __name__ == "__main__":
     parser.add_argument('--start_string', type=str, required=True) # use wandb sweep, mmlu
     args = parser.parse_args()
   
-    full_strings_all = pd.read_csv(f'../../../data/gather_data/crawl_real/crawl_dataset_name_{args.leaderboard}.csv')['Run'].tolist()
-    
     output_dir = f'../../../data/gather_data/crawl_real/jsons/{args.start_string}_json'
     os.makedirs(output_dir, exist_ok=True)
-    full_strings = [f for f in full_strings_all if f.startswith(args.start_string)]
+    
+    full_strings_all = pd.read_csv(f'../../../data/gather_data/crawl_real/crawl_dataset_name_{args.leaderboard}.csv')['Run'].tolist()
+    full_strings = [f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.start_string)]
     for full_string in full_strings:
         save_path = f'{output_dir}/{full_string}.json'
         if os.path.exists(save_path):

@@ -1,7 +1,5 @@
-import argparse
 import os
 import yaml
-import pandas as pd
 
 if __name__ == "__main__":
     input_dir = '../data/pre_calibration/'
