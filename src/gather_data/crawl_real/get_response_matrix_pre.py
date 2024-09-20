@@ -12,8 +12,8 @@ if __name__ == "__main__":
     start_strings = [s for s in start_strings if s != "mmlu"]
     
     yaml_content = {
-        'program': 'save_json.py',
-        'project': 'save_json',
+        'program': 'get_response_matrix.py',
+        'project': 'get_response_matrix',
         'method': 'grid',
         'parameters': {
             'leaderboard': {
