@@ -15,7 +15,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     base_url = f'https://crfm.stanford.edu/{args.leaderboard}/classic/latest/#/runs?page='
-    output_dir = "../../../data/real/crawl"
+    output_dir = "../../../data/gather_data/crawl_real"
     os.makedirs(output_dir, exist_ok=True)
     output_path = f'{output_dir}/crawl_dataset_name_{args.leaderboard}.csv'
     if args.leaderboard == "classic":

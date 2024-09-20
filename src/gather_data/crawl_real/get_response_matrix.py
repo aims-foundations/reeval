@@ -45,11 +45,11 @@ if __name__ == "__main__":
     parser.add_argument('--start_string', type=str, required=True) # use wandb sweep, mmlu
     args = parser.parse_args()
   
-    input_dir = f'../../../data/real/crawl/{args.start_string}_json'
+    input_dir = f'../../../data/gather_data/crawl_real/{args.start_string}_json'
     output_dir = f'../../../data/pre_calibration/{args.start_string}'
     os.makedirs(output_dir, exist_ok=True)
     
-    full_strings_all = pd.read_csv(f'../../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv')['Run'].tolist()
+    full_strings_all = pd.read_csv(f'../../../data/gather_data/crawl_real/crawl_dataset_name_{args.leaderboard}.csv')['Run'].tolist()
     full_strings = [f for f in full_strings_all if f.startswith(args.start_string)]
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])

@@ -34,7 +34,7 @@ if __name__ == "__main__":
     parser.add_argument('--leaderboard', type=str, required=True) # classic, lite, mmlu
     args = parser.parse_args()
 
-    input_path = f'../../../data/real/crawl/crawl_dataset_name_{args.leaderboard}.csv'
+    input_path = f'../../../data/gather_data/crawl_real/crawl_dataset_name_{args.leaderboard}.csv'
     df_input = pd.read_csv(input_path)
 
     df_input['cleaned_run'] = df_input['Run'].apply(delete_model_name)
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     model_counts = df_input.groupby('cleaned_run').size().tolist()
     first_run_list = df_input.groupby('cleaned_run')['Run'].first().tolist()
     
-    output_path = f'../../../data/real/crawl/dataset_info_stats_{args.leaderboard}.csv'
+    output_path = f'../../../data/gather_data/crawl_real/dataset_info_stats_{args.leaderboard}.csv'
 
     for i, exp_string in enumerate(tqdm(first_run_list)):
         question_count = get_question_count(exp_string, args.leaderboard)
