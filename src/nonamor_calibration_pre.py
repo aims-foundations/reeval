@@ -3,7 +3,7 @@ import yaml
 
 if __name__ == "__main__":
     input_dir = '../data/pre_calibration/'
-    folder_list = [f for f in os.listdir(input_dir) if os.path.isdir(os.path.join(input_dir, f))]
+    folder_list = [f for f in os.listdir(input_dir)]
     
     yaml_content = {
         'program': 'nonamor_calibration.py',
