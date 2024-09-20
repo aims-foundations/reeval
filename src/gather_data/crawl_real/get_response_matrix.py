@@ -32,10 +32,28 @@ def get_bool_answers(data):
                 bool_answers.append(1)
             else:
                 bool_answers.append(0)
+            
         else:
-            predicted_answer = question['result']['completions'][0]['text'].strip()
-            true_answer = question['instance']['references'][0]['output']['text'].strip()
-            bool_answers.append(int(predicted_answer==true_answer))
+            len_predicted_answers = len(question['result']['completions'])
+            predicted_answers = [question['result']['completions'][i]['text'].strip() for i in range(len_predicted_answers)]
+            len_true_answers = len(question['instance']['references'])
+            true_answers = [question['instance']['references'][i]['output']['text'].strip() for i in range(len_true_answers)]
+            
+            correct_tag = False
+            for predicted_answer in predicted_answers:
+                if predicted_answer in true_answers:
+                    correct_tag = True
+                    break
+            bool_answers.append(int(correct_tag))
+            
+    return bool_answers
+
+def get_bool_answers_logprob(data, threshold):
+    bool_answers = []
+    for question in data['request_states']:
+        assert not question['instance']['references']
+        logprob = question["result"]["completions"][0]["logprob"]
+        bool_answers.append(int(logprob > threshold))
     return bool_answers
 
 if __name__ == "__main__":
@@ -54,6 +72,20 @@ if __name__ == "__main__":
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])
     non_model_strings = list(set([delete_model_name(f) for f in full_strings]))
+    
+    logprob_tag = False
+    with open(f"{input_dir}/{full_strings[0]}.json", 'r') as f:
+        data = json.load(f)
+    if not data['request_states'][0]['instance']['references']:
+        logprob_tag = True
+        logprobs = []
+        for full_string in full_strings:
+            with open(f"{input_dir}/{full_string}.json", 'r') as f:
+                data = json.load(f)
+            for question in data['request_states']:
+                logprob = question["result"]["completions"][0]["logprob"]
+                logprobs.append(logprob)
+        threshold = sum(logprobs)/len(logprobs)
     
     # response matrix
     max_lens = []
@@ -74,8 +106,11 @@ if __name__ == "__main__":
                 if len_q > max_len:
                     max_len = len_q
                     max_len_file_name = filename
-                    
-                bool_answers = get_bool_answers(data)
+                
+                if logprob_tag:
+                    bool_answers = get_bool_answers_logprob(data, threshold)
+                else:
+                    bool_answers = get_bool_answers(data)
                 single_matrix[model_name] = bool_answers
             
         for model_name, bool_answers in single_matrix.items():
