@@ -35,6 +35,7 @@ def goodness_of_fit_1PL(
     assert y_df.shape[1] == z.shape[0]
     assert y_df.shape[0] == theta.shape[0]
 
+    theta = theta.detach().cpu()
     bin_start = torch.min(theta)
     bin_end = torch.max(theta)
     bins = torch.linspace(bin_start, bin_end, bin_size)
