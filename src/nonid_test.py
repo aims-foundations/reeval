@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
-from utils import item_response_fn_1PL, set_seed, perform_t_test, bootstrap_mean_variance
+from utils import item_response_fn_1PL, set_seed, perform_t_test, bootstrap_mean_var
 from nonamor_calibration import nonamor_calibration
 
 def inverse_item_response_fn_1PL(y,theta):
@@ -98,11 +98,11 @@ if __name__ == "__main__":
     
     # CTT
     print("CTT")
-    mean_dumb, var_dumb = bootstrap_mean_variance(dumb_answers)
+    mean_dumb, var_dumb = bootstrap_mean_var(dumb_answers)
     print(f"dumb CTT mean = {mean_dumb}")
     print(f"dumb CTT var= {var_dumb}")
     
-    mean_smart, var_smart = bootstrap_mean_variance(smart_answers)
+    mean_smart, var_smart = bootstrap_mean_var(smart_answers)
     print(f"smart CTT mean = {mean_smart}")
     print(f"smart CTT var = {var_smart}")
     

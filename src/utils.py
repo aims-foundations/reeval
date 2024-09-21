@@ -27,13 +27,12 @@ def set_seed(seed):
 def goodness_of_fit_1PL(
     z: torch.Tensor,
     theta: torch.Tensor,
-    y_path: str,
+    y: torch.Tensor,
     plot_path: str,
     bin_size: int=7,
 ):
-    y_df = pd.read_csv(y_path, index_col=0)
-    assert y_df.shape[1] == z.shape[0]
-    assert y_df.shape[0] == theta.shape[0]
+    assert y.shape[1] == z.shape[0]
+    assert y.shape[0] == theta.shape[0]
 
     theta = theta.detach().cpu()
     bin_start = torch.min(theta)
@@ -44,7 +43,7 @@ def goodness_of_fit_1PL(
     diff_list = []
     for i in range(z.shape[0]):
         single_z = z[i]
-        y_col = y_df.iloc[:, i].values
+        y_col = y[:, i]
 
         for j in range(bins.shape[0] - 1):
             bin_mask = (theta >= bins[j]) & (theta < bins[j + 1])
@@ -52,8 +51,7 @@ def goodness_of_fit_1PL(
                 y_empirical = y_col[(bin_mask) & (y_col != -1)].mean()
 
                 theta_mid = (bins[j] + bins[j + 1]) / 2
-                theta_mid_tensor = torch.tensor([theta_mid], dtype=torch.float32)
-                y_theoretical = item_response_fn_1PL(theta_mid_tensor, single_z).item()
+                y_theoretical = item_response_fn_1PL(theta_mid, single_z).item()
 
                 diff = abs(y_empirical - y_theoretical)
                 diff_list.append(diff)
@@ -74,7 +72,7 @@ def goodness_of_fit_1PL(
     plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f}', ha='center', va='bottom', fontsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
 
-def bootstrap_mean_variance(data, ratio = 0.9, num_samples=1000):
+def bootstrap_mean_var(data, ratio = 0.9, num_samples=1000):
     data = np.array(data)
     mean = np.mean(data)
     
