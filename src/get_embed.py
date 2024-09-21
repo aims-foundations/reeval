@@ -23,7 +23,7 @@ def get_embed(
     
     return emb['text']
     
-def get_single_embed(search_path, z_path, hf_repo):
+def get_single_embed(search_path, z_path, hf_repo, bs=1024):
     search_df = pd.read_csv(search_path)
     z_df = pd.read_csv(z_path, usecols=["z"])
     deleted_col_indices = search_df[search_df.loc[:, "is_deleted"] == 1].index.tolist()
@@ -35,7 +35,7 @@ def get_single_embed(search_path, z_path, hf_repo):
     tzpair_df = pd.concat([text_df, z_df], axis=1)
     tzpair_dataset = Dataset.from_pandas(tzpair_df)
     
-    embed = get_embed(tzpair_dataset) # list of list
+    embed = get_embed(tzpair_dataset, bs=bs) # list of list
     assert len(embed) == len(text_df) == len(z_df)
     
     push_df = pd.DataFrame({
@@ -61,6 +61,7 @@ if __name__ == "__main__":
     wandb.init()
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
+    parser.add_argument('--bs', type=int, default=1024)
     args = parser.parse_args()
     
     load_dotenv()
@@ -70,7 +71,8 @@ if __name__ == "__main__":
     get_single_embed(
         search_path = f'../data/pre_calibration/{args.dataset}/search.csv',
         z_path = f'../data/calibration/{args.dataset}/nonamor_z.csv',
-        hf_repo = f'stair-lab/reeval_{args.dataset}-embed'
+        hf_repo = f'stair-lab/reeval_{args.dataset}-embed',
+        bs=args.bs
     )
 
     
