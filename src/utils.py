@@ -1,10 +1,10 @@
 import warnings
 from matplotlib import gridspec
+import pandas as pd
 import torch
 import numpy as np
 import random
 from scipy.stats import ttest_ind
-import os
 import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
@@ -21,6 +21,59 @@ def set_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
+def goodness_of_fit_1PL(
+    z: torch.Tensor,
+    theta: torch.Tensor,
+    y_path: str,
+    plot_path: str,
+    bin_size: int=7,
+):
+    y_df = pd.read_csv(y_path, index_col=0)
+    assert y_df.shape[1] == z.shape[0]
+    assert y_df.shape[0] == theta.shape[0]
+
+    bin_start = torch.min(theta)
+    bin_end = torch.max(theta)
+    bins = torch.linspace(bin_start, bin_end, bin_size)
+    print(bins) # [-3. -2. -1.  0.  1.  2.  3.]
+
+    diff_list = []
+    for i in range(z.shape[0]):
+        single_z = z[i]
+        y_col = y_df.iloc[:, i].values
+
+        for j in range(bins.shape[0] - 1):
+            bin_mask = (theta >= bins[j]) & (theta < bins[j + 1])
+            if bin_mask.sum() > 0: # bin not empty
+                y_empirical = y_col[(bin_mask) & (y_col != -1)].mean()
+
+                theta_mid = (bins[j] + bins[j + 1]) / 2
+                theta_mid_tensor = torch.tensor([theta_mid], dtype=torch.float32)
+                y_theoretical = item_response_fn_1PL(theta_mid_tensor, single_z).item()
+
+                diff = abs(y_empirical - y_theoretical)
+                diff_list.append(diff)
+
+    diff_array = np.array(diff_list)
+    mean_diff = diff_array.mean()
+    std_diff = diff_array.std()
+
+    print(f'Mean of differences: {mean_diff}')
+    print(f'Standard deviation of differences: {std_diff}')
+
+    plt.figure(figsize=(10, 6))
+    plt.hist(diff_list, bins=40, density=True, alpha=0.4)
+    plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
+    plt.tick_params(axis='both', labelsize=25)
+    plt.xlim(0, 1)
+    plt.axvline(mean_diff, linestyle='--')
+    plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f}', 
+            ha='center', va='bottom', fontsize=25)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    
+    
+    
+    
 def perform_t_test(sample_1, sample_2, label=""):
     print(f"{label} T-test:")
     print(f"Null Hypothesis (H0): The means of the two samples are equal.")
@@ -44,61 +97,6 @@ def bootstrap_mean_variance(data_list):
     variance_bootstrap = np.var(bootstrap_means)
     return mean_bootstrap, variance_bootstrap
 
-def goodness_of_fit_1PL(
-    Z,
-    theta,
-    y_df,
-    plot_path,
-    bin_size=7,
-):
-    assert y_df.shape[1] == len(Z), f"Number of columns in y_df ({y_df.shape[1]}) does not match the length of Z ({len(Z)})"
-    assert y_df.shape[0] == len(theta), f"Number of rows in y_df ({y_df.shape[0]}) does not match the length of theta ({len(theta)})"
-
-    theta = torch.tensor(theta, dtype=torch.float32)
-    if torch.isnan(theta).any():
-        warnings.warn("Warning: 'theta' contains NaN values.")
-    theta_no_nan = theta[~torch.isnan(theta)]
-    bin_start = torch.min(theta_no_nan)
-    bin_end = torch.max(theta_no_nan)
-    bins = np.linspace(bin_start, bin_end, bin_size)
-    print(bins)
-    # [-3. -2. -1.  0.  1.  2.  3.]
-
-    diff_list = []
-    for i in range(len(Z)):
-        single_z3 = torch.tensor(Z[i], dtype=torch.float32)
-
-        y_col = y_df.iloc[:, i].values
-
-        for j in range(len(bins) - 1):
-            bin_mask = (theta >= bins[j]) & (theta < bins[j + 1])
-            if bin_mask.sum() > 0: # bin not empty
-                y_empirical = y_col[(bin_mask) & (y_col != -1)].mean()
-
-                theta_mid = (bins[j] + bins[j + 1]) / 2
-                theta_mid_tensor = torch.tensor([theta_mid], dtype=torch.float32)
-                y_theoretical = item_response_fn_1PL(theta_mid_tensor, single_z3).item()
-
-                diff = abs(y_empirical - y_theoretical)
-                diff_list.append(diff)
-
-    diff_array = np.array(diff_list)
-    mean_diff = diff_array.mean()
-    std_diff = diff_array.std()
-
-    print(f'Mean of differences: {mean_diff}')
-    print(f'Standard deviation of differences: {std_diff}')
-
-    plt.figure(figsize=(10, 6))
-    plt.hist(diff_list, bins=40, density=True, alpha=0.4)
-    plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
-    plt.tick_params(axis='both', labelsize=25)
-    plt.xlim(0, 1)
-    plt.axvline(mean_diff, linestyle='--')
-    plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f}', 
-            ha='center', va='bottom', fontsize=25)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    
 def z_corr_plot(
     x,
     y,
