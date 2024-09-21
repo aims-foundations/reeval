@@ -6,6 +6,7 @@ import os
 from huggingface_hub import login
 from embed_text_package.embed_text import Embedder
 from dotenv import load_dotenv
+import wandb
 
 def get_embed(
     dataset,
@@ -57,7 +58,7 @@ def get_single_embed(search_path, z_path, hf_repo):
     push_dataset_dict.push_to_hub(hf_repo)
 
 if __name__ == "__main__":
-    # wandb.init()
+    wandb.init()
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
