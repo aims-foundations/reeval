@@ -11,7 +11,7 @@ import wandb
 def get_embed(
     dataset,
     cols_to_be_embded = ['text'],
-    bs = 1024,
+    bs = 64,
     model_name="meta-llama/Meta-Llama-3-8B",
 ):
     embdr = Embedder()
