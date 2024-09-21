@@ -49,11 +49,11 @@ def get_single_embed(search_path, z_path, hf_repo):
     push_test_df = push_df[split_index:]
     
     push_train_dataset = Dataset.from_pandas(push_train_df.reset_index(drop=True))
-    push_train_dataset = Dataset.from_pandas(push_test_df.reset_index(drop=True))
+    push_test_dataset = Dataset.from_pandas(push_test_df.reset_index(drop=True))
     
     push_dataset_dict = DatasetDict({
         'train': push_train_dataset,
-        'test': push_train_dataset
+        'test': push_test_dataset
     })
     push_dataset_dict.push_to_hub(hf_repo)
 
