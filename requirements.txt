@@ -9,3 +9,4 @@ pandas
 wandb
 matplotlib
 tueplots
+selenium

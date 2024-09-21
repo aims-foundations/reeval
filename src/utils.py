@@ -10,13 +10,8 @@ from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
 
-def item_response_fn_1PL(z3, theta, datatype="torch"):
-    if datatype == "torch":
-        return 1 / (1 + torch.exp(-(theta + z3)))
-    elif datatype == "numpy":
-        return 1 / (1 + np.exp(-(theta + z3)))
-    else:
-        raise ValueError("datatype should be 'torch' or 'numpy'")
+def item_response_fn_1PL(z3, theta):
+    return 1 / (1 + torch.exp(-(theta + z3)))
     
 def set_seed(seed):
     random.seed(seed)
@@ -25,20 +20,6 @@ def set_seed(seed):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    torch.cuda.manual_seed_all(seed)
-    
-def save_state(filepath, **kwargs):
-    torch.save(kwargs, filepath)
-    print(f"State saved to {filepath}")
-
-def load_state(filepath):
-    if os.path.exists(filepath):
-        state = torch.load(filepath)
-        print(f"State loaded from {filepath}")
-        return state
-    else:
-        print(f"No previous state found at {filepath}")
-        return None
 
 def perform_t_test(sample_1, sample_2, label=""):
     print(f"{label} T-test:")
