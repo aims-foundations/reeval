@@ -10,3 +10,4 @@ wandb
 matplotlib
 tueplots
 selenium
+python-dotenv

@@ -5,39 +5,14 @@ parameters:
     - classic
   start_string:
     values:
-    - synthetic_efficiency
-    - wikifact
-    - entity_data_imputation
     - copyright
-    - commonsense
-    - quac
-    - imdb
     - the_pile
-    - ice
-    - summarization_cnndm
-    - bbq
     - natural_qa
-    - math
-    - twitter_aae
-    - truthful_qa
     - msmarco
-    - legal_support
-    - boolq
-    - narrative_qa
     - real_toxicity_prompts
-    - bold
-    - blimp
-    - gsm
-    - babi_qa
-    - summarization_xsum
-    - synthetic_reasoning_natural
-    - dyck_language_np=3
     - civil_comments
-    - lsat_qa
     - disinfo
     - raft
-    - code
-    - entity_matching
     - synthetic_reasoning
 program: get_response_matrix.py
 project: get_response_matrix

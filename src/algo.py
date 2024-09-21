@@ -1,4 +1,3 @@
-import pandas as pd
 import torch
 from tqdm import tqdm
 from utils import item_response_fn_1PL
@@ -61,28 +60,3 @@ def amor_calibration(
 
     return theta_hat, z_hat, W, losses
 
-def model(Z, asked_question_list, asked_answer_list):
-    theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0)) # prior
-    Z_asked = Z[asked_question_list]
-    probs = item_response_fn_1PL(Z_asked, theta_hat, datatype="jnp")
-    numpyro.sample("obs", dist.Bernoulli(probs), obs=asked_answer_list)
-    
-def fit_theta_mcmc(Z, asked_question_list, asked_answer_list, num_samples=9000, num_warmup=1000):
-    rng_key = random.PRNGKey(0)
-    rng_key, rng_key_ = random.split(rng_key)
-    
-    nuts_kernel = NUTS(model)
-    mcmc = MCMC(nuts_kernel, num_samples=num_samples, num_warmup=num_warmup)
-    mcmc.run(
-        rng_key_,
-        Z=Z,
-        asked_question_list=asked_question_list,
-        asked_answer_list=asked_answer_list,
-    )
-    mcmc.print_summary()
-    
-    theta_samples = mcmc.get_samples()["theta_hat"]
-    mean_theta = jnp.mean(theta_samples)
-    std_theta = jnp.std(theta_samples)
-
-    return mean_theta, std_theta, theta_samples

@@ -1,17 +1,20 @@
-import warnings
 from matplotlib import gridspec
 import pandas as pd
 import torch
 import numpy as np
 import random
+import jax.numpy as jnp
 from scipy.stats import ttest_ind
 import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
 
-def item_response_fn_1PL(z3, theta):
-    return 1 / (1 + torch.exp(-(theta + z3)))
+def item_response_fn_1PL(z3, theta, datatype="torch"):
+    if datatype == "torch":
+        return 1 / (1 + torch.exp(-(theta + z3)))
+    elif datatype == "jnp":
+        return 1 / (1 + jnp.exp(-(theta + z3)))
     
 def set_seed(seed):
     random.seed(seed)
@@ -67,12 +70,20 @@ def goodness_of_fit_1PL(
     plt.tick_params(axis='both', labelsize=25)
     plt.xlim(0, 1)
     plt.axvline(mean_diff, linestyle='--')
-    plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f}', 
-            ha='center', va='bottom', fontsize=25)
+    plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f}', ha='center', va='bottom', fontsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+
+def bootstrap_mean_variance(data, ratio = 0.9, num_samples=1000):
+    data = np.array(data)
+    mean = np.mean(data)
     
-    
-    
+    bootstrap_means = []
+    for _ in range(num_samples):
+        bootstrap_sample = np.random.choice(data, size=int(ratio * data.shape[0]), replace=True)
+        bootstrap_means.append(np.mean(bootstrap_sample))
+        
+    var_bootstrap = np.var(bootstrap_means)
+    return mean, var_bootstrap
     
 def perform_t_test(sample_1, sample_2, label=""):
     print(f"{label} T-test:")
@@ -85,17 +96,7 @@ def perform_t_test(sample_1, sample_2, label=""):
     else:
         print(f"Fail to reject the null hypothesis for {label}.")
 
-def bootstrap_mean_variance(data_list):
-    num_samples=1000
-    ratio = 0.9
-    data = np.array(data_list)
-    bootstrap_means = []
-    for _ in range(num_samples):
-        bootstrap_sample = np.random.choice(data, size=ratio * len(data_list), replace=True)
-        bootstrap_means.append(np.mean(bootstrap_sample))
-    mean_bootstrap = np.mean(bootstrap_means)
-    variance_bootstrap = np.var(bootstrap_means)
-    return mean_bootstrap, variance_bootstrap
+
 
 def z_corr_plot(
     x,

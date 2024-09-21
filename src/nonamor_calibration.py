@@ -9,10 +9,9 @@ from utils import item_response_fn_1PL
 import torch.optim as optim
 from utils import goodness_of_fit_1PL
 
-def nonamor_calibration(y_path, max_epoch=3000):
+def nonamor_calibration(y, max_epoch=3000):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    y = pd.read_csv(y_path, index_col=0).values
     response_matrix = torch.tensor(y, dtype=torch.float32, device=device)
     theta_hat = torch.normal(
         mean=0.0, std=1.0,
@@ -56,18 +55,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     set_seed(42)
-    y_path = f'../data/pre_calibration/{args.dataset}/matrix.csv'
     output_dir = f'../data/calibration/{args.dataset}'
     plot_dir = f'../plot/nonamor_calibration'
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
-    theta_hat, z_hat = nonamor_calibration(y_path)
+    y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
+    theta_hat, z_hat = nonamor_calibration(y)
     
     goodness_of_fit_1PL(
         z=z_hat,
         theta=theta_hat,
-        y_path=y_path,
+        y=y,
         plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}",
     )    
 
