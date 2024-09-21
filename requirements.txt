@@ -7,3 +7,5 @@ xgboost
 transformers
 pandas
 wandb
+matplotlib
+tueplots

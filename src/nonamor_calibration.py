@@ -49,16 +49,15 @@ def nonamor_calibration(y_path, max_epoch=3000):
     return theta_hat.cpu().detach().numpy(), z_hat.cpu().detach().numpy()
 
 if __name__ == "__main__":
-    wandb.init()
+    # wandb.init()
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
     
     set_seed(42)
-    
     input_path = f'../data/pre_calibration/{args.dataset}/matrix.csv'
     output_dir = f'../data/calibration/{args.dataset}'
-    os.makedirs(os.path.dirname(output_dir), exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
     
     theta_hat, z_hat = nonamor_calibration(input_path)
     

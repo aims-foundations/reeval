@@ -21,7 +21,7 @@ if __name__ == "__main__":
             prob = item_response_fn_1PL(z_true[j], theta_true[i])
             response_matrix[i, j] = torch.distributions.Bernoulli(prob).sample()
             
-    output_dir = "../data/pre_calibration/synthetic"
+    output_dir = "../../data/pre_calibration/synthetic"
     os.makedirs(output_dir, exist_ok=True)
 
     matrix_df = pd.DataFrame(response_matrix.astype(int))
