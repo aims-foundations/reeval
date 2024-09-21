@@ -1,0 +1,30 @@
+method: grid
+parameters:
+  dataset:
+    values:
+    - airbench
+    - gsm
+    - wikifact
+    - narrative_qa
+    - synthetic_efficiency
+    - quac
+    - truthful_qa
+    - mmlu
+    - synthetic_reasoning_natural
+    - summarization_xsum
+    - synthetic
+    - entity_data_imputation
+    - summarization_cnndm
+    - ice
+    - blimp
+    - boolq
+    - dyck_language_np=3
+    - legal_support
+    - math
+    - babi_qa
+    - bold
+    - imdb
+    - twitter_aae
+    - bbq
+program: nonamor_calibration.py
+project: nonamor_calibration
