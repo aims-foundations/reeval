@@ -18,8 +18,7 @@ def amor_calibration(
     patience=5000
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    response_matrix = response_matrix.to(device)
-    embedding = embedding.to(device)
+    response_matrix, embedding = response_matrix.to(device), embedding.to(device)
     theta_hat = torch.normal(
         mean=0.0, std=1.0,
         size=(response_matrix.size(0),),
@@ -83,16 +82,14 @@ def main(
     y = pd.read_csv(y_path, index_col=0).values
     y = torch.tensor(y, dtype=torch.float32)
     
-    dataset_train = load_dataset(hf_repo, split="train")
-    dataset_test = load_dataset(hf_repo, split="test")
+    dataset_train, dataset_test = load_dataset(hf_repo, split="train"), load_dataset(hf_repo, split="test")
     dataset = concatenate_datasets([dataset_train, dataset_test])
     emb = torch.tensor(dataset['embed'], dtype=torch.float32)
     
     assert y.shape[1] == emb.shape[0]
     train_indices, test_indices = split_indices(emb.shape[0])    
-    emb_train = emb[train_indices]
+    emb_train, emb_test = emb[train_indices], emb[test_indices]
     y_train = y[:, train_indices]
-    emb_test = emb[test_indices]
     
     theta_train, z_train, W_train = amor_calibration(y_train, emb_train)
     z_test = torch.matmul(emb_test, W_train.cpu().detach())

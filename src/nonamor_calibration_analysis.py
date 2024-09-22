@@ -11,10 +11,7 @@ if __name__ == "__main__":
     input_dir = '../data/nonamor_calibration/'
     datasets = [f for f in os.listdir(input_dir)]
     
-    gof_means = []
-    gof_stds = []
-    corr_ctt_means = []
-    corr_ctt_stds = []
+    gof_means, gof_stds, corr_ctt_means, corr_ctt_stds = [], [], [], []
     for dataset in tqdm(datasets):
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
         theta_hat = pd.read_csv(f'{input_dir}/{dataset}/nonamor_theta.csv')['theta'].values

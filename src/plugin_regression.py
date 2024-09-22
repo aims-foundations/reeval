@@ -15,23 +15,18 @@ def main(
     df_test_path,
     save_model_path=None,
 ):
-    dataset_train = load_dataset(hf_repo, split="train")
-    dataset_test = load_dataset(hf_repo, split="test")
+    dataset_train, dataset_test = load_dataset(hf_repo, split="train"), load_dataset(hf_repo, split="test")
     dataset = concatenate_datasets([dataset_train, dataset_test])
-    emb = np.array(dataset['embed'])
-    z = np.array(dataset['z'])
+    emb, z = np.array(dataset['embed']), np.array(dataset['z'])
     
     train_indices, test_indices = split_indices(z.shape[0])    
-    emb_train = emb[train_indices]
-    z_train = z[train_indices]
-    emb_test = emb[test_indices]
-    z_test = z[test_indices]
+    emb_train, z_train = emb[train_indices], z[train_indices]
+    emb_test, z_test = emb[test_indices], z[test_indices]
     
     model = BayesianRidge()
     model.fit(emb_train, z_train)
 
-    z_train_pred = model.predict(emb_train)
-    z_test_pred = model.predict(emb_test)
+    z_train_pred, z_test_pred = model.predict(emb_train), model.predict(emb_test)
     
     df_train = pd.DataFrame({
         'index': train_indices,

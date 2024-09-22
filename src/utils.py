@@ -28,8 +28,7 @@ def split_indices(length):
     indices = np.arange(length)
     np.random.shuffle(indices)
     train_size = int(0.8 * len(indices))
-    train_indices = indices[:train_size]
-    test_indices = indices[train_size:]
+    train_indices, test_indices = indices[:train_size], indices[train_size:]
     return train_indices, test_indices
     
 def bootstrap_mean_std(data: np.array):
@@ -61,9 +60,7 @@ def goodness_of_fit_1PL(
     assert y.shape[1] == z.shape[0], f'{y.shape[1]} != {z.shape[0]}'
     assert y.shape[0] == theta.shape[0], f'{y.shape[0]} != {theta.shape[0]}'
 
-    theta = theta.detach().cpu()
-    bin_start = torch.min(theta)
-    bin_end = torch.max(theta)
+    bin_start, bin_end = torch.min(theta), torch.max(theta)
     bins = torch.linspace(bin_start, bin_end, bin_size)
     print(bins) # [-3. -2. -1.  0.  1.  2.  3.]
 
@@ -84,8 +81,7 @@ def goodness_of_fit_1PL(
                 diff_list.append(diff)
 
     diff_array = np.array(diff_list)
-    mean_diff = np.mean(diff_array)
-    std_diff = np.std(diff_array)
+    mean_diff, std_diff = np.mean(diff_array), np.std(diff_array)
     return mean_diff, std_diff, diff_list
 
 def goodness_of_fit_1PL_plot(
@@ -104,6 +100,7 @@ def goodness_of_fit_1PL_plot(
     plt.axvline(mean_diff, linestyle='--')
     plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f} $\\pm$ {3 * std_diff:.2f}', ha='center', va='bottom', fontsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    return mean_diff, std_diff
 
 def theta_corr_ctt(
     theta: np.array,
@@ -125,8 +122,7 @@ def theta_corr_ctt(
     if np.isnan(ctt_scores).any():
         warnings.warn("ctt_scores contains nan", UserWarning)
     mask = ~np.isnan(ctt_scores)
-    theta_masked = theta[mask]
-    ctt_scores_masked = ctt_scores[mask]
+    theta_masked, ctt_scores_masked = theta[mask], ctt_scores[mask]
     corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
     
     sample_corrs = []
@@ -147,8 +143,7 @@ def theta_corr_ctt(
     return corr, sample_std
     
 def error_bar_plot(datasets, means, stds, plot_path):
-    means = np.array(means)
-    stds = np.array(stds)
+    means, stds = np.array(means), np.array(stds)
     plt.figure(figsize=(10, 6))
     plt.errorbar(datasets, means, yerr=stds, elinewidth=0.75, fmt="o", ms=5)
     plt.xticks(rotation=45, ha='right', fontsize=20)

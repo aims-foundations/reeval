@@ -27,10 +27,7 @@ def inverse_item_response_fn_1PL(y,theta):
 def sample_subsets(z, dumb_theta, smart_theta, subset_size, y_mean=0.7):
     z = torch.tensor(z)
     z_sorted, original_indices = torch.sort(z)
-    mean_all = z_sorted.mean().item()
     std_all = z_sorted.std().item()
-    print(f"mean of all z values: {mean_all}")
-    print(f"std of all z values: {std_all}")
 
     mean_easy = inverse_item_response_fn_1PL(y_mean, dumb_theta).item()
     mean_hard = inverse_item_response_fn_1PL(y_mean, smart_theta).item()
@@ -43,12 +40,8 @@ def sample_subsets(z, dumb_theta, smart_theta, subset_size, y_mean=0.7):
     easy_indices_sorted = torch.multinomial(easy_probs, subset_size, replacement=False)
     hard_indices_sorted = torch.multinomial(hard_probs, subset_size, replacement=False)
 
-    easy_indices = original_indices[easy_indices_sorted]
-    hard_indices = original_indices[hard_indices_sorted]
-
-    z_easy = z[easy_indices]
-    z_hard = z[hard_indices]
-
+    easy_indices, hard_indices = original_indices[easy_indices_sorted], original_indices[hard_indices_sorted]
+    z_easy, z_hard = z[easy_indices], z[hard_indices]
     return z_easy, z_hard, easy_indices, hard_indices
 
 def model(z_asked, answers):
@@ -70,9 +63,7 @@ def fit_theta_mcmc(z_asked, answers, num_samples=9000, num_warmup=1000):
     mcmc.print_summary()
     
     theta_samples = mcmc.get_samples()["theta_hat"]
-    theta_mean = jnp.mean(theta_samples)
-    theta_std = jnp.std(theta_samples)
-
+    theta_mean, theta_std = jnp.mean(theta_samples), jnp.std(theta_samples)
     return theta_mean, theta_std, theta_samples
 
 if __name__ == "__main__":
@@ -144,5 +135,4 @@ if __name__ == "__main__":
     plt.xlabel(r'$z$')
     plt.xlabel(r'$z$', fontsize=25)
     plt.tick_params(axis='both', labelsize=16)
-
     plt.savefig(f'{plot_dir}/posttheta_z_distr_{args.dataset}.png', dpi=300, bbox_inches='tight')

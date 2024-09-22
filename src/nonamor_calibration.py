@@ -61,8 +61,7 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     
     y = pd.read_csv(f'{input_dir}/{args.dataset}/matrix.csv', index_col=0).values
-    y = torch.tensor(y, dtype=torch.float32)
-    theta_hat, z_hat = nonamor_calibration(y)
+    theta_hat, z_hat = nonamor_calibration(torch.tensor(y, dtype=torch.float32))
     
     z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
     z_df.to_csv(f"{output_dir}/nonamor_z.csv", index=False)

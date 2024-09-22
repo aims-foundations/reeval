@@ -17,10 +17,7 @@ def get_embed(
     embdr = Embedder()
     embdr.load(model_name)
     dataloader = DataLoader(dataset, batch_size=bs)
-    emb = embdr.get_embeddings(
-        dataloader, model_name, cols_to_be_embded
-    )
-    
+    emb = embdr.get_embeddings(dataloader, model_name, cols_to_be_embded)
     return emb['text']
     
 def main(
@@ -52,9 +49,7 @@ def main(
     push_df.to_csv(save_path, index=False)
     
     split_index = int(0.8 * len(push_df))
-    push_train_df = push_df[:split_index]
-    push_test_df = push_df[split_index:]
-    
+    push_train_df, push_test_df = push_df[:split_index], push_df[split_index:]
     push_train_dataset = Dataset.from_pandas(push_train_df.reset_index(drop=True))
     push_test_dataset = Dataset.from_pandas(push_test_df.reset_index(drop=True))
     
