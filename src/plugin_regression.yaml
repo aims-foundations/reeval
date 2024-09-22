@@ -1,0 +1,41 @@
+method: grid
+parameters:
+  dataset:
+    values:
+    - copyright
+    - synthetic_reasoning
+    - disinfo
+    - airbench
+    - gsm
+    - wikifact
+    - narrative_qa
+    - synthetic_efficiency
+    - commonsense
+    - quac
+    - truthful_qa
+    - mmlu
+    - synthetic_reasoning_natural
+    - entity_matching
+    - summarization_xsum
+    - entity_data_imputation
+    - summarization_cnndm
+    - natural_qa
+    - ice
+    - blimp
+    - the_pile
+    - boolq
+    - legal_support
+    - math
+    - dyck_language_np3
+    - real_toxicity_prompts
+    - lsat_qa
+    - babi_qa
+    - bold
+    - imdb
+    - twitter_aae
+    - bbq
+    - code
+    - civil_comments
+    - raft
+program: plugin_regression.py
+project: plugin_regression
