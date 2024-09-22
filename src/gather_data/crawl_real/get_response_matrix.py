@@ -142,6 +142,8 @@ if __name__ == "__main__":
     search_list = []
     base_idx = 0
     for i, non_model_string in enumerate(non_model_strings):
+        print(f"Processing {non_model_string}")
+        print(f"filename: {max_len_file_names[i]}")
         with open(f"{input_dir}/{max_len_file_names[i]}", 'r') as f:
             data = json.load(f)
         for j, question in enumerate(data['request_states']):

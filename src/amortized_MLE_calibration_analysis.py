@@ -1,5 +1,4 @@
 import argparse
-import numpy as np
 import torch
 from utils import set_seed, goodness_of_fit_1PL, z_corr_plot
 import pandas as pd

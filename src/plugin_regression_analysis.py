@@ -66,7 +66,7 @@ def plugin_regression(
     return z_train_pred, z_test_pred
     
 if __name__ == "__main__":
-    wandb.init()
+    # wandb.init()
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()

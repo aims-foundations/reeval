@@ -7,7 +7,6 @@ import pandas as pd
 from tqdm import tqdm
 from utils import item_response_fn_1PL
 import torch.optim as optim
-from utils import goodness_of_fit_1PL
 
 def nonamor_calibration(
     response_matrix: torch.Tensor,
@@ -57,22 +56,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     set_seed(42)
-    output_dir = f'../data/calibration/{args.dataset}'
-    plot_dir = f'../plot/nonamor_calibration'
+    input_dir = '../data/pre_calibration/'
+    folder_list = [f for f in os.listdir(input_dir)]
+    output_dir = f'../data/nonamor_calibration/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
-    os.makedirs(plot_dir, exist_ok=True)
     
     y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
     y = torch.tensor(y, dtype=torch.float32)
     theta_hat, z_hat = nonamor_calibration(y)
     
-    goodness_of_fit_1PL(
-        z=z_hat.detach().cpu(),
-        theta=theta_hat.detach().cpu(),
-        y=y,
-        plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}",
-    )    
-
     z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
     z_df.to_csv(f"{output_dir}/nonamor_z.csv", index=False)
     theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=["theta"])

@@ -8,12 +8,17 @@ import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
 import jax.numpy as jnp
 import jax.random as random
+from nonamor_calibration import nonamor_calibration
 import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
-from utils import item_response_fn_1PL, set_seed, perform_t_test, bootstrap_mean_var
-from nonamor_calibration import nonamor_calibration
+from utils import (
+    set_seed,
+    perform_t_test,
+    bootstrap_mean_std, 
+    item_response_fn_1PL_jnp
+)
 
 def inverse_item_response_fn_1PL(y,theta):
     y = torch.tensor(y, dtype=torch.float32)
@@ -48,7 +53,7 @@ def sample_subsets(z, dumb_theta, smart_theta, subset_size, y_mean=0.7):
 
 def model(z_asked, answers):
     theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0)) # prior
-    probs = item_response_fn_1PL(z_asked, theta_hat, datatype="jnp")
+    probs = item_response_fn_1PL_jnp(z_asked, theta_hat, datatype="jnp")
     numpyro.sample("obs", dist.Bernoulli(probs), obs=answers)
     
 def fit_theta_mcmc(z_asked, answers, num_samples=9000, num_warmup=1000):
@@ -73,12 +78,13 @@ def fit_theta_mcmc(z_asked, answers, num_samples=9000, num_warmup=1000):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--dataset", type=str, required=True)
-    parser.add_argument("--subset_size", type=int, default=100)
     args = parser.parse_args()
 
     set_seed(42)
-    theta = pd.read_csv(f'../data/calibration/{args.dataset}/nonamor_theta.csv')['theta'].values
+    theta = pd.read_csv(f'../data/nonamor_calibration/{args.dataset}/nonamor_theta.csv')['theta'].values
     y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
+    subset_size = min(y.shape[1] // 10, 5000)
+    print(f"subset size = {subset_size}")
     plot_dir = f'../plot/nonid_test'
     os.makedirs(plot_dir, exist_ok=True)
     
@@ -88,9 +94,9 @@ if __name__ == "__main__":
     print(f'smart theta = {theta[j]}')
 
     y_new = np.delete(y, [i, j], axis=0)
-    theta_new, z_new = nonamor_calibration(y_new)
+    theta_new, z_new = nonamor_calibration(torch.tensor(y_new, dtype=torch.float32))
     z_easy, z_hard, easy_indices, hard_indices = sample_subsets(
-        z_new, theta[i], theta[j], args.subset_size
+        z_new, theta[i], theta[j], subset_size
     )
     
     dumb_answers = y[i][easy_indices]
@@ -98,13 +104,13 @@ if __name__ == "__main__":
     
     # CTT
     print("CTT")
-    mean_dumb, var_dumb = bootstrap_mean_var(dumb_answers)
+    mean_dumb, std_dumb = bootstrap_mean_std(dumb_answers)
     print(f"dumb CTT mean = {mean_dumb}")
-    print(f"dumb CTT var= {var_dumb}")
+    print(f"dumb CTT std= {std_dumb}")
     
-    mean_smart, var_smart = bootstrap_mean_var(smart_answers)
+    mean_smart, std_smart = bootstrap_mean_std(smart_answers)
     print(f"smart CTT mean = {mean_smart}")
-    print(f"smart CTT var = {var_smart}")
+    print(f"smart CTT std = {std_smart}")
     
     perform_t_test(dumb_answers, smart_answers, label="CTT")
     

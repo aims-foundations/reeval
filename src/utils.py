@@ -1,20 +1,20 @@
 from matplotlib import gridspec
-import pandas as pd
 import torch
 import numpy as np
 import random
 import jax.numpy as jnp
+import warnings
 from scipy.stats import ttest_ind
 import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
 
-def item_response_fn_1PL(z3, theta, datatype="torch"):
-    if datatype == "torch":
-        return 1 / (1 + torch.exp(-(theta + z3)))
-    elif datatype == "jnp":
-        return 1 / (1 + jnp.exp(-(theta + z3)))
+def item_response_fn_1PL(z3, theta):
+    return 1 / (1 + torch.exp(-(theta + z3)))
+
+def item_response_fn_1PL_jnp(z3, theta):
+    return 1 / (1 + jnp.exp(-(theta + z3)))
     
 def set_seed(seed):
     random.seed(seed)
@@ -57,9 +57,8 @@ def goodness_of_fit_1PL(
                 diff_list.append(diff)
 
     diff_array = np.array(diff_list)
-    mean_diff = diff_array.mean()
-    std_diff = diff_array.std()
-
+    mean_diff = np.mean(diff_array)
+    std_diff = np.std(diff_array)
     print(f'Mean of differences: {mean_diff}')
     print(f'Standard deviation of differences: {std_diff}')
 
@@ -72,7 +71,9 @@ def goodness_of_fit_1PL(
     plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f}', ha='center', va='bottom', fontsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
 
-def bootstrap_mean_var(data, ratio = 0.9, num_samples=1000):
+    return mean_diff, std_diff
+
+def bootstrap_mean_std(data, ratio = 0.9, num_samples=1000):
     data = np.array(data)
     mean = np.mean(data)
     
@@ -81,8 +82,8 @@ def bootstrap_mean_var(data, ratio = 0.9, num_samples=1000):
         bootstrap_sample = np.random.choice(data, size=int(ratio * data.shape[0]), replace=True)
         bootstrap_means.append(np.mean(bootstrap_sample))
         
-    var_bootstrap = np.var(bootstrap_means)
-    return mean, var_bootstrap
+    std_bootstrap = np.std(bootstrap_means)
+    return mean, std_bootstrap
     
 def perform_t_test(sample_1, sample_2, label=""):
     print(f"{label} T-test:")
@@ -95,7 +96,42 @@ def perform_t_test(sample_1, sample_2, label=""):
     else:
         print(f"Fail to reject the null hypothesis for {label}.")
 
-
+def theta_corr_ctt(
+    theta: np.array,
+    y: np.array,
+    plot_path: str,
+):
+    assert y.shape[1] == theta.shape[0], f'{y.shape[1]} != {theta.shape[0]}'
+    
+    ctt_scores = []
+    for row in y:
+        valid_values = row[row != -1]
+        if len(valid_values) > 0:
+            ctt_scores.append(np.mean(valid_values))
+        else:
+            ctt_scores.append(np.nan)
+    ctt_scores = np.array(ctt_scores)
+    assert ctt_scores.shape[0] == theta.shape[0]
+    
+    if np.isnan(ctt_scores).any():
+        warnings.warn("ctt_scores contains NaN values.", UserWarning)
+    mask = ~np.isnan(ctt_scores)
+    ctt_scores_masked = ctt_scores[mask]
+    theta_masked = theta[mask]
+    corr = np.corrcoef(ctt_scores_masked, theta_masked)[0, 1]
+    
+    plt.figure(figsize=(10, 10))
+    plt.scatter(theta_masked, ctt_scores_masked)
+    plt.xlabel(r'$\theta$ from calibration', fontsize=45)
+    plt.ylabel(r'CTT score', fontsize=45)
+    plt.title(f'Correlation: {corr:.2f}', fontsize=45)
+    plt.tick_params(axis='both', labelsize=35)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    
+    return corr
+    
+    
+    
 
 def z_corr_plot(
     x,
@@ -120,8 +156,8 @@ def theta_corr_plot(
     corr = np.corrcoef(x, y)[0, 1]
     plt.figure(figsize=(10, 10))
     plt.scatter(x, y)
-    plt.xlabel(r'$\theta$ from IRT calibration', fontsize=45)
-    plt.ylabel(r'CTT score from leaderboard', fontsize=45)
+    plt.xlabel(r'$\theta$ from calibration', fontsize=45)
+    plt.ylabel(r'CTT score', fontsize=45)
     plt.title(f'Correlation: {corr:.2f}', fontsize=45)
     plt.tick_params(axis='both', labelsize=35)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
