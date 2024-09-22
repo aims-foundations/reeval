@@ -7,10 +7,9 @@ import pickle
 import os
 from tqdm import tqdm
 import wandb
+from utils import set_seed, split_indices
 
-from utils import set_seed
-
-def plugin_regression(
+def main(
     hf_repo,
     df_train_path,
     df_test_path,
@@ -22,12 +21,7 @@ def plugin_regression(
     emb = np.array(dataset['embed'])
     z = np.array(dataset['z'])
     
-    indices = np.arange(len(emb))
-    np.random.shuffle(indices)
-    train_size = int(0.8 * len(indices))
-    train_indices = indices[:train_size]
-    test_indices = indices[train_size:]    
-    
+    train_indices, test_indices = split_indices(z.shape[0])    
     emb_train = emb[train_indices]
     z_train = z[train_indices]
     emb_test = emb[test_indices]
@@ -68,12 +62,10 @@ if __name__ == "__main__":
     
     for i in tqdm(range(100)):
         set_seed(i)
-        df_train_path = f'{output_dir}/train_{i}.csv'
-        df_test_path = f'{output_dir}/test_{i}.csv'
-        plugin_regression(
+        main(
             hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
-            df_train_path=df_train_path,
-            df_test_path=df_test_path,
+            df_train_path=f'{output_dir}/train_{i}.csv',
+            df_test_path=f'{output_dir}/test_{i}.csv',
             save_model_path=f'{output_dir}/bayridge.pkl' if i==42 else None,
         )
         

@@ -140,6 +140,21 @@ def error_bar_plot(datasets, means, stds, plot_path):
     plt.xticks(rotation=45, ha='right', fontsize=20)
     plt.tick_params(axis='both', labelsize=20)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+
+def split_indices(length):
+    indices = np.arange(length)
+    np.random.shuffle(indices)
+    train_size = int(0.8 * len(indices))
+    train_indices = indices[:train_size]
+    test_indices = indices[train_size:]
+    return train_indices, test_indices
+    
+    
+    
+    
+    
+    
+    
     
 def z_corr_plot(
     x,

@@ -23,7 +23,7 @@ def get_embed(
     
     return emb['text']
     
-def get_single_embed(
+def main(
     search_path,
     z_path, 
     hf_repo, 
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     output_dir = f'../data/get_embed/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     
-    get_single_embed(
+    main(
         search_path=f'../data/pre_calibration/{args.dataset}/search.csv',
         z_path=f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv',
         hf_repo=f'stair-lab/reeval_{args.dataset}-embed',

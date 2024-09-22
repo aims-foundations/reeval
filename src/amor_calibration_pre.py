@@ -6,8 +6,8 @@ if __name__ == "__main__":
     folder_list = [f for f in os.listdir(input_dir)]
     
     yaml_content = {
-        'program': 'plugin_regression.py',
-        'project': 'plugin_regression',
+        'program': 'amor_calibration.py',
+        'project': 'amor_calibration',
         'method': 'grid',
         'parameters': {
             'dataset': {
@@ -16,6 +16,6 @@ if __name__ == "__main__":
         }
     }
 
-    with open('plugin_regression.yaml', 'w') as yaml_file:
+    with open('amor_calibration.yaml', 'w') as yaml_file:
         yaml.dump(yaml_content, yaml_file, default_flow_style=False)
         
