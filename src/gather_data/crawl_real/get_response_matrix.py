@@ -139,14 +139,9 @@ if __name__ == "__main__":
     all_matrix_df.to_csv(f'{output_dir}/matrix.csv', index_label=None)
 
     # index search
-    print(max_len_file_names)
-    print(max_lens)
     search_list = []
     base_idx = 0
-    for i, non_model_string in enumerate(non_model_strings):
-        print(f"Processing {non_model_string}")
-        print(f"filename: {max_len_file_names[i]}")
-        with open(f"{input_dir}/{max_len_file_names[i]}", 'r') as f:
+    for i, non_model_string in enumerate(non_model_strings):        with open(f"{input_dir}/{max_len_file_names[i]}", 'r') as f:
             data = json.load(f)
         for j, question in enumerate(data['request_states']):
             text = question['instance']['input']['text']

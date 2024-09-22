@@ -57,7 +57,6 @@ if __name__ == "__main__":
     
     set_seed(42)
     input_dir = '../data/pre_calibration/'
-    folder_list = [f for f in os.listdir(input_dir)]
     output_dir = f'../data/nonamor_calibration/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     

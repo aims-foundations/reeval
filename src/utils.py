@@ -136,8 +136,9 @@ def error_bar_plot(datasets, means, stds, plot_path):
     means = np.array(means)
     stds = np.array(stds)
     plt.figure(figsize=(10, 6))
-    plt.errorbar(datasets, means, yerr=3 * stds, fmt='o')
-    plt.xticks(rotation=45, ha='right')
+    plt.errorbar(datasets, means, yerr=stds, elinewidth=0.75, fmt="o", ms=5)
+    plt.xticks(rotation=45, ha='right', fontsize=20)
+    plt.tick_params(axis='both', labelsize=20)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     
 def z_corr_plot(
