@@ -1,25 +1,12 @@
 import argparse
 from datasets import Dataset, DatasetDict
-from torch.utils.data import DataLoader
 import pandas as pd
 import os
 from huggingface_hub import login
-from embed_text_package.embed_text import Embedder
 from dotenv import load_dotenv
 import wandb
+from utils import get_embed
 
-def get_embed(
-    dataset,
-    cols_to_be_embded = ['text'],
-    bs = 1024,
-    model_name="meta-llama/Meta-Llama-3-8B",
-):
-    embdr = Embedder()
-    embdr.load(model_name)
-    dataloader = DataLoader(dataset, batch_size=bs)
-    emb = embdr.get_embeddings(dataloader, model_name, cols_to_be_embded)
-    return emb['text']
-    
 def main(
     search_path,
     z_path, 
@@ -28,17 +15,12 @@ def main(
     bs=1024
 ):
     search_df = pd.read_csv(search_path)
+    text_df = search_df.loc[search_df["is_deleted"] != 1, ["text"]].reset_index(drop=True)
     z_df = pd.read_csv(z_path, usecols=["z"])
-    deleted_col_indices = search_df[search_df.loc[:, "is_deleted"] == 1].index.tolist()
-    
-    text_df = search_df.loc[:, ["text"]]
-    text_df = text_df.drop(deleted_col_indices).reset_index(drop=True)
     assert len(text_df) == len(z_df)
     
-    tzpair_df = pd.concat([text_df, z_df], axis=1)
-    tzpair_dataset = Dataset.from_pandas(tzpair_df)
-    
-    embed = get_embed(tzpair_dataset, bs=bs) # list of list
+    text_dataset = Dataset.from_pandas(text_df)
+    embed = get_embed(text_dataset, bs=bs) # list of list
     assert len(embed) == len(text_df) == len(z_df)
     
     push_df = pd.DataFrame({

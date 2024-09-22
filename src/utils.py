@@ -5,6 +5,8 @@ import random
 import jax.numpy as jnp
 import warnings
 from scipy.stats import ttest_ind
+from embed_text_package.embed_text import Embedder
+from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
@@ -30,7 +32,19 @@ def split_indices(length):
     train_size = int(0.8 * len(indices))
     train_indices, test_indices = indices[:train_size], indices[train_size:]
     return train_indices, test_indices
-    
+
+def get_embed(
+    dataset,
+    cols_to_be_embded = ['text'],
+    bs = 1024,
+    model_name="meta-llama/Meta-Llama-3-8B",
+):
+    embdr = Embedder()
+    embdr.load(model_name)
+    dataloader = DataLoader(dataset, batch_size=bs)
+    emb = embdr.get_embeddings(dataloader, model_name, cols_to_be_embded)
+    return emb['text']
+
 def bootstrap_mean_std(data: np.array):
     mean = np.mean(data)
     bootstrap_means = []
@@ -214,7 +228,8 @@ def plot_scatter_with_histograms(z3_py, z3_r, save_path, x_label=r'Our $z_3$', y
 
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
-    
+
+
 DESCRIPTION_MAP = {
     'synthetic_efficiency': '### DATASET: Synthetic efficiency, ### PUBLISH TIME: unknown, ### CONTENT: to better understand inference runtime performance of various models',
     'wikifact': '### DATASET: WikiFact, ### PUBLISH TIME: 2019, ### CONTENT: knowledge base completion, entity-relation-entity triples in natural language form, to more extensively test factual knowledge',
@@ -226,7 +241,7 @@ DESCRIPTION_MAP = {
     'math': '### DATASET: MATH, ### PUBLISH TIME: 2021, ### CONTENT: for measuring mathematical problem solving on competition math problems with or without with chain-of-thought style reasoning',
     'twitter_aae': '### DATASET: TwitterAAE, ### PUBLISH TIME: 2016, ### CONTENT: for measuring language model performance in tweets as a function of speaker dialect, on African-American-aligned Tweets, on White-aligned Tweets',
     'truthful_qa': '### DATASET: TruthfulQA, ### PUBLISH TIME: 2022, ### CONTENT: for measuring model truthfulness and commonsense knowledge in question answering',
-    'msmarco': '### DATASET: MSMARCO, ### PUBLISH TIME: 2016, ### CONTENT: for passage retrieval in information retrieval',
+    # 'msmarco': '### DATASET: MSMARCO, ### PUBLISH TIME: 2016, ### CONTENT: for passage retrieval in information retrieval',
     'legal_support': '### DATASET: LegalSupport, ### PUBLISH TIME: unknown, ### CONTENT: measure fine-grained legal reasoning through reverse entailment.',
     'boolq': '### DATASET: boolq, ### PUBLISH TIME: 2019, ### CONTENT: binary (yes/no) question answering, passages from Wikipedia, questions from search queries',
     'narrative_qa': '### DATASET: NarrativeQA, ### PUBLISH TIME: 2017, ### CONTENT: for reading comprehension over narratives, passages are books and movie scripts',
