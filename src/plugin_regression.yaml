@@ -2,9 +2,7 @@ method: grid
 parameters:
   dataset:
     values:
-    - copyright
     - synthetic_reasoning
-    - disinfo
     - airbench
     - gsm
     - wikifact
@@ -19,10 +17,6 @@ parameters:
     - summarization_xsum
     - entity_data_imputation
     - summarization_cnndm
-    - natural_qa
-    - ice
-    - blimp
-    - the_pile
     - boolq
     - legal_support
     - math
@@ -35,7 +29,6 @@ parameters:
     - twitter_aae
     - bbq
     - code
-    - civil_comments
     - raft
 program: plugin_regression.py
 project: plugin_regression
