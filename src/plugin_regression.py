@@ -60,7 +60,7 @@ if __name__ == "__main__":
     output_dir = f'../data/plugin_regression/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     
-    for i in tqdm(range(100)):
+    for i in tqdm(range(50)):
         set_seed(i)
         main(
             hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
