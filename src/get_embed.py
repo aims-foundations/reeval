@@ -58,7 +58,7 @@ def get_single_embed(search_path, z_path, hf_repo, bs=1024):
     push_dataset_dict.push_to_hub(hf_repo)
 
 if __name__ == "__main__":
-    wandb.init()
+    # wandb.init()
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     parser.add_argument('--bs', type=int, default=1024)

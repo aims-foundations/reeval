@@ -31,8 +31,8 @@ def goodness_of_fit_1PL(
     plot_path: str,
     bin_size: int=7,
 ):
-    assert y.shape[1] == z.shape[0]
-    assert y.shape[0] == theta.shape[0]
+    assert y.shape[1] == z.shape[0], f'{y.shape[1]} != {z.shape[0]}'
+    assert y.shape[0] == theta.shape[0], f'{y.shape[0]} != {theta.shape[0]}'
 
     theta = theta.detach().cpu()
     bin_start = torch.min(theta)

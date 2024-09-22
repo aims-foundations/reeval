@@ -11,3 +11,6 @@ matplotlib
 tueplots
 selenium
 python-dotenv
+jax
+jaxlib
+webdriver_manager
