@@ -23,6 +23,7 @@ def amor_calibration(
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     response_matrix = response_matrix.to(device)
+    embedding = embedding.to(device)
     theta_hat = torch.normal(
         mean=0.0, std=1.0,
         size=(response_matrix.size(0),),
