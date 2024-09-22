@@ -14,7 +14,7 @@ from helm_theta_correlation import theta_corr_plot
 def main(
     exp,
     y_df,
-    epochs=20000
+    epochs=50000
 ):
     set_seed(42)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

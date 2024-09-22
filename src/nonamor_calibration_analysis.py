@@ -1,7 +1,8 @@
 import os
 import torch
 import pandas as pd
-from utils import goodness_of_fit_1PL, theta_corr_ctt
+from tqdm import tqdm
+from utils import goodness_of_fit_1PL, theta_corr_ctt, error_bar_plot
 
 if __name__ == "__main__":
     plot_dir = f'../plot/nonamor_calibration'
@@ -10,26 +11,43 @@ if __name__ == "__main__":
     input_dir = '../data/nonamor_calibration/'
     datasets = [f for f in os.listdir(input_dir)]
     
-    for dataset in datasets:
+    gof_means = []
+    gof_stds = []
+    corr_ctt_means = []
+    corr_ctt_stds = []
+    for dataset in tqdm(datasets):
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
         theta_hat = pd.read_csv(f'{input_dir}/{dataset}/nonamor_theta.csv')['theta'].values
         z_hat = pd.read_csv(f'{input_dir}/{dataset}/nonamor_z.csv')['z'].values
         
-        mean_diff, std_diff = goodness_of_fit_1PL(
+        gof_mean, gof_std = goodness_of_fit_1PL(
             z=torch.tensor(z_hat, dtype=torch.float32),
             theta=torch.tensor(theta_hat, dtype=torch.float32),
             y=torch.tensor(y, dtype=torch.float32),
             plot_path=f"{plot_dir}/goodness_of_fit_{dataset}",
         )
+        gof_means.append(gof_mean)
+        gof_stds.append(gof_std)
         
-        corr_ctt = theta_corr_ctt(
+        corr_ctt_mean, corr_ctt_std = theta_corr_ctt(
             theta=theta_hat,
             y=y,
             plot_path=f"{plot_dir}/theta_corr_ctt_{dataset}",
         )
-        
-        
+        corr_ctt_means.append(corr_ctt_mean)
+        corr_ctt_stds.append(corr_ctt_std)
 
-        
-        
-        
+    error_bar_plot(
+        datasets=datasets,
+        means=gof_means,
+        stds=gof_stds,
+        plot_path=f"{plot_dir}/summarize_goodness_of_fit",
+    )
+    
+    error_bar_plot(
+        datasets=datasets,
+        means=corr_ctt_means,
+        stds=corr_ctt_stds,
+        plot_path=f"{plot_dir}/summarize_theta_corr_ctt",
+    )
+    

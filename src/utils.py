@@ -59,8 +59,6 @@ def goodness_of_fit_1PL(
     diff_array = np.array(diff_list)
     mean_diff = np.mean(diff_array)
     std_diff = np.std(diff_array)
-    print(f'Mean of differences: {mean_diff}')
-    print(f'Standard deviation of differences: {std_diff}')
 
     plt.figure(figsize=(10, 6))
     plt.hist(diff_list, bins=40, density=True, alpha=0.4)
@@ -68,20 +66,17 @@ def goodness_of_fit_1PL(
     plt.tick_params(axis='both', labelsize=25)
     plt.xlim(0, 1)
     plt.axvline(mean_diff, linestyle='--')
-    plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f}', ha='center', va='bottom', fontsize=25)
+    plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f} $\\pm$ {3 * std_diff:.2f}', ha='center', va='bottom', fontsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
 
     return mean_diff, std_diff
 
-def bootstrap_mean_std(data, ratio = 0.9, num_samples=1000):
-    data = np.array(data)
+def bootstrap_mean_std(data: np.array):
     mean = np.mean(data)
-    
     bootstrap_means = []
-    for _ in range(num_samples):
-        bootstrap_sample = np.random.choice(data, size=int(ratio * data.shape[0]), replace=True)
+    for _ in range(100):
+        bootstrap_sample = np.random.choice(data, size=int(0.8 * data.shape[0]), replace=True)
         bootstrap_means.append(np.mean(bootstrap_sample))
-        
     std_bootstrap = np.std(bootstrap_means)
     return mean, std_bootstrap
     
@@ -101,7 +96,7 @@ def theta_corr_ctt(
     y: np.array,
     plot_path: str,
 ):
-    assert y.shape[1] == theta.shape[0], f'{y.shape[1]} != {theta.shape[0]}'
+    assert y.shape[0] == theta.shape[0], f'{y.shape[1]} != {theta.shape[0]}'
     
     ctt_scores = []
     for row in y:
@@ -114,25 +109,37 @@ def theta_corr_ctt(
     assert ctt_scores.shape[0] == theta.shape[0]
     
     if np.isnan(ctt_scores).any():
-        warnings.warn("ctt_scores contains NaN values.", UserWarning)
+        warnings.warn("ctt_scores contains nan", UserWarning)
     mask = ~np.isnan(ctt_scores)
-    ctt_scores_masked = ctt_scores[mask]
     theta_masked = theta[mask]
-    corr = np.corrcoef(ctt_scores_masked, theta_masked)[0, 1]
+    ctt_scores_masked = ctt_scores[mask]
+    corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
     
+    bootstrap_corrs = []
+    for _ in range(100):
+        indices = np.random.choice(len(theta_masked), int(0.8 * len(theta_masked)), replace=True)
+        bootstrap_corr = np.corrcoef(theta_masked[indices], ctt_scores_masked[indices])[0, 1]
+        bootstrap_corrs.append(bootstrap_corr)
+    bootstrap_std = np.std(bootstrap_corrs)
+
     plt.figure(figsize=(10, 10))
     plt.scatter(theta_masked, ctt_scores_masked)
     plt.xlabel(r'$\theta$ from calibration', fontsize=45)
     plt.ylabel(r'CTT score', fontsize=45)
-    plt.title(f'Correlation: {corr:.2f}', fontsize=45)
+    plt.title(f'Correlation: {corr:.2f} $\\pm$ {3 * bootstrap_std:.2f}', fontsize=45)
     plt.tick_params(axis='both', labelsize=35)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     
-    return corr
+    return corr, bootstrap_std
     
+def error_bar_plot(datasets, means, stds, plot_path):
+    means = np.array(means)
+    stds = np.array(stds)
+    plt.figure(figsize=(10, 6))
+    plt.errorbar(datasets, means, yerr=3 * stds, fmt='o')
+    plt.xticks(rotation=45, ha='right')
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     
-    
-
 def z_corr_plot(
     x,
     y,
