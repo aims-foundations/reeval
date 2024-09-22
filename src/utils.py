@@ -214,3 +214,35 @@ def plot_scatter_with_histograms(z3_py, z3_r, save_path, x_label=r'Our $z_3$', y
 
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
+    
+DESCRIPTION_MAP = {
+    'synthetic_efficiency': '### DATASET: Synthetic efficiency, ### PUBLISH TIME: unknown, ### CONTENT: to better understand inference runtime performance of various models',
+    'wikifact': '### DATASET: WikiFact, ### PUBLISH TIME: 2019, ### CONTENT: knowledge base completion, entity-relation-entity triples in natural language form, to more extensively test factual knowledge',
+    'entity_data_imputation': '### DATASET: Data imputation, ### PUBLISH TIME: 2021, ### CONTENT: tests the ability to impute missing entities in a data table',
+    'commonsense': '### DATASET: HellaSwag, ### PUBLISH TIME: 2019, ### CONTENT: commonsense reasoning in question answering',
+    'quac': '### DATASET: QuAC (Question Answering in Context), ### PUBLISH TIME: 2018, ### CONTENT: question answering in the context of dialogues',
+    'imdb': '### DATASET: IMDB, ### PUBLISH TIME: 2011, ### CONTENT: sentiment analysis in movie review',
+    'bbq': '### DATASET: BBQ (Bias Benchmark for Question Answering), ### PUBLISH TIME: 2022, ### CONTENT: for measuring social bias in question answering in ambiguous and unambigous context',
+    'math': '### DATASET: MATH, ### PUBLISH TIME: 2021, ### CONTENT: for measuring mathematical problem solving on competition math problems with or without with chain-of-thought style reasoning',
+    'twitter_aae': '### DATASET: TwitterAAE, ### PUBLISH TIME: 2016, ### CONTENT: for measuring language model performance in tweets as a function of speaker dialect, on African-American-aligned Tweets, on White-aligned Tweets',
+    'truthful_qa': '### DATASET: TruthfulQA, ### PUBLISH TIME: 2022, ### CONTENT: for measuring model truthfulness and commonsense knowledge in question answering',
+    'msmarco': '### DATASET: MSMARCO, ### PUBLISH TIME: 2016, ### CONTENT: for passage retrieval in information retrieval',
+    'legal_support': '### DATASET: LegalSupport, ### PUBLISH TIME: unknown, ### CONTENT: measure fine-grained legal reasoning through reverse entailment.',
+    'boolq': '### DATASET: boolq, ### PUBLISH TIME: 2019, ### CONTENT: binary (yes/no) question answering, passages from Wikipedia, questions from search queries',
+    'narrative_qa': '### DATASET: NarrativeQA, ### PUBLISH TIME: 2017, ### CONTENT: for reading comprehension over narratives, passages are books and movie scripts',
+    'real_toxicity_prompts': '### DATASET: RealToxicityPrompts, ### PUBLISH TIME: 2020, ### CONTENT: for measuring toxicity in prompted model generations',
+    'bold': '### DATASET: BOLD (Bias in Open-Ended Language Generation Dataset), ### PUBLISH TIME: 2021, ### CONTENT: for measuring biases and toxicity in open-ended language generation',
+    'gsm': '### DATASET: GSM8K (Grade school math word problems), ### PUBLISH TIME: 2021, ### CONTENT: for testing mathematical reasoning on grade-school math problems',
+    'babi_qa': '### DATASET: bAbI, ### PUBLISH TIME: 2015, ### CONTENT: for measuring understanding and reasoning',
+    'summarization_xsum': '### DATASET: XSUM, ### PUBLISH TIME: 2018, ### CONTENT: for text summarization of BBC news articles',
+    'synthetic_reasoning_natural': '### DATASET: Synthetic reasoning (natural language), ### PUBLISH TIME: 2021, ### CONTENT: Synthetic reasoning tasks defined using simple natural language based on LIME',
+    'dyck_language_np=3': '### DATASET: Dyck, ### PUBLISH TIME: 2019, ### CONTENT: Scenario testing hierarchical reasoning through the Dyck formal languages',
+    'civil_comments': '### DATASET: CivilComments, ### PUBLISH TIME: 2019, ### CONTENT: for toxicity detection',
+    'lsat_qa': '### DATASET: LSAT, ### PUBLISH TIME: 2021, ### CONTENT: for measuring analytical reasoning on the Law School Admission Test',
+    'raft': '### DATASET: RAFT (Real-world Annotated Few-Shot), ### PUBLISH TIME: 2021, ### CONTENT: meta-benchmark of 11 real-world text classification tasks',
+    'code': '### DATASET: Code, ### PUBLISH TIME: 2021, ### CONTENT: for measuring competence on code challenges, for measuring functional correctness for synthesizing programs from docstrings',
+    'entity_matching': '### DATASET: Entity matching, ### PUBLISH TIME: 2016, ### CONTENT: tests the ability to determine if two entities match',
+    'synthetic_reasoning': '### DATASET: Synthetic reasoning, ### PUBLISH TIME: 2021, ### CONTENT: defined using abstract symbols based on LIME and simple natural language based on LIME',
+    'mmlu': '### DATASET: MMLU (Massive Multitask Language Understanding), ### PUBLISH TIME: 2021, ### CONTENT: for knowledge-intensive question answering across 57 domains',
+    'airbench': '### DATASET: AirBench, ### PUBLISH TIME: 2024, ### CONTENT: AI safety benchmark that aligns with emerging government regulations and company policies',
+}

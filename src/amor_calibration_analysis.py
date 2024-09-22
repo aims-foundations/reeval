@@ -53,20 +53,20 @@ if __name__ == "__main__":
     plot_dir = f'../plot/amor_calibration'
     os.makedirs(plot_dir, exist_ok=True)
     
-    gof_means, gof_stds, corr_ctt_means, corr_ctt_stds = [], [], [], []
+    train_gof_means, test_gof_means = [], [], [], []
+    train_corr_ctt_means, train_corr_ctt_stds, test_corr_ctt_means, test_corr_ctt_stds = [], [], [], []
+    train_corr_z_means, train_corr_z_stds, test_corr_z_means, test_corr_z_stds = [], [], [], []
     for dataset in tqdm(datasets):
         for i in range(10):
             y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
             theta_train = pd.read_csv(f'{input_dir}/{dataset}/theta_{i}.csv')['theta'].values
             df_z_train = pd.read_csv(f'{input_dir}/{dataset}/z_train_{i}.csv')
-            train_indices = df_z_train['index'].values
-            z_train = df_z_train['z'].values
+            train_indices, z_train = df_z_train['index'].values, df_z_train['z'].values
             df_z_test = pd.read_csv(f'{input_dir}/{dataset}/z_test_{i}.csv')
-            test_indices = df_z_test['index'].values
-            z_test = df_z_test['z'].values
+            test_indices, z_test = df_z_test['index'].values, df_z_test['z'].values
             
-            gof_mean, gof_std = goodness_of_fit_1PL(
-                z=torch.tensor(z_hat, dtype=torch.float32),
+            gof_mean, _, _ = goodness_of_fit_1PL(
+                z=torch.tensor(z_train, dtype=torch.float32),
                 theta=torch.tensor(theta_hat, dtype=torch.float32),
                 y=torch.tensor(y, dtype=torch.float32),
                 plot_path=f"{plot_dir}/goodness_of_fit_{dataset}",
