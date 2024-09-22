@@ -96,7 +96,7 @@ if __name__ == "__main__":
         single_matrix = {name: [] for name in all_model_names}
         
         for filename in os.listdir(input_dir):
-            file_name_without_json = filename.replace(".json", "")
+            file_name_without_json = filename[:-5]
             if filename.endswith('.json') and (delete_model_name(file_name_without_json) == non_model_string):
                 model_name = extract_model_name(file_name_without_json)
                 with open(f"{input_dir}/{filename}", 'r') as f:
