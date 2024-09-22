@@ -5,7 +5,7 @@ import os
 import wandb
 
 if __name__ == "__main__":
-    wandb.init()
+    wandb.init(project="save_json")
     parser = argparse.ArgumentParser()
     parser.add_argument('--leaderboard', type=str, default="classic") # classic, mmlu
     parser.add_argument('--start_string', type=str, required=True) # use wandb sweep, mmlu

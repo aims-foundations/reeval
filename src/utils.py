@@ -117,7 +117,7 @@ def theta_corr_ctt(
     
     bootstrap_corrs = []
     for _ in range(100):
-        indices = np.random.choice(len(theta_masked), int(0.8 * len(theta_masked)), replace=True)
+        indices = np.random.choice(len(theta_masked), int(0.8 * len(theta_masked)), replace=False)
         bootstrap_corr = np.corrcoef(theta_masked[indices], ctt_scores_masked[indices])[0, 1]
         bootstrap_corrs.append(bootstrap_corr)
     bootstrap_std = np.std(bootstrap_corrs)

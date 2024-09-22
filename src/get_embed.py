@@ -65,7 +65,7 @@ def get_single_embed(
     push_dataset_dict.push_to_hub(hf_repo)
 
 if __name__ == "__main__":
-    wandb.init()
+    wandb.init(project="get_embed")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     parser.add_argument('--bs', type=int, default=1024)
@@ -79,9 +79,9 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     
     get_single_embed(
-        search_path = f'../data/pre_calibration/{args.dataset}/search.csv',
-        z_path = f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv',
-        hf_repo = f'stair-lab/reeval_{args.dataset}-embed',
+        search_path=f'../data/pre_calibration/{args.dataset}/search.csv',
+        z_path=f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv',
+        hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
         save_path=f'{output_dir}/embed.csv',
         bs=args.bs
     )

@@ -2,7 +2,7 @@ import os
 import yaml
 
 if __name__ == "__main__":
-    input_dir = '../data/pre_calibration/'
+    input_dir = '../data/nonamor_calibration/'
     folder_list = [f for f in os.listdir(input_dir) if f != "synthetic"]
     
     yaml_content = {
