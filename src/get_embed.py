@@ -23,7 +23,13 @@ def get_embed(
     
     return emb['text']
     
-def get_single_embed(search_path, z_path, hf_repo, bs=1024):
+def get_single_embed(
+    search_path,
+    z_path, 
+    hf_repo, 
+    save_path,
+    bs=1024
+):
     search_df = pd.read_csv(search_path)
     z_df = pd.read_csv(z_path, usecols=["z"])
     deleted_col_indices = search_df[search_df.loc[:, "is_deleted"] == 1].index.tolist()
@@ -43,6 +49,7 @@ def get_single_embed(search_path, z_path, hf_repo, bs=1024):
         'z': z_df['z'],
         'embed': embed
     })
+    push_df.to_csv(save_path, index=False)
     
     split_index = int(0.8 * len(push_df))
     push_train_df = push_df[:split_index]
@@ -68,10 +75,14 @@ if __name__ == "__main__":
     hf_token = os.getenv('HF_TOKEN')
     login(token=hf_token)
     
+    output_dir = f'../data/get_embed/{args.dataset}'
+    os.makedirs(output_dir, exist_ok=True)
+    
     get_single_embed(
         search_path = f'../data/pre_calibration/{args.dataset}/search.csv',
         z_path = f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv',
         hf_repo = f'stair-lab/reeval_{args.dataset}-embed',
+        save_path=f'{output_dir}/embed.csv',
         bs=args.bs
     )
 
