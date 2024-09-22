@@ -99,7 +99,7 @@ def main(
     emb_test = emb[test_indices]
     
     theta_train, z_train, W_train = amor_calibration(y_train, emb_train)
-    z_test = torch.matmul(emb_test, W_train)
+    z_test = torch.matmul(emb_test, W_train.cpu().detach())
     
     df_z_train = pd.DataFrame({
         'index': train_indices,
