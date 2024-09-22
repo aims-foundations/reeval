@@ -57,7 +57,7 @@ def get_bool_answers_logprob(data, threshold):
     return bool_answers
 
 if __name__ == "__main__":
-    wandb.init()
+    wandb.init(project="get_response_matrix")
     parser = argparse.ArgumentParser()
     parser.add_argument('--leaderboard', type=str, default="classic") # classic, mmlu
     parser.add_argument('--start_string', type=str, required=True) # use wandb sweep, mmlu
@@ -141,7 +141,8 @@ if __name__ == "__main__":
     # index search
     search_list = []
     base_idx = 0
-    for i, non_model_string in enumerate(non_model_strings):        with open(f"{input_dir}/{max_len_file_names[i]}", 'r') as f:
+    for i, non_model_string in enumerate(non_model_strings):
+        with open(f"{input_dir}/{max_len_file_names[i]}", 'r') as f:
             data = json.load(f)
         for j, question in enumerate(data['request_states']):
             text = question['instance']['input']['text']

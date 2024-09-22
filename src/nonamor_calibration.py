@@ -50,7 +50,7 @@ def nonamor_calibration(
     return theta_hat, z_hat
 
 if __name__ == "__main__":
-    wandb.init()
+    wandb.init(project="nonamor_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
