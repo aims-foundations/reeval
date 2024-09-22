@@ -5,9 +5,7 @@ import pandas as pd
 from sklearn.linear_model import BayesianRidge
 import pickle
 import os
-from sklearn.model_selection import train_test_split
 import torch
-import wandb
 from utils import bootstrap_mean_var, goodness_of_fit_1PL, set_seed
 
 def mse_with_var(y_true, y_pred):

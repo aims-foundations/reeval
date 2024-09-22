@@ -1,16 +1,12 @@
 import argparse
 import os
 import wandb
-from utils import set_seed, item_response_fn_1PL, split_indices
 import pandas as pd
-import matplotlib.pyplot as plt
-from tueplots import bundles
-plt.rcParams.update(bundles.icml2022())
-plt.style.use('seaborn-v0_8-paper')
-from datasets import load_dataset,  concatenate_datasets
 import torch
 from tqdm import tqdm
 import torch.optim as optim
+from datasets import load_dataset,  concatenate_datasets
+from utils import set_seed, item_response_fn_1PL, split_indices
 
 def amor_calibration(
     response_matrix: torch.Tensor, # response_matrix [69, 959]

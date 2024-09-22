@@ -1,14 +1,56 @@
 import os
-import torch
 import pandas as pd
+import torch
 from tqdm import tqdm
+from datasets import load_dataset,  concatenate_datasets
 from utils import goodness_of_fit_1PL_plot, theta_corr_ctt, error_bar_plot
 
+def main(
+    hf_repo,
+    y_path,
+    df_z_train_path,
+    df_z_test_path,
+    df_theta_path,
+):
+    y = pd.read_csv(y_path, index_col=0).values
+    y = torch.tensor(y, dtype=torch.float32)
+    
+    dataset_train = load_dataset(hf_repo, split="train")
+    dataset_test = load_dataset(hf_repo, split="test")
+    dataset = concatenate_datasets([dataset_train, dataset_test])
+    emb = torch.tensor(dataset['embed'], dtype=torch.float32)
+    
+    assert y.shape[1] == emb.shape[0]
+    train_indices, test_indices = split_indices(emb.shape[0])    
+    emb_train = emb[train_indices]
+    y_train = y[:, train_indices]
+    emb_test = emb[test_indices]
+    
+    theta_train, z_train, W_train = amor_calibration(y_train, emb_train)
+    z_test = torch.matmul(emb_test, W_train.cpu().detach())
+    
+    df_z_train = pd.DataFrame({
+        'index': train_indices,
+        'z': z_train.cpu().detach().numpy(),
+    })
+    df_z_train.to_csv(df_z_train_path, index=False)
+    
+    df_z_test = pd.DataFrame({
+        'index': test_indices,
+        'z': z_test.cpu().detach().numpy(),
+    })
+    df_z_test.to_csv(df_z_test_path, index=False)
+    
+    df_theta = pd.DataFrame({
+        'theta': theta_train.cpu().detach().numpy(),
+    })
+    df_theta.to_csv(df_theta_path, index=False)
+
 if __name__ == "__main__":
-    plot_dir = f'../plot/nonamor_calibration'
+    plot_dir = f'../plot/amor_calibration'
     os.makedirs(plot_dir, exist_ok=True)
     
-    input_dir = '../data/nonamor_calibration/'
+    input_dir = '../data/amor_calibration/'
     datasets = [f for f in os.listdir(input_dir)]
     
     gof_means = []

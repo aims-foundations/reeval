@@ -60,13 +60,13 @@ if __name__ == "__main__":
     output_dir = f'../data/plugin_regression/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     
-    for i in tqdm(range(50)):
+    for i in tqdm(range(10)):
         set_seed(i)
         main(
             hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
             df_train_path=f'{output_dir}/train_{i}.csv',
             df_test_path=f'{output_dir}/test_{i}.csv',
-            save_model_path=f'{output_dir}/bayridge.pkl' if i==42 else None,
+            save_model_path=f'{output_dir}/bayridge.pkl' if i==0 else None,
         )
         
 

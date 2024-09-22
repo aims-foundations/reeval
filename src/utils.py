@@ -24,11 +24,38 @@ def set_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
+def split_indices(length):
+    indices = np.arange(length)
+    np.random.shuffle(indices)
+    train_size = int(0.8 * len(indices))
+    train_indices = indices[:train_size]
+    test_indices = indices[train_size:]
+    return train_indices, test_indices
+    
+def bootstrap_mean_std(data: np.array):
+    mean = np.mean(data)
+    bootstrap_means = []
+    for _ in range(1000):
+        bootstrap_sample = np.random.choice(data, size=int(0.8 * data.shape[0]), replace=True)
+        bootstrap_means.append(np.mean(bootstrap_sample))
+    std_bootstrap = np.std(bootstrap_means)
+    return mean, std_bootstrap
+    
+def perform_t_test(sample_1, sample_2, label=""):
+    print(f"{label} T-test:")
+    print(f"Null Hypothesis (H0): The means of the two samples are equal.")
+    print(f"Alternative Hypothesis (H1): The means of the two samples are not equal.")
+    t_stat, p_value = ttest_ind(sample_1, sample_2)
+    print(f"t_stat = {t_stat}, p_value = {p_value}")
+    if p_value < 0.05:
+        print(f"Reject the null hypothesis for {label}.")
+    else:
+        print(f"Fail to reject the null hypothesis for {label}.")
+
 def goodness_of_fit_1PL(
     z: torch.Tensor,
     theta: torch.Tensor,
     y: torch.Tensor,
-    plot_path: str,
     bin_size: int=7,
 ):
     assert y.shape[1] == z.shape[0], f'{y.shape[1]} != {z.shape[0]}'
@@ -59,7 +86,16 @@ def goodness_of_fit_1PL(
     diff_array = np.array(diff_list)
     mean_diff = np.mean(diff_array)
     std_diff = np.std(diff_array)
+    return mean_diff, std_diff, diff_list
 
+def goodness_of_fit_1PL_plot(
+    z: torch.Tensor,
+    theta: torch.Tensor,
+    y: torch.Tensor,
+    plot_path: str,
+    bin_size: int=7,
+):
+    mean_diff, std_diff, diff_list = goodness_of_fit_1PL(z, theta, y, bin_size)
     plt.figure(figsize=(10, 6))
     plt.hist(diff_list, bins=40, density=True, alpha=0.4)
     plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
@@ -68,28 +104,6 @@ def goodness_of_fit_1PL(
     plt.axvline(mean_diff, linestyle='--')
     plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f} $\\pm$ {3 * std_diff:.2f}', ha='center', va='bottom', fontsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-
-    return mean_diff, std_diff
-
-def bootstrap_mean_std(data: np.array):
-    mean = np.mean(data)
-    bootstrap_means = []
-    for _ in range(100):
-        bootstrap_sample = np.random.choice(data, size=int(0.8 * data.shape[0]), replace=True)
-        bootstrap_means.append(np.mean(bootstrap_sample))
-    std_bootstrap = np.std(bootstrap_means)
-    return mean, std_bootstrap
-    
-def perform_t_test(sample_1, sample_2, label=""):
-    print(f"{label} T-test:")
-    print(f"Null Hypothesis (H0): The means of the two samples are equal.")
-    print(f"Alternative Hypothesis (H1): The means of the two samples are not equal.")
-    t_stat, p_value = ttest_ind(sample_1, sample_2)
-    print(f"t_stat = {t_stat}, p_value = {p_value}")
-    if p_value < 0.05:
-        print(f"Reject the null hypothesis for {label}.")
-    else:
-        print(f"Fail to reject the null hypothesis for {label}.")
 
 def theta_corr_ctt(
     theta: np.array,
@@ -115,22 +129,22 @@ def theta_corr_ctt(
     ctt_scores_masked = ctt_scores[mask]
     corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
     
-    bootstrap_corrs = []
+    sample_corrs = []
     for _ in range(100):
         indices = np.random.choice(len(theta_masked), int(0.8 * len(theta_masked)), replace=False)
-        bootstrap_corr = np.corrcoef(theta_masked[indices], ctt_scores_masked[indices])[0, 1]
-        bootstrap_corrs.append(bootstrap_corr)
-    bootstrap_std = np.std(bootstrap_corrs)
+        sample_corr = np.corrcoef(theta_masked[indices], ctt_scores_masked[indices])[0, 1]
+        sample_corrs.append(sample_corr)
+    sample_std = np.std(sample_corrs)
 
     plt.figure(figsize=(10, 10))
     plt.scatter(theta_masked, ctt_scores_masked)
     plt.xlabel(r'$\theta$ from calibration', fontsize=45)
     plt.ylabel(r'CTT score', fontsize=45)
-    plt.title(f'Correlation: {corr:.2f} $\\pm$ {3 * bootstrap_std:.2f}', fontsize=45)
+    plt.title(f'Correlation: {corr:.2f} $\\pm$ {3 * sample_std:.2f}', fontsize=45)
     plt.tick_params(axis='both', labelsize=35)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     
-    return corr, bootstrap_std
+    return corr, sample_std
     
 def error_bar_plot(datasets, means, stds, plot_path):
     means = np.array(means)
@@ -139,16 +153,10 @@ def error_bar_plot(datasets, means, stds, plot_path):
     plt.errorbar(datasets, means, yerr=stds, elinewidth=0.75, fmt="o", ms=5)
     plt.xticks(rotation=45, ha='right', fontsize=20)
     plt.tick_params(axis='both', labelsize=20)
+    plt.ylim(0, 1)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
 
-def split_indices(length):
-    indices = np.arange(length)
-    np.random.shuffle(indices)
-    train_size = int(0.8 * len(indices))
-    train_indices = indices[:train_size]
-    test_indices = indices[train_size:]
-    return train_indices, test_indices
-    
+
     
     
     
