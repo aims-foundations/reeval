@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 from utils import DESCRIPTION_MAP, get_embed
 import argparse
 from datasets import Dataset, DatasetDict
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     output_dir = f'../data/agg_embed/'
     os.makedirs(output_dir, exist_ok=True)
     
-    for dataset, desciption in DESCRIPTION_MAP.items():
+    for dataset, desciption in tqdm(DESCRIPTION_MAP.items()):
         main(
             dataset=dataset,
             description=desciption,
