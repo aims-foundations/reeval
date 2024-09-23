@@ -24,6 +24,7 @@ if __name__ == "__main__":
         theta_hat = pd.read_csv(f'{input_dir}/{dataset}/nonamor_theta.csv')['theta'].values
         z_hat = pd.read_csv(f'{input_dir}/{dataset}/nonamor_z.csv')['z'].values
         
+        print("Goodness of Fit")
         gof_mean, gof_std = goodness_of_fit_1PL_plot(
             z=torch.tensor(z_hat, dtype=torch.float32),
             theta=torch.tensor(theta_hat, dtype=torch.float32),
@@ -33,6 +34,7 @@ if __name__ == "__main__":
         gof_means.append(gof_mean)
         gof_stds.append(gof_std)
         
+        print("Theta correlation with CTT")
         corr_ctt_mean, corr_ctt_std = theta_corr_ctt_plot(
             theta=theta_hat,
             y=y,
