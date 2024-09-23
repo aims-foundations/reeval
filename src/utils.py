@@ -141,9 +141,8 @@ def theta_corr_ctt(
     mask = ~np.isnan(ctt_scores)
     theta_masked, ctt_scores_masked = theta[mask], ctt_scores[mask]
     
-    print(f"theta_masked: {theta_masked}, ctt_scores_masked: {ctt_scores_masked}")
-    if theta_masked.size == 0:
-        warnings.warn("theta_masked, ctt_scores_masked is empty", UserWarning)
+    if np.unique(ctt_scores).size <= 3:
+        warnings.warn(f"ctt_scores has little value: {ctt_scores}", UserWarning)
         return np.nan, theta_masked, ctt_scores_masked
     
     corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]

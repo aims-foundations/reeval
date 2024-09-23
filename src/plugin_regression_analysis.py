@@ -3,7 +3,7 @@ import pandas as pd
 import os
 import torch
 from tqdm import tqdm
-from utils import goodness_of_fit_1PL, error_bar_plot
+from utils import goodness_of_fit_1PL, error_bar_plot_single, error_bar_plot_double
 from sklearn.metrics import mean_squared_error
 
 if __name__ == "__main__":
@@ -82,20 +82,26 @@ if __name__ == "__main__":
         dataset_test_mse_stds.append(np.std(test_mses))
         dataset_baseline_train_mse_stds.append(np.std(baseline_train_mses))
         dataset_baseline_test_mse_stds.append(np.std(baseline_test_mses))
-            
-    error_bar_plot(
-        datasets=datasets,
-        means=dataset_gof_train_means,
-        stds=dataset_gof_train_stds,
-        plot_path=f"{plot_dir}/summarize_gof_train",
-    )
+        
+    error_bar_plot_double(
+        datasets=datasets, 
+        means_1=dataset_gof_train_means,
+        stds_1=dataset_gof_train_stds,
+        means_2=dataset_gof_test_means,
+        stds_2=dataset_gof_test_stds,
+        plot_path=f"{plot_dir}/summarize_gof",
+        ylabel=r"Goodness of Fit",
+    )   
     
-    error_bar_plot(
-        datasets=datasets,
-        means=dataset_gof_test_means,
-        stds=dataset_gof_test_stds,
-        plot_path=f"{plot_dir}/summarize_gof_test",
-    )
+    error_bar_plot_double(
+        datasets=datasets, 
+        means_1=dataset_gof_train_means,
+        stds_1=dataset_gof_train_stds,
+        means_2=dataset_gof_test_means,
+        stds_2=dataset_gof_test_stds,
+        plot_path=f"{plot_dir}/summarize_gof",
+        ylabel=r"Goodness of Fit",
+    )  
     
     error_bar_plot(
         datasets=datasets,
