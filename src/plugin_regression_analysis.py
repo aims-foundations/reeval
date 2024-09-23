@@ -3,7 +3,7 @@ import pandas as pd
 import os
 import torch
 from tqdm import tqdm
-from utils import goodness_of_fit_1PL, error_bar_plot_single, error_bar_plot_double
+from utils import goodness_of_fit_1PL, error_bar_plot_double
 from sklearn.metrics import mean_squared_error
 
 if __name__ == "__main__":
@@ -85,32 +85,32 @@ if __name__ == "__main__":
         
     error_bar_plot_double(
         datasets=datasets, 
-        means_1=dataset_gof_train_means,
-        stds_1=dataset_gof_train_stds,
-        means_2=dataset_gof_test_means,
-        stds_2=dataset_gof_test_stds,
-        plot_path=f"{plot_dir}/summarize_gof",
+        means_train=dataset_gof_train_means,
+        stds_train=dataset_gof_train_stds,
+        means_test=dataset_gof_test_means,
+        stds_test=dataset_gof_test_stds,
+        plot_path=f"{plot_dir}/plugin_regression_summarize_gof",
         ylabel=r"Goodness of Fit",
     )   
     
     error_bar_plot_double(
         datasets=datasets, 
-        means_1=dataset_train_mse_means,
-        stds_1=dataset_train_mse_stds,
-        means_2=dataset_test_mse_means,
-        stds_2=dataset_test_mse_stds,
-        plot_path=f"{plot_dir}/summarize_mse",
+        means_train=dataset_train_mse_means,
+        stds_train=dataset_train_mse_stds,
+        means_test=dataset_test_mse_means,
+        stds_test=dataset_test_mse_stds,
+        plot_path=f"{plot_dir}/plugin_regression_summarize_mse",
         ylabel=r"MSE of Bayesian Ridge Regression",
         ylim_upper=10,
     )
     
     error_bar_plot_double(
         datasets=datasets, 
-        means_1=dataset_baseline_train_mse_means,
-        stds_1=dataset_baseline_train_mse_stds,
-        means_2=dataset_baseline_test_mse_means,
-        stds_2=dataset_baseline_test_mse_stds,
-        plot_path=f"{plot_dir}/summarize_baseline_mse",
+        means_train=dataset_baseline_train_mse_means,
+        stds_train=dataset_baseline_train_mse_stds,
+        means_test=dataset_baseline_test_mse_means,
+        stds_test=dataset_baseline_test_mse_stds,
+        plot_path=f"{plot_dir}/plugin_regression_summarize_baseline_mse",
         ylabel=r"MSE of Baseline Mean Prediction",
         ylim_upper=10,
     )

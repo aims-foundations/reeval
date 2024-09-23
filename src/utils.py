@@ -182,7 +182,10 @@ def error_bar_plot_single(
     ylabel,
     ylim_upper=1
 ):
+    sorted_data = sorted(zip(datasets, means, stds), key=lambda x: x[1])
+    datasets, means, stds = zip(*sorted_data)
     stds_mul3 = [s*3 for s in stds]
+    
     plt.figure(figsize=(20, 6))
     plt.errorbar(datasets, means, yerr=stds_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
     plt.xticks(rotation=30, ha='right', fontsize=45)
@@ -194,17 +197,23 @@ def error_bar_plot_single(
     
 def error_bar_plot_double(
     datasets, 
-    means_1, stds_1, 
-    means_2, stds_2,
+    means_train, stds_train, 
+    means_test, stds_test,
     plot_path,
     ylabel,
     ylim_upper=1
 ):
-    stds_1_mul3 = [s*3 for s in stds_1]
-    stds_2_mul3 = [s*3 for s in stds_2]
+    sorted_data = sorted(
+        zip(datasets, means_train, stds_train, means_test, stds_test),
+        key=lambda x: x[3]
+    )
+    datasets, means_train, stds_train, means_test, stds_test = zip(*sorted_data)
+    stds_train_mul3 = [s*3 for s in stds_train]
+    stds_test_mul3 = [s*3 for s in stds_test]
+    
     plt.figure(figsize=(20, 6))
-    plt.errorbar(datasets, means_1, yerr=stds_1_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
-    plt.errorbar(datasets, means_2, yerr=stds_2_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
+    plt.errorbar(datasets, means_train, yerr=stds_train_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
+    plt.errorbar(datasets, means_test, yerr=stds_test_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
     plt.xticks(rotation=30, ha='right', fontsize=45)
     plt.tick_params(axis='both', labelsize=35)
     plt.ylabel(ylabel, fontsize=45)

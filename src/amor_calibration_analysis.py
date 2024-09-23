@@ -3,7 +3,13 @@ import numpy as np
 import pandas as pd
 import torch
 from tqdm import tqdm
-from utils import goodness_of_fit_1PL, theta_corr_ctt, error_bar_plot, amorz_corr_nonamorz
+from utils import (
+    goodness_of_fit_1PL, 
+    theta_corr_ctt, 
+    error_bar_plot_single,
+    error_bar_plot_double, 
+    amorz_corr_nonamorz,
+)
 
 if __name__ == "__main__":
     input_dir = '../data/amor_calibration'
@@ -79,38 +85,32 @@ if __name__ == "__main__":
         dataset_theta_corr_ctt_stds.append(np.std(theta_corr_ctt_means))
         dataset_z_corr_train_stds.append(np.std(z_corr_train_means))
         dataset_z_corr_test_stds.append(np.std(z_corr_test_means))
-            
-    error_bar_plot(
-        datasets=datasets,
-        means=dataset_gof_train_means,
-        stds=dataset_gof_train_stds,
-        plot_path=f"{plot_dir}/summarize_gof_train",
-    )
     
-    error_bar_plot(
-        datasets=datasets,
-        means=dataset_gof_test_means,
-        stds=dataset_gof_test_stds,
-        plot_path=f"{plot_dir}/summarize_gof_test",
-    )
+    error_bar_plot_double(
+        datasets=datasets, 
+        means_train=dataset_gof_train_means,
+        stds_train=dataset_gof_train_stds,
+        means_test=dataset_gof_test_means,
+        stds_test=dataset_gof_test_stds,
+        plot_path=f"{plot_dir}/amor_calibration_summarize_gof",
+        ylabel=r"Goodness of Fit",
+    )   
     
-    error_bar_plot(
+    error_bar_plot_single(
         datasets=datasets,
         means=dataset_theta_corr_ctt_means,
         stds=dataset_theta_corr_ctt_stds,
-        plot_path=f"{plot_dir}/summarize_theta_corr_ctt",
+        plot_path=f"{plot_dir}/amor_calibration_summarize_theta_corr_ctt",
+        ylabel=r"$\theta$ correlation with CTT",
     )
     
-    error_bar_plot(
-        datasets=datasets,
-        means=dataset_z_corr_train_means,
-        stds=dataset_z_corr_train_stds,
-        plot_path=f"{plot_dir}/summarize_z_corr_train",
-    )
+    error_bar_plot_double(
+        datasets=datasets, 
+        means_train=dataset_z_corr_train_means,
+        stds_train=dataset_z_corr_train_stds,
+        means_test=dataset_z_corr_test_means,
+        stds_test=dataset_z_corr_test_stds,
+        plot_path=f"{plot_dir}/amor_calibration_summarize_z_corr",
+        ylabel=r"correlation between $z$ from amortized and non-amortized calibration",
+    )   
     
-    error_bar_plot(
-        datasets=datasets,
-        means=dataset_z_corr_test_means,
-        stds=dataset_z_corr_test_stds,
-        plot_path=f"{plot_dir}/summarize_z_corr_test",
-    )
