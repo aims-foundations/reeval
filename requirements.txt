@@ -16,3 +16,4 @@ jaxlib
 webdriver_manager
 numpyro
 vllm
+peft

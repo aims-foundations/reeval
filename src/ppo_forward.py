@@ -4,11 +4,8 @@ from vllm import LLM, SamplingParams
 from peft import AutoPeftModelForCausalLM
 
 if __name__ == "__main__":
-    input_path = "../data/ppo/llama3-ppo/checkpoint-399"
-    output_dir = "../data/ppo/llama3-ppo/merged_model"
-    os.makedirs(output_dir, exist_ok=True)
-    
-    model = AutoPeftModelForCausalLM.from_pretrained(input_path)
+    output_dir = "../data/ppo/llama3-ppo"
+    model = AutoPeftModelForCausalLM.from_pretrained(f'{output_dir}/checkpoint-399')
     model = model.merge_and_unload().to(torch.bfloat16)
     model.save_pretrained(output_dir)
 
