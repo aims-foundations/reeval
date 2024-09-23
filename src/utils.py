@@ -61,8 +61,11 @@ def perform_t_test(sample_1, sample_2, label=""):
     print(f"t_stat = {t_stat}, p_value = {p_value}")
     if p_value < 0.05:
         print(f"Reject the null hypothesis for {label}.")
+        tag = True
     else:
         print(f"Fail to reject the null hypothesis for {label}.")
+        tag = False
+    return tag, t_stat, p_value
 
 def goodness_of_fit_1PL(
     z: torch.Tensor,

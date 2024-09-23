@@ -3,11 +3,11 @@ import yaml
 
 if __name__ == "__main__":
     input_dir = '../data/nonamor_calibration/'
-    folder_list = [f for f in os.listdir(input_dir) if f != "synthetic"]
+    folder_list = [f for f in os.listdir(input_dir)]
     
     yaml_content = {
-        'program': 'get_embed.py',
-        'project': 'get_embed',
+        'program': 'nonid_test.py',
+        'project': 'nonid_test',
         'method': 'grid',
         'parameters': {
             'dataset': {
@@ -16,6 +16,6 @@ if __name__ == "__main__":
         }
     }
 
-    with open('get_embed.yaml', 'w') as yaml_file:
+    with open('nonid_test.yaml', 'w') as yaml_file:
         yaml.dump(yaml_content, yaml_file, default_flow_style=False)
         

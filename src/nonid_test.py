@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import argparse
 import os
 import numpy as np
 import pandas as pd
@@ -8,6 +9,7 @@ import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
 import jax.numpy as jnp
 import jax.random as random
+import wandb
 from nonamor_calibration import nonamor_calibration
 import matplotlib.pyplot as plt
 from tueplots import bundles
@@ -46,7 +48,7 @@ def sample_subsets(z, dumb_theta, smart_theta, subset_size, y_mean=0.7):
 
 def model(z_asked, answers):
     theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0)) # prior
-    probs = item_response_fn_1PL_jnp(z_asked, theta_hat, datatype="jnp")
+    probs = item_response_fn_1PL_jnp(z_asked, theta_hat)
     numpyro.sample("obs", dist.Bernoulli(probs), obs=answers)
     
 def fit_theta_mcmc(z_asked, answers, num_samples=9000, num_warmup=1000):
@@ -66,18 +68,16 @@ def fit_theta_mcmc(z_asked, answers, num_samples=9000, num_warmup=1000):
     theta_mean, theta_std = jnp.mean(theta_samples), jnp.std(theta_samples)
     return theta_mean, theta_std, theta_samples
 
-if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument("--dataset", type=str, required=True)
-    args = parser.parse_args()
-
-    set_seed(42)
-    theta = pd.read_csv(f'../data/nonamor_calibration/{args.dataset}/nonamor_theta.csv')['theta'].values
-    y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
+def main(
+    theta_path, 
+    y_path,
+    plot_path,
+    output_path
+):
+    theta = pd.read_csv(theta_path)['theta'].values
+    y = pd.read_csv(y_path, index_col=0).values
     subset_size = min(y.shape[1] // 10, 5000)
     print(f"subset size = {subset_size}")
-    plot_dir = f'../plot/nonid_test'
-    os.makedirs(plot_dir, exist_ok=True)
     
     i = np.abs(theta - 0.5).argmin()
     j = np.abs(theta - 1).argmin()
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     print(f'smart theta = {theta[j]}')
 
     y_new = np.delete(y, [i, j], axis=0)
-    theta_new, z_new = nonamor_calibration(torch.tensor(y_new, dtype=torch.float32))
+    _, z_new = nonamor_calibration(torch.tensor(y_new, dtype=torch.float32))
     z_easy, z_hard, easy_indices, hard_indices = sample_subsets(
         z_new, theta[i], theta[j], subset_size
     )
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     print(f"smart CTT mean = {mean_smart}")
     print(f"smart CTT std = {std_smart}")
     
-    perform_t_test(dumb_answers, smart_answers, label="CTT")
+    ctt_tag, ctt_t_stat, ctt_p_value = perform_t_test(dumb_answers, smart_answers, label="CTT")
     
     # IRT via HMC
     print("\nIRT via HMC")
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     print(f"smart IRT mean = {theta_smart_mean}")
     print(f"smart IRT std = {theta_smart_std}")
     
-    perform_t_test(theta_dumb_samples, theta_smart_samples, label="IRT")
+    irt_tag, irt_t_stat, irt_p_value = perform_t_test(theta_dumb_samples, theta_smart_samples, label="IRT")
     
     # plot
     plt.figure(figsize=(12, 6))
@@ -135,6 +135,34 @@ if __name__ == "__main__":
     plt.xlabel(r'$z$')
     plt.xlabel(r'$z$', fontsize=25)
     plt.tick_params(axis='both', labelsize=16)
-    plt.savefig(f'{plot_dir}/posttheta_z_distr_{args.dataset}.png', dpi=300, bbox_inches='tight')
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     
+    output_df = pd.DataFrame({
+        'ctt_tag': [ctt_tag],
+        'ctt_t_stat': [ctt_t_stat],
+        'ctt_p_value': [ctt_p_value],
+        'irt_tag': [irt_tag],
+        'irt_t_stat': [irt_t_stat],
+        'irt_p_value': [irt_p_value]
+    })
+    output_df.to_csv(output_path, index=False)
+    
+if __name__ == "__main__":
+    wandb.init(project="nonid_test")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, required=True)
+    args = parser.parse_args()
+    
+    set_seed(42)
+    plot_dir = f'../plot/nonid_test'
+    output_dir = f'../data/nonid_test/{args.dataset}'
+    os.makedirs(plot_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
+    
+    main(
+        theta_path=f'../data/nonamor_calibration/{args.dataset}/nonamor_theta.csv', 
+        y_path=f'../data/pre_calibration/{args.dataset}/matrix.csv',
+        output_path=f'{output_dir}/nonid_test.csv',
+        plot_path=f'{plot_dir}/posttheta_zdistr_{args.dataset}.png',
+    )
