@@ -1,4 +1,4 @@
-from utils import DESCRIPTION_MAP
+from utils import DATASETS
 from datasets import Dataset, DatasetDict
 import pandas as pd
 import os
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     input_dir = f'../data/agg_embed/'
     
     agg_df = pd.concat(
-        [pd.read_csv(f'{input_dir}/embed_{dataset}.csv') for dataset in DESCRIPTION_MAP.keys()],
+        [pd.read_csv(f'{input_dir}/embed_{dataset}.csv') for dataset in DATASETS],
         ignore_index=True
     )
     agg_dataset = Dataset.from_pandas(agg_df)
