@@ -136,3 +136,5 @@ if __name__ == "__main__":
     plt.xlabel(r'$z$', fontsize=25)
     plt.tick_params(axis='both', labelsize=16)
     plt.savefig(f'{plot_dir}/posttheta_z_distr_{args.dataset}.png', dpi=300, bbox_inches='tight')
+    plt.close()
+    

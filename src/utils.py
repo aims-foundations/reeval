@@ -76,7 +76,7 @@ def goodness_of_fit_1PL(
 
     bin_start, bin_end = torch.min(theta), torch.max(theta)
     bins = torch.linspace(bin_start, bin_end, bin_size)
-    print(bins) # [-3. -2. -1.  0.  1.  2.  3.]
+    # print(bins) # [-3. -2. -1.  0.  1.  2.  3.]
 
     diff_list = []
     for i in range(z.shape[0]):
@@ -107,6 +107,7 @@ def goodness_of_fit_1PL_plot(
 ):
     mean_diff, diff_list = goodness_of_fit_1PL(z, theta, y, bin_size)
     std_diff = np.std(diff_list)
+    
     plt.figure(figsize=(10, 6))
     plt.hist(diff_list, bins=40, density=True, alpha=0.4)
     plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
@@ -115,6 +116,8 @@ def goodness_of_fit_1PL_plot(
     plt.axvline(mean_diff, linestyle='--')
     plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f} $\\pm$ {3 * std_diff:.2f}', ha='center', va='bottom', fontsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
     return mean_diff, std_diff
 
 def theta_corr_ctt(
@@ -162,6 +165,7 @@ def theta_corr_ctt_plot(
     plt.title(f'Correlation: {corr:.2f} $\\pm$ {3 * sample_std:.2f}', fontsize=45)
     plt.tick_params(axis='both', labelsize=35)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
     
     return corr, sample_std
     
@@ -172,7 +176,8 @@ def error_bar_plot(datasets, means, stds, plot_path, ylim_upper=1):
     plt.tick_params(axis='both', labelsize=20)
     plt.ylim(0, ylim_upper)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-
+    plt.close()
+    
 def amorz_corr_nonamorz(
     z_amor: np.array,
     z_nonamor: np.array,
