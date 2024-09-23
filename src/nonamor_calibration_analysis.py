@@ -10,7 +10,7 @@ if __name__ == "__main__":
     
     input_dir = '../data/nonamor_calibration/'
     # datasets = [f for f in os.listdir(input_dir)]
-    datasets = ['synthetic_efficiency', 'wikifact', 'entity_data_imputation', 'commonsense', 'quac', 'imdb', 'bbq', 'math', 'twitter_aae', 'truthful_qa', 'legal_support', 'boolq', 'narrative_qa', 'real_toxicity_prompts', 'bold', 'gsm', 'babi_qa', 'summarization_xsum', 'synthetic_reasoning_natural', 'dyck_language_np=3', 'lsat_qa', 'raft', 'code', 'entity_matching', 'synthetic_reasoning', 'mmlu', 'airbench']
+    datasets = ['synthetic_efficiency', 'wikifact', 'entity_data_imputation', 'commonsense', 'quac', 'imdb', 'bbq', 'math', 'twitter_aae', 'truthful_qa', 'legal_support', 'boolq', 'narrative_qa', 'real_toxicity_prompts', 'bold', 'gsm', 'babi_qa', 'summarization_xsum', 'synthetic_reasoning_natural', 'dyck_language_np3', 'lsat_qa', 'raft', 'code', 'entity_matching', 'synthetic_reasoning', 'mmlu', 'airbench']
 
     gof_means, gof_stds = [], []
     corr_ctt_means, corr_ctt_stds = [], []
@@ -19,6 +19,7 @@ if __name__ == "__main__":
         theta_hat = pd.read_csv(f'{input_dir}/{dataset}/nonamor_theta.csv')['theta'].values
         z_hat = pd.read_csv(f'{input_dir}/{dataset}/nonamor_z.csv')['z'].values
         
+        print("Goodness of fit")
         gof_mean, gof_std = goodness_of_fit_1PL_plot(
             z=torch.tensor(z_hat, dtype=torch.float32),
             theta=torch.tensor(theta_hat, dtype=torch.float32),
@@ -28,6 +29,7 @@ if __name__ == "__main__":
         gof_means.append(gof_mean)
         gof_stds.append(gof_std)
         
+        print("Theta correlation with CTT")
         corr_ctt_mean, corr_ctt_std = theta_corr_ctt_plot(
             theta=theta_hat,
             y=y,
