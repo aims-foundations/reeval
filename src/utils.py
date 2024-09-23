@@ -108,7 +108,13 @@ def goodness_of_fit_1PL_plot(
     bin_size: int=6,
 ):
     mean_diff, diff_list = goodness_of_fit_1PL(z, theta, y, bin_size)
-    std_diff = np.std(diff_list)
+    
+    sample_means = []
+    for _ in range(100):
+        indices = np.random.choice(len(diff_list), int(0.8 * len(diff_list)), replace=False)
+        sample_mean = np.mean(diff_list[indices])
+        sample_means.append(sample_mean)
+    std_diff = np.std(sample_means)
     
     plt.figure(figsize=(10, 6))
     plt.hist(diff_list, bins=40, density=True, alpha=0.4)
