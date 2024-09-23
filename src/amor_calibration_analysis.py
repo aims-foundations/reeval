@@ -31,7 +31,7 @@ if __name__ == "__main__":
         theta_corr_ctt_means = []
         z_corr_train_means, z_corr_test_means = [], []
         
-        for i in range(10):
+        for i in range(2):
             y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
             theta_train = pd.read_csv(f'{input_dir}/{dataset}/theta_{i}.csv')['theta'].values
             df_z_train = pd.read_csv(f'{input_dir}/{dataset}/z_train_{i}.csv')
@@ -111,6 +111,6 @@ if __name__ == "__main__":
         means_test=dataset_z_corr_test_means,
         stds_test=dataset_z_corr_test_stds,
         plot_path=f"{plot_dir}/amor_calibration_summarize_z_corr",
-        ylabel=r"correlation between $z$ from amortized and non-amortized calibration",
+        ylabel=r"correlation of $z$",
     )   
     
