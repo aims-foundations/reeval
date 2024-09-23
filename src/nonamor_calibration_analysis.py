@@ -2,7 +2,7 @@ import os
 import torch
 import pandas as pd
 from tqdm import tqdm
-from utils import goodness_of_fit_1PL_plot, theta_corr_ctt_plot, error_bar_plot
+from utils import goodness_of_fit_1PL_plot, theta_corr_ctt_plot, error_bar_plot_single
 
 if __name__ == "__main__":
     plot_dir = f'../plot/nonamor_calibration'
@@ -36,18 +36,20 @@ if __name__ == "__main__":
         )
         corr_ctt_means.append(corr_ctt_mean)
         corr_ctt_stds.append(corr_ctt_std)
-
-    error_bar_plot(
+    
+    error_bar_plot_single(
         datasets=datasets,
         means=gof_means,
         stds=gof_stds,
         plot_path=f"{plot_dir}/summarize_goodness_of_fit",
+        ylabel=r"Goodness of Fit",
     )
     
-    error_bar_plot(
+    error_bar_plot_single(
         datasets=datasets,
         means=corr_ctt_means,
         stds=corr_ctt_stds,
         plot_path=f"{plot_dir}/summarize_theta_corr_ctt",
+        ylabel=r"$\theta$ correlation with CTT",
     )
     

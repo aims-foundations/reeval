@@ -1,4 +1,3 @@
-from matplotlib import gridspec
 import torch
 import numpy as np
 import random
@@ -142,20 +141,9 @@ def theta_corr_ctt(
     mask = ~np.isnan(ctt_scores)
     theta_masked, ctt_scores_masked = theta[mask], ctt_scores[mask]
     
+    print(f"theta_masked: {theta_masked}, ctt_scores_masked: {ctt_scores_masked}")
     if theta_masked.size == 0:
         warnings.warn("theta_masked, ctt_scores_masked is empty", UserWarning)
-        return np.nan, theta_masked, ctt_scores_masked
-    
-    if theta_masked.size == 1:
-        warnings.warn("theta_masked, ctt_scores_masked len = 1", UserWarning)
-        return np.nan, theta_masked, ctt_scores_masked
-    
-    if np.std(theta_masked) == 0:
-        warnings.warn("Standard deviation of theta_masked is zero", UserWarning)
-        return np.nan, theta_masked, ctt_scores_masked
-    
-    if np.std(ctt_scores_masked) == 0:
-        warnings.warn("Standard deviation of ctt_scores_masked is zero", UserWarning)
         return np.nan, theta_masked, ctt_scores_masked
     
     corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
@@ -186,7 +174,25 @@ def theta_corr_ctt_plot(
     
     return corr, sample_std
     
-def error_bar_plot(
+def error_bar_plot_single(
+    datasets, 
+    means,
+    stds, 
+    plot_path,
+    ylabel,
+    ylim_upper=1
+):
+    stds_mul3 = [s*3 for s in stds]
+    plt.figure(figsize=(20, 6))
+    plt.errorbar(datasets, means, yerr=stds_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
+    plt.xticks(rotation=30, ha='right', fontsize=45)
+    plt.tick_params(axis='both', labelsize=35)
+    plt.ylabel(ylabel, fontsize=45)
+    plt.ylim(0, ylim_upper)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+def error_bar_plot_double(
     datasets, 
     means_1, stds_1, 
     means_2, stds_2,
@@ -194,13 +200,12 @@ def error_bar_plot(
     ylabel,
     ylim_upper=1
 ):
-    stds_1 = [s*3 for s in stds_1]
-    stds_2 = [s*3 for s in stds_2]
-    
+    stds_1_mul3 = [s*3 for s in stds_1]
+    stds_2_mul3 = [s*3 for s in stds_2]
     plt.figure(figsize=(20, 6))
-    plt.errorbar(datasets, means_1, yerr=stds_1, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
-    plt.errorbar(datasets, means_2, yerr=stds_2, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
-    plt.xticks(rotation=30, ha='right', fontsize=35)
+    plt.errorbar(datasets, means_1, yerr=stds_1_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
+    plt.errorbar(datasets, means_2, yerr=stds_2_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
+    plt.xticks(rotation=30, ha='right', fontsize=45)
     plt.tick_params(axis='both', labelsize=35)
     plt.ylabel(ylabel, fontsize=45)
     plt.ylim(0, ylim_upper)
