@@ -98,7 +98,7 @@ def goodness_of_fit_1PL(
 
     diff_array = np.array(diff_list)
     mean_diff = np.mean(diff_array)
-    return mean_diff, diff_list
+    return mean_diff, diff_array
 
 def goodness_of_fit_1PL_plot(
     z: torch.Tensor,
@@ -107,17 +107,17 @@ def goodness_of_fit_1PL_plot(
     plot_path: str,
     bin_size: int=6,
 ):
-    mean_diff, diff_list = goodness_of_fit_1PL(z, theta, y, bin_size)
+    mean_diff, diff_array = goodness_of_fit_1PL(z, theta, y, bin_size)
     
     sample_means = []
     for _ in range(100):
-        indices = np.random.choice(len(diff_list), int(0.8 * len(diff_list)), replace=False)
-        sample_mean = np.mean(diff_list[indices])
+        indices = np.random.choice(len(diff_array), int(0.8 * len(diff_array)), replace=False)
+        sample_mean = np.mean(diff_array[indices])
         sample_means.append(sample_mean)
     std_diff = np.std(sample_means)
     
     plt.figure(figsize=(10, 6))
-    plt.hist(diff_list, bins=40, density=True, alpha=0.4)
+    plt.hist(diff_array, bins=40, density=True, alpha=0.4)
     plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
     plt.ylabel(r'Goodness of fit', fontsize=30)
     plt.tick_params(axis='both', labelsize=25)
