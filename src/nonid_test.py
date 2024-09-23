@@ -26,8 +26,13 @@ def inverse_item_response_fn_1PL(y,theta):
     y = torch.tensor(y, dtype=torch.float32)
     return - theta - torch.log((1 - y) / y)
 
-def sample_subsets(z, dumb_theta, smart_theta, subset_size, y_mean=0.7):
-    z = torch.tensor(z)
+def sample_subsets(
+    z: torch.Tensor, 
+    dumb_theta: torch.Tensor, 
+    smart_theta: torch.Tensor, 
+    subset_size: int, 
+    y_mean: float=0.7
+):
     z_sorted, original_indices = torch.sort(z)
     std_all = z_sorted.std().item()
 
@@ -87,7 +92,10 @@ def main(
     y_new = np.delete(y, [i, j], axis=0)
     _, z_new = nonamor_calibration(torch.tensor(y_new, dtype=torch.float32))
     z_easy, z_hard, easy_indices, hard_indices = sample_subsets(
-        z_new, theta[i], theta[j], subset_size
+        z_new.detach().cpu(),
+        torch.tensor(theta[i], dtype=torch.float32), 
+        torch.tensor(theta[j], dtype=torch.float32), 
+        subset_size
     )
     
     dumb_answers = y[i][easy_indices]
