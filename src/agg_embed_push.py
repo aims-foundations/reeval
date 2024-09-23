@@ -10,10 +10,10 @@ if __name__ == "__main__":
     hf_token = os.getenv('HF_TOKEN')
     login(token=hf_token)
     
-    output_dir = f'../data/agg_embed/'
+    input_dir = f'../data/agg_embed/'
     
     agg_df = pd.concat(
-        [pd.read_csv(f'{output_dir}/embed_{dataset}.csv') for dataset in DESCRIPTION_MAP.keys()],
+        [pd.read_csv(f'{input_dir}/embed_{dataset}.csv') for dataset in DESCRIPTION_MAP.keys()],
         ignore_index=True
     )
     agg_dataset = Dataset.from_pandas(agg_df)
