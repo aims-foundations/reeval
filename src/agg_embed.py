@@ -1,12 +1,9 @@
-import numpy as np
-from tqdm import tqdm
+import wandb
 from utils import DESCRIPTION_MAP, get_embed
 import argparse
-from datasets import Dataset, DatasetDict
+from datasets import Dataset
 import pandas as pd
 import os
-from huggingface_hub import login
-from dotenv import load_dotenv
 
 def main(
     dataset,
@@ -35,31 +32,21 @@ def main(
     save_df.to_csv(save_path, index=False)
     
 if __name__ == "__main__":
+    wandb.init(project="agg_embed")
     parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, required=True)
     parser.add_argument('--bs', type=int, default=1024)
     args = parser.parse_args()
-    
-    load_dotenv()
-    hf_token = os.getenv('HF_TOKEN')
-    login(token=hf_token)
     
     output_dir = f'../data/agg_embed/'
     os.makedirs(output_dir, exist_ok=True)
     
-    for dataset, desciption in tqdm(DESCRIPTION_MAP.items()):
-        main(
-            dataset=dataset,
-            description=desciption,
-            search_path=f'../data/pre_calibration/{dataset}/search.csv',
-            z_path=f'../data/nonamor_calibration/{dataset}/nonamor_z.csv',
-            save_path=f'{output_dir}/embed_{dataset}.csv',
-            bs=args.bs
-        )
-    
-    agg_df = pd.concat(
-        [pd.read_csv(f'{output_dir}/embed_{dataset}.csv') for dataset in DESCRIPTION_MAP.keys()],
-        ignore_index=True
+    description = DESCRIPTION_MAP[args.dataset]
+    main(
+        dataset=args.dataset,
+        description=description,
+        search_path=f'../data/pre_calibration/{args.dataset}/search.csv',
+        z_path=f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv',
+        save_path=f'{output_dir}/embed_{args.dataset}.csv',
+        bs=args.bs
     )
-    agg_dataset = Dataset.from_pandas(agg_df)
-    dataset_dict = DatasetDict({'train': agg_dataset})
-    dataset_dict.push_to_hub("stair-lab/reeval_aggregate-embed")
