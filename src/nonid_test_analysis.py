@@ -8,8 +8,9 @@ if __name__ == "__main__":
     
     ctt_tags, ctt_t_stats, irt_tags, irt_t_stats = [], [], [], []
     for dataset in DATASETS:
-        print(f"Dataset: {dataset}")
-        input_df = f"../data/nonid_test/{dataset}/nonid_test.csv",
+        if dataset == "imdb":
+            continue
+        input_df = f"../data/nonid_test/{dataset}/nonid_test.csv"
         ctt_tag = input_df['ctt_tag'].values()
         ctt_t_stat = input_df['ctt_t_stat'].values()
         irt_tag = input_df['irt_tag'].values()
