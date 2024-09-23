@@ -40,10 +40,15 @@ def sample_subsets(
     hard_probs = torch.exp(-0.5 * ((z_sorted - mean_hard) / (std_all / 2)) ** 2)
     hard_probs /= hard_probs.sum()
 
-    easy_indices_sorted = torch.multinomial(easy_probs, subset_size, replacement=False)
-    hard_indices_sorted = torch.multinomial(hard_probs, subset_size, replacement=False)
+    easy_indices_sorted = torch.multinomial(
+        easy_probs, subset_size, replacement=False
+    )
+    hard_indices_sorted = torch.multinomial(
+        hard_probs, subset_size, replacement=False
+    )
 
-    easy_indices, hard_indices = original_indices[easy_indices_sorted], original_indices[hard_indices_sorted]
+    easy_indices = original_indices[easy_indices_sorted]
+    hard_indices = original_indices[hard_indices_sorted]
     z_easy, z_hard = z[easy_indices], z[hard_indices]
     return z_easy, z_hard, easy_indices, hard_indices
 
@@ -86,7 +91,9 @@ def main(
     print(f'smart theta = {theta[j]}')
 
     y_new = np.delete(y, [i, j], axis=0)
-    _, z_new = nonamor_calibration(torch.tensor(y_new, dtype=torch.float32))
+    _, z_new = nonamor_calibration(
+        torch.tensor(y_new, dtype=torch.float32)
+    )
     z_easy, z_hard, easy_indices, hard_indices = sample_subsets(
         z_new.detach().cpu(),
         torch.tensor(theta[i], dtype=torch.float32), 
@@ -107,23 +114,31 @@ def main(
     print(f"smart CTT mean = {mean_smart}")
     print(f"smart CTT std = {std_smart}")
     
-    ctt_tag, ctt_t_stat, ctt_p_value = perform_t_test(dumb_answers, smart_answers, label="CTT")
+    ctt_tag, ctt_t_stat, ctt_p_value = perform_t_test(
+        dumb_answers, smart_answers, label="CTT"
+    )
     
     # IRT via HMC
     print("\nIRT via HMC")
     z_easy = jnp.array(z_easy)
     dumb_answers = jnp.array(dumb_answers)
-    theta_dumb_mean, theta_dumb_std, theta_dumb_samples = fit_theta_mcmc(z_easy, dumb_answers)
+    theta_dumb_mean, theta_dumb_std, theta_dumb_samples = fit_theta_mcmc(
+        z_easy, dumb_answers
+    )
     print(f"dumb IRT mean = {theta_dumb_mean}")
     print(f"dumb IRT std = {theta_dumb_std}")
     
     z_hard = jnp.array(z_hard)
     smart_answers = jnp.array(smart_answers)
-    theta_smart_mean, theta_smart_std, theta_smart_samples = fit_theta_mcmc(z_hard, smart_answers)
+    theta_smart_mean, theta_smart_std, theta_smart_samples = fit_theta_mcmc(
+        z_hard, smart_answers
+    )
     print(f"smart IRT mean = {theta_smart_mean}")
     print(f"smart IRT std = {theta_smart_std}")
     
-    irt_tag, irt_t_stat, irt_p_value = perform_t_test(theta_dumb_samples, theta_smart_samples, label="IRT")
+    irt_tag, irt_t_stat, irt_p_value = perform_t_test(
+        theta_dumb_samples, theta_smart_samples, label="IRT"
+    )
     
     output_df = pd.DataFrame({
         'ctt_tag': [ctt_tag],

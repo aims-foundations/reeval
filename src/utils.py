@@ -29,7 +29,8 @@ def split_indices(length):
     indices = np.arange(length)
     np.random.shuffle(indices)
     train_size = int(0.8 * len(indices))
-    train_indices, test_indices = indices[:train_size], indices[train_size:]
+    train_indices = indices[:train_size]
+    test_indices = indices[train_size:]
     return train_indices, test_indices
 
 def get_embed(
@@ -41,14 +42,18 @@ def get_embed(
     embdr = Embedder()
     embdr.load(model_name)
     dataloader = DataLoader(dataset, batch_size=bs)
-    emb = embdr.get_embeddings(dataloader, model_name, cols_to_be_embded)
+    emb = embdr.get_embeddings(
+        dataloader, model_name, cols_to_be_embded
+    )
     return emb['text']
 
 def bootstrap_mean_std(data: np.array):
     mean = np.mean(data)
     bootstrap_means = []
     for _ in range(1000):
-        bootstrap_sample = np.random.choice(data, size=int(0.8 * data.shape[0]), replace=True)
+        bootstrap_sample = np.random.choice(
+            data, size=int(0.8 * data.shape[0]), replace=True
+        )
         bootstrap_means.append(np.mean(bootstrap_sample))
     std_bootstrap = np.std(bootstrap_means)
     return mean, std_bootstrap
@@ -111,7 +116,9 @@ def goodness_of_fit_1PL_plot(
     
     sample_means = []
     for _ in range(100):
-        indices = np.random.choice(len(diff_array), int(0.8 * len(diff_array)), replace=False)
+        indices = np.random.choice(
+            len(diff_array), int(0.8 * len(diff_array)), replace=False
+        )
         sample_mean = np.mean(diff_array[indices])
         sample_means.append(sample_mean)
     std_diff = np.std(sample_means)
@@ -123,7 +130,14 @@ def goodness_of_fit_1PL_plot(
     plt.tick_params(axis='both', labelsize=25)
     plt.xlim(0, 1)
     plt.axvline(mean_diff, linestyle='--')
-    plt.text(mean_diff, plt.gca().get_ylim()[1], f'{mean_diff:.2f} $\\pm$ {3 * std_diff:.2f}', ha='center', va='bottom', fontsize=25)
+    plt.text(
+        mean_diff, 
+        plt.gca().get_ylim()[1], 
+        f'{mean_diff:.2f} $\\pm$ {3 * std_diff:.2f}', 
+        ha='center', 
+        va='bottom', 
+        fontsize=25
+    )
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     
@@ -164,7 +178,9 @@ def theta_corr_ctt_plot(
     
     sample_corrs = []
     for _ in range(100):
-        indices = np.random.choice(len(theta_masked), int(0.8 * len(theta_masked)), replace=False)
+        indices = np.random.choice(
+            len(theta_masked), int(0.8 * len(theta_masked)), replace=False
+        )
         sample_corr = np.corrcoef(theta_masked[indices], ctt_scores_masked[indices])[0, 1]
         sample_corrs.append(sample_corr)
     sample_std = np.std(sample_corrs)
@@ -193,7 +209,10 @@ def error_bar_plot_single(
     stds_mul3 = [s*3 for s in stds]
     
     plt.figure(figsize=(20, 8))
-    plt.errorbar(datasets, means, yerr=stds_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
+    plt.errorbar(
+        datasets, means, yerr=stds_mul3, 
+        elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1
+    )
     plt.xticks(rotation=30, ha='right', fontsize=35)
     plt.tick_params(axis='both', labelsize=35)
     plt.ylabel(ylabel, fontsize=35)
@@ -218,8 +237,14 @@ def error_bar_plot_double(
     stds_test_mul3 = [s*3 for s in stds_test]
     
     plt.figure(figsize=(20, 8))
-    plt.errorbar(datasets, means_train, yerr=stds_train_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
-    plt.errorbar(datasets, means_test, yerr=stds_test_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
+    plt.errorbar(
+        datasets, means_train, yerr=stds_train_mul3, 
+        elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1
+    )
+    plt.errorbar(
+        datasets, means_test, yerr=stds_test_mul3, 
+        elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1
+    )
     plt.xticks(rotation=30, ha='right', fontsize=35)
     plt.tick_params(axis='both', labelsize=35)
     plt.ylabel(ylabel, fontsize=35)

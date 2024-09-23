@@ -15,7 +15,8 @@ def main(
     df_test_path,
     save_model_path=None,
 ):
-    dataset_train, dataset_test = load_dataset(hf_repo, split="train"), load_dataset(hf_repo, split="test")
+    dataset_train = load_dataset(hf_repo, split="train")
+    dataset_test = load_dataset(hf_repo, split="test")
     dataset = concatenate_datasets([dataset_train, dataset_test])
     emb, z = np.array(dataset['embed']), np.array(dataset['z'])
     
