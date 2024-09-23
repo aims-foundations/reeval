@@ -3,14 +3,11 @@ import pandas as pd
 import os
 import torch
 from tqdm import tqdm
-from utils import goodness_of_fit_1PL, error_bar_plot_double
+from utils import goodness_of_fit_1PL, error_bar_plot_double, DATASETS
 from sklearn.metrics import mean_squared_error
 
 if __name__ == "__main__":
     input_dir = '../data/plugin_regression'
-    # datasets = [f for f in os.listdir(input_dir)]
-    datasets = ['synthetic_efficiency', 'wikifact', 'entity_data_imputation', 'commonsense', 'quac', 'imdb', 'bbq', 'math', 'twitter_aae', 'truthful_qa', 'legal_support', 'boolq', 'narrative_qa', 'real_toxicity_prompts', 'bold', 'gsm', 'babi_qa', 'summarization_xsum', 'synthetic_reasoning_natural', 'dyck_language_np3', 'lsat_qa', 'raft', 'code', 'entity_matching', 'synthetic_reasoning', 'mmlu', 'airbench', 'civil_comments']
-    
     plot_dir = f'../plot/plugin_regression'
     os.makedirs(plot_dir, exist_ok=True)
     
@@ -21,7 +18,7 @@ if __name__ == "__main__":
     dataset_baseline_train_mse_means, dataset_baseline_train_mse_stds = [], []
     dataset_baseline_test_mse_means, dataset_baseline_test_mse_stds = [], []
     
-    for dataset in tqdm(datasets):
+    for dataset in tqdm(DATASETS):
         gof_train_means, gof_test_means = [], []
         train_mses, test_mses = [], []
         baseline_train_mses, baseline_test_mses = [], []
@@ -84,7 +81,7 @@ if __name__ == "__main__":
         dataset_baseline_test_mse_stds.append(np.std(baseline_test_mses))
         
     error_bar_plot_double(
-        datasets=datasets, 
+        datasets=DATASETS, 
         means_train=dataset_gof_train_means,
         stds_train=dataset_gof_train_stds,
         means_test=dataset_gof_test_means,
@@ -94,7 +91,7 @@ if __name__ == "__main__":
     )   
     
     error_bar_plot_double(
-        datasets=datasets, 
+        datasets=DATASETS, 
         means_train=dataset_train_mse_means,
         stds_train=dataset_train_mse_stds,
         means_test=dataset_test_mse_means,
@@ -105,7 +102,7 @@ if __name__ == "__main__":
     )
     
     error_bar_plot_double(
-        datasets=datasets, 
+        datasets=DATASETS, 
         means_train=dataset_baseline_train_mse_means,
         stds_train=dataset_baseline_train_mse_stds,
         means_test=dataset_baseline_test_mse_means,

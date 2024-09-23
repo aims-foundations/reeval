@@ -260,3 +260,5 @@ DESCRIPTION_MAP = {
     'mmlu': '### DATASET: MMLU (Massive Multitask Language Understanding), ### PUBLISH TIME: 2021, ### CONTENT: for knowledge-intensive question answering across 57 domains',
     'airbench': '### DATASET: AirBench, ### PUBLISH TIME: 2024, ### CONTENT: AI safety benchmark that aligns with emerging government regulations and company policies',
 }
+
+DATASETS = ['synthetic_efficiency', 'wikifact', 'entity_data_imputation', 'commonsense', 'quac', 'imdb', 'bbq', 'math', 'twitter_aae', 'truthful_qa', 'legal_support', 'boolq', 'narrative_qa', 'real_toxicity_prompts', 'bold', 'gsm', 'babi_qa', 'summarization_xsum', 'synthetic_reasoning_natural', 'dyck_language_np3', 'lsat_qa', 'raft', 'code', 'entity_matching', 'synthetic_reasoning', 'mmlu', 'airbench', 'civil_comments']

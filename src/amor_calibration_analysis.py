@@ -9,13 +9,11 @@ from utils import (
     error_bar_plot_single,
     error_bar_plot_double, 
     amorz_corr_nonamorz,
+    DATASETS,
 )
 
 if __name__ == "__main__":
     input_dir = '../data/amor_calibration'
-    # datasets = [f for f in os.listdir(input_dir)]
-    datasets = ['synthetic_efficiency', 'wikifact', 'entity_data_imputation', 'commonsense', 'quac', 'imdb', 'bbq', 'math', 'twitter_aae', 'truthful_qa', 'legal_support', 'boolq', 'narrative_qa', 'real_toxicity_prompts', 'bold', 'gsm', 'babi_qa', 'summarization_xsum', 'synthetic_reasoning_natural', 'dyck_language_np3', 'lsat_qa', 'raft', 'code', 'entity_matching', 'synthetic_reasoning', 'mmlu', 'airbench', 'civil_comments']
-    
     plot_dir = f'../plot/amor_calibration'
     os.makedirs(plot_dir, exist_ok=True)
     
@@ -25,7 +23,7 @@ if __name__ == "__main__":
     dataset_z_corr_train_means, dataset_z_corr_train_stds = [], []
     dataset_z_corr_test_means, dataset_z_corr_test_stds = [], []
     
-    for dataset in tqdm(datasets):
+    for dataset in tqdm(DATASETS):
         print(f"Processing {dataset}")
         gof_train_means, gof_test_means = [], []
         theta_corr_ctt_means = []
@@ -87,7 +85,7 @@ if __name__ == "__main__":
         dataset_z_corr_test_stds.append(np.std(z_corr_test_means))
     
     error_bar_plot_double(
-        datasets=datasets, 
+        datasets=DATASETS, 
         means_train=dataset_gof_train_means,
         stds_train=dataset_gof_train_stds,
         means_test=dataset_gof_test_means,
@@ -97,7 +95,7 @@ if __name__ == "__main__":
     )   
     
     error_bar_plot_single(
-        datasets=datasets,
+        datasets=DATASETS,
         means=dataset_theta_corr_ctt_means,
         stds=dataset_theta_corr_ctt_stds,
         plot_path=f"{plot_dir}/amor_calibration_summarize_theta_corr_ctt",
@@ -105,7 +103,7 @@ if __name__ == "__main__":
     )
     
     error_bar_plot_double(
-        datasets=datasets, 
+        datasets=DATASETS, 
         means_train=dataset_z_corr_train_means,
         stds_train=dataset_z_corr_train_stds,
         means_test=dataset_z_corr_test_means,
