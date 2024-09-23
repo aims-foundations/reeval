@@ -69,13 +69,13 @@ def goodness_of_fit_1PL(
     z: torch.Tensor,
     theta: torch.Tensor,
     y: torch.Tensor,
-    bin_size: int=7,
+    bin_size: int=6,
 ):
     assert y.shape[1] == z.shape[0], f'{y.shape[1]} != {z.shape[0]}'
     assert y.shape[0] == theta.shape[0], f'{y.shape[0]} != {theta.shape[0]}'
 
     bin_start, bin_end = torch.min(theta), torch.max(theta)
-    bins = torch.linspace(bin_start, bin_end, bin_size)
+    bins = torch.linspace(bin_start, bin_end, bin_size+1)
     # print(bins) # [-3. -2. -1.  0.  1.  2.  3.]
 
     diff_list = []
@@ -84,14 +84,12 @@ def goodness_of_fit_1PL(
         y_col = y[:, i]
 
         for j in range(bins.shape[0] - 1):
-            bin_mask = (theta >= bins[j]) & (theta < bins[j + 1])
+            bin_mask = (theta >= bins[j]) & (theta < bins[j + 1]) & (y_col != -1)
             if bin_mask.sum() > 0: # bin not empty
-                y_empirical = y_col[(bin_mask) & (y_col != -1)].mean()
-                print(f"y_empirical: {y_empirical}")
+                y_empirical = y_col[bin_mask].mean()
 
                 theta_mid = (bins[j] + bins[j + 1]) / 2
                 y_theoretical = item_response_fn_1PL(theta_mid, single_z).item()
-                print(f"y_theoretical: {y_theoretical}")
 
                 diff = abs(y_empirical - y_theoretical)
                 diff_list.append(diff)
@@ -105,7 +103,7 @@ def goodness_of_fit_1PL_plot(
     theta: torch.Tensor,
     y: torch.Tensor,
     plot_path: str,
-    bin_size: int=7,
+    bin_size: int=6,
 ):
     mean_diff, diff_list = goodness_of_fit_1PL(z, theta, y, bin_size)
     std_diff = np.std(diff_list)
