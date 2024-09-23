@@ -171,7 +171,7 @@ def theta_corr_ctt_plot(
     
 def error_bar_plot(datasets, means, stds, plot_path, ylim_upper=1):
     plt.figure(figsize=(20, 6))
-    plt.errorbar(datasets, means, yerr=3*stds, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
+    plt.errorbar(datasets, means, yerr=stds*3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
     plt.xticks(rotation=30, ha='right', fontsize=20)
     plt.tick_params(axis='both', labelsize=20)
     plt.ylim(0, ylim_upper)
