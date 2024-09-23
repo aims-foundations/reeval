@@ -140,7 +140,7 @@ def theta_corr_ctt(
         warnings.warn("ctt_scores contains nan", UserWarning)
     mask = ~np.isnan(ctt_scores)
     theta_masked, ctt_scores_masked = theta[mask], ctt_scores[mask]
-    if theta_masked and ctt_scores_masked:
+    if not theta_masked and not ctt_scores_masked:
         corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
     else:
         corr = np.nan
