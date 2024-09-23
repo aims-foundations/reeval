@@ -111,6 +111,7 @@ def goodness_of_fit_1PL_plot(
     plt.figure(figsize=(10, 6))
     plt.hist(diff_list, bins=40, density=True, alpha=0.4)
     plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
+    plt.ylabel(r'Goodness of fit', fontsize=30)
     plt.tick_params(axis='both', labelsize=25)
     plt.xlim(0, 1)
     plt.axvline(mean_diff, linestyle='--')
@@ -140,12 +141,24 @@ def theta_corr_ctt(
         warnings.warn("ctt_scores contains nan", UserWarning)
     mask = ~np.isnan(ctt_scores)
     theta_masked, ctt_scores_masked = theta[mask], ctt_scores[mask]
-    if np.any(theta_masked):
-        corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
-    else:
-        corr = np.nan
-        warnings.warn("theta_masked and ctt_scores_masked is empty", UserWarning)
     
+    if theta_masked.size == 0:
+        warnings.warn("theta_masked, ctt_scores_masked is empty", UserWarning)
+        return np.nan, theta_masked, ctt_scores_masked
+    
+    if theta_masked.size == 1:
+        warnings.warn("theta_masked, ctt_scores_masked len = 1", UserWarning)
+        return np.nan, theta_masked, ctt_scores_masked
+    
+    if np.std(theta_masked) == 0:
+        warnings.warn("Standard deviation of theta_masked is zero", UserWarning)
+        return np.nan, theta_masked, ctt_scores_masked
+    
+    if np.std(ctt_scores_masked) == 0:
+        warnings.warn("Standard deviation of ctt_scores_masked is zero", UserWarning)
+        return np.nan, theta_masked, ctt_scores_masked
+    
+    corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
     return corr, theta_masked, ctt_scores_masked
 
 def theta_corr_ctt_plot(
@@ -178,6 +191,7 @@ def error_bar_plot(
     means_1, stds_1, 
     means_2, stds_2,
     plot_path,
+    ylabel,
     ylim_upper=1
 ):
     stds_1 = [s*3 for s in stds_1]
@@ -186,8 +200,9 @@ def error_bar_plot(
     plt.figure(figsize=(20, 6))
     plt.errorbar(datasets, means_1, yerr=stds_1, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
     plt.errorbar(datasets, means_2, yerr=stds_2, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
-    plt.xticks(rotation=30, ha='right', fontsize=20)
-    plt.tick_params(axis='both', labelsize=20)
+    plt.xticks(rotation=30, ha='right', fontsize=35)
+    plt.tick_params(axis='both', labelsize=35)
+    plt.ylabel(ylabel, fontsize=45)
     plt.ylim(0, ylim_upper)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()

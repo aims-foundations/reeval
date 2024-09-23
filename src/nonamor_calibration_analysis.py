@@ -15,6 +15,7 @@ if __name__ == "__main__":
     gof_means, gof_stds = [], []
     corr_ctt_means, corr_ctt_stds = [], []
     for dataset in tqdm(datasets):
+        print(f"Processing {dataset}")
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
         theta_hat = pd.read_csv(f'{input_dir}/{dataset}/nonamor_theta.csv')['theta'].values
         z_hat = pd.read_csv(f'{input_dir}/{dataset}/nonamor_z.csv')['z'].values
