@@ -245,6 +245,29 @@ def plot_bar(
     plt.savefig(plot_path, dpi = 300, bbox_inches='tight')
     plt.close()
 
+def plot_nonid_test(
+    theta_dumb_samples,
+    theta_smart_samples,
+    z_easy,
+    z_hard,
+    plot_path
+):
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.hist(theta_dumb_samples, bins=30, density=True, alpha=0.4)
+    plt.hist(theta_smart_samples, bins=30, density=True, alpha=0.4)
+    plt.xlabel(r'$\theta$', fontsize=25)
+    plt.tick_params(axis='both', labelsize=16)
+
+    plt.subplot(1, 2, 2)
+    plt.hist(z_easy, bins=30, density=True, alpha=0.4)
+    plt.hist(z_hard, bins=30, density=True, alpha=0.4)
+    plt.xlabel(r'$z$')
+    plt.xlabel(r'$z$', fontsize=25)
+    plt.tick_params(axis='both', labelsize=16)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
 DESCRIPTION_MAP = {
     'synthetic_efficiency': '### DATASET: Synthetic efficiency, ### PUBLISH TIME: unknown, ### CONTENT: to better understand inference runtime performance of various models',
     'wikifact': '### DATASET: WikiFact, ### PUBLISH TIME: 2019, ### CONTENT: knowledge base completion, entity-relation-entity triples in natural language form, to more extensively test factual knowledge',

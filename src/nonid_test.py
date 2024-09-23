@@ -10,15 +10,12 @@ import jax.numpy as jnp
 import jax.random as random
 import wandb
 from nonamor_calibration import nonamor_calibration
-import matplotlib.pyplot as plt
-from tueplots import bundles
-plt.rcParams.update(bundles.icml2022())
-plt.style.use('seaborn-v0_8-paper')
 from utils import (
     set_seed,
     perform_t_test,
     bootstrap_mean_std, 
-    item_response_fn_1PL_jnp
+    item_response_fn_1PL_jnp,
+    plot_nonid_test
 )
 
 def inverse_item_response_fn_1PL(y,theta):
@@ -128,23 +125,6 @@ def main(
     
     irt_tag, irt_t_stat, irt_p_value = perform_t_test(theta_dumb_samples, theta_smart_samples, label="IRT")
     
-    # plot
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    plt.hist(theta_dumb_samples, bins=30, density=True, alpha=0.4)
-    plt.hist(theta_smart_samples, bins=30, density=True, alpha=0.4)
-    plt.xlabel(r'$\theta$', fontsize=25)
-    plt.tick_params(axis='both', labelsize=16)
-
-    plt.subplot(1, 2, 2)
-    plt.hist(z_easy, bins=30, density=True, alpha=0.4)
-    plt.hist(z_hard, bins=30, density=True, alpha=0.4)
-    plt.xlabel(r'$z$')
-    plt.xlabel(r'$z$', fontsize=25)
-    plt.tick_params(axis='both', labelsize=16)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    
     output_df = pd.DataFrame({
         'ctt_tag': [ctt_tag],
         'ctt_t_stat': [ctt_t_stat],
@@ -154,6 +134,14 @@ def main(
         'irt_p_value': [irt_p_value]
     })
     output_df.to_csv(output_path, index=False)
+    
+    plot_nonid_test(
+        theta_dumb_samples,
+        theta_smart_samples,
+        z_easy,
+        z_hard,
+        plot_path
+    )
     
 if __name__ == "__main__":
     wandb.init(project="nonid_test")
