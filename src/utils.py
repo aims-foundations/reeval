@@ -140,7 +140,7 @@ def theta_corr_ctt(
         warnings.warn("ctt_scores contains nan", UserWarning)
     mask = ~np.isnan(ctt_scores)
     theta_masked, ctt_scores_masked = theta[mask], ctt_scores[mask]
-    if not theta_masked and not ctt_scores_masked:
+    if np.any(theta_masked):
         corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
     else:
         corr = np.nan
@@ -173,10 +173,19 @@ def theta_corr_ctt_plot(
     
     return corr, sample_std
     
-def error_bar_plot(datasets, means, stds, plot_path, ylim_upper=1):
-    std3s = [std*3 for std in stds]
+def error_bar_plot(
+    datasets, 
+    means_1, stds_1, 
+    means_2, stds_2,
+    plot_path,
+    ylim_upper=1
+):
+    stds_1 = [s*3 for s in stds_1]
+    stds_2 = [s*3 for s in stds_2]
+    
     plt.figure(figsize=(20, 6))
-    plt.errorbar(datasets, means, yerr=std3s, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
+    plt.errorbar(datasets, means_1, yerr=stds_1, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
+    plt.errorbar(datasets, means_2, yerr=stds_2, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
     plt.xticks(rotation=30, ha='right', fontsize=20)
     plt.tick_params(axis='both', labelsize=20)
     plt.ylim(0, ylim_upper)
