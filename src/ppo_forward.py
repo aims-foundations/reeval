@@ -9,7 +9,7 @@ prompts = [
 ]
 sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
 
-model_path = os.path.abspath("../data/ppo/llama3-ppo/checkpoint-399")
+model_path = os.path.abspath("../data/ppo/llama3-ppo")
 llm = LLM(model=model_path)
 
 outputs = llm.generate(prompts, sampling_params)
