@@ -87,9 +87,11 @@ def goodness_of_fit_1PL(
             bin_mask = (theta >= bins[j]) & (theta < bins[j + 1])
             if bin_mask.sum() > 0: # bin not empty
                 y_empirical = y_col[(bin_mask) & (y_col != -1)].mean()
+                print(f"y_empirical: {y_empirical}")
 
                 theta_mid = (bins[j] + bins[j + 1]) / 2
                 y_theoretical = item_response_fn_1PL(theta_mid, single_z).item()
+                print(f"y_theoretical: {y_theoretical}")
 
                 diff = abs(y_empirical - y_theoretical)
                 diff_list.append(diff)
