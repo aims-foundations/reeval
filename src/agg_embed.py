@@ -35,7 +35,7 @@ if __name__ == "__main__":
     wandb.init(project="agg_embed")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
-    parser.add_argument('--bs', type=int, default=1024)
+    parser.add_argument('--bs', type=int, default=256)
     args = parser.parse_args()
     
     output_dir = f'../data/agg_embed/'
