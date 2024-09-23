@@ -186,9 +186,9 @@ def error_bar_plot_single(
     datasets, means, stds = zip(*sorted_data)
     stds_mul3 = [s*3 for s in stds]
     
-    plt.figure(figsize=(20, 6))
+    plt.figure(figsize=(20, 8))
     plt.errorbar(datasets, means, yerr=stds_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
-    plt.xticks(rotation=30, ha='right', fontsize=45)
+    plt.xticks(rotation=30, ha='right', fontsize=35)
     plt.tick_params(axis='both', labelsize=35)
     plt.ylabel(ylabel, fontsize=35)
     plt.ylim(0, ylim_upper)
@@ -211,10 +211,10 @@ def error_bar_plot_double(
     stds_train_mul3 = [s*3 for s in stds_train]
     stds_test_mul3 = [s*3 for s in stds_test]
     
-    plt.figure(figsize=(20, 6))
+    plt.figure(figsize=(20, 8))
     plt.errorbar(datasets, means_train, yerr=stds_train_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
     plt.errorbar(datasets, means_test, yerr=stds_test_mul3, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
-    plt.xticks(rotation=30, ha='right', fontsize=45)
+    plt.xticks(rotation=30, ha='right', fontsize=35)
     plt.tick_params(axis='both', labelsize=35)
     plt.ylabel(ylabel, fontsize=35)
     plt.ylim(0, ylim_upper)
@@ -228,6 +228,22 @@ def amorz_corr_nonamorz(
     assert z_amor.shape == z_nonamor.shape, f'{z_amor.shape} != {z_nonamor.shape}'
     z_corr = np.corrcoef(z_amor, z_nonamor)[0, 1]
     return z_corr
+
+def plot_bar(
+    datasets,
+    nums,
+    plot_path,
+    ylabel,
+):
+    sorted_by_nums = sorted(zip(datasets, nums), key=lambda x: x[1])
+    sorted_datasets, sorted_nums = zip(*sorted_by_nums)
+    plt.figure(figsize=(20, 8))
+    plt.bar(sorted_datasets, sorted_nums)
+    plt.xticks(rotation=30, ha='right', fontsize=35)
+    plt.tick_params(axis='both', labelsize=35)
+    plt.ylabel(ylabel, fontsize=35)
+    plt.savefig(plot_path, dpi = 300, bbox_inches='tight')
+    plt.close()
 
 DESCRIPTION_MAP = {
     'synthetic_efficiency': '### DATASET: Synthetic efficiency, ### PUBLISH TIME: unknown, ### CONTENT: to better understand inference runtime performance of various models',
@@ -246,19 +262,19 @@ DESCRIPTION_MAP = {
     'narrative_qa': '### DATASET: NarrativeQA, ### PUBLISH TIME: 2017, ### CONTENT: for reading comprehension over narratives, passages are books and movie scripts',
     'real_toxicity_prompts': '### DATASET: RealToxicityPrompts, ### PUBLISH TIME: 2020, ### CONTENT: for measuring toxicity in prompted model generations',
     'bold': '### DATASET: BOLD (Bias in Open-Ended Language Generation Dataset), ### PUBLISH TIME: 2021, ### CONTENT: for measuring biases and toxicity in open-ended language generation',
-    'gsm': '### DATASET: GSM8K (Grade school math word problems), ### PUBLISH TIME: 2021, ### CONTENT: for testing mathematical reasoning on grade-school math problems',
+    # 'gsm': '### DATASET: GSM8K (Grade school math word problems), ### PUBLISH TIME: 2021, ### CONTENT: for testing mathematical reasoning on grade-school math problems',
     'babi_qa': '### DATASET: bAbI, ### PUBLISH TIME: 2015, ### CONTENT: for measuring understanding and reasoning',
-    'summarization_xsum': '### DATASET: XSUM, ### PUBLISH TIME: 2018, ### CONTENT: for text summarization of BBC news articles',
+    # 'summarization_xsum': '### DATASET: XSUM, ### PUBLISH TIME: 2018, ### CONTENT: for text summarization of BBC news articles',
     'synthetic_reasoning_natural': '### DATASET: Synthetic reasoning (natural language), ### PUBLISH TIME: 2021, ### CONTENT: Synthetic reasoning tasks defined using simple natural language based on LIME',
     'dyck_language_np=3': '### DATASET: Dyck, ### PUBLISH TIME: 2019, ### CONTENT: Scenario testing hierarchical reasoning through the Dyck formal languages',
     'civil_comments': '### DATASET: CivilComments, ### PUBLISH TIME: 2019, ### CONTENT: for toxicity detection',
     'lsat_qa': '### DATASET: LSAT, ### PUBLISH TIME: 2021, ### CONTENT: for measuring analytical reasoning on the Law School Admission Test',
     'raft': '### DATASET: RAFT (Real-world Annotated Few-Shot), ### PUBLISH TIME: 2021, ### CONTENT: meta-benchmark of 11 real-world text classification tasks',
-    'code': '### DATASET: Code, ### PUBLISH TIME: 2021, ### CONTENT: for measuring competence on code challenges, for measuring functional correctness for synthesizing programs from docstrings',
+    # 'code': '### DATASET: Code, ### PUBLISH TIME: 2021, ### CONTENT: for measuring competence on code challenges, for measuring functional correctness for synthesizing programs from docstrings',
     'entity_matching': '### DATASET: Entity matching, ### PUBLISH TIME: 2016, ### CONTENT: tests the ability to determine if two entities match',
     'synthetic_reasoning': '### DATASET: Synthetic reasoning, ### PUBLISH TIME: 2021, ### CONTENT: defined using abstract symbols based on LIME and simple natural language based on LIME',
     'mmlu': '### DATASET: MMLU (Massive Multitask Language Understanding), ### PUBLISH TIME: 2021, ### CONTENT: for knowledge-intensive question answering across 57 domains',
     'airbench': '### DATASET: AirBench, ### PUBLISH TIME: 2024, ### CONTENT: AI safety benchmark that aligns with emerging government regulations and company policies',
 }
+DATASETS = list(DESCRIPTION_MAP.keys())
 
-DATASETS = ['synthetic_efficiency', 'wikifact', 'entity_data_imputation', 'commonsense', 'quac', 'imdb', 'bbq', 'math', 'twitter_aae', 'truthful_qa', 'legal_support', 'boolq', 'narrative_qa', 'real_toxicity_prompts', 'bold', 'gsm', 'babi_qa', 'summarization_xsum', 'synthetic_reasoning_natural', 'dyck_language_np3', 'lsat_qa', 'raft', 'code', 'entity_matching', 'synthetic_reasoning', 'mmlu', 'airbench', 'civil_comments']
