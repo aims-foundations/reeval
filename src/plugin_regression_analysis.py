@@ -95,43 +95,23 @@ if __name__ == "__main__":
     
     error_bar_plot_double(
         datasets=datasets, 
-        means_1=dataset_gof_train_means,
-        stds_1=dataset_gof_train_stds,
-        means_2=dataset_gof_test_means,
-        stds_2=dataset_gof_test_stds,
-        plot_path=f"{plot_dir}/summarize_gof",
-        ylabel=r"Goodness of Fit",
-    )  
-    
-    error_bar_plot(
-        datasets=datasets,
-        means=dataset_train_mse_means,
-        stds=dataset_train_mse_stds,
-        plot_path=f"{plot_dir}/summarize_train_mse",
+        means_1=dataset_train_mse_means,
+        stds_1=dataset_train_mse_stds,
+        means_2=dataset_test_mse_means,
+        stds_2=dataset_test_mse_stds,
+        plot_path=f"{plot_dir}/summarize_mse",
+        ylabel=r"MSE of Bayesian Ridge Regression",
         ylim_upper=10,
     )
     
-    error_bar_plot(
-        datasets=datasets,
-        means=dataset_test_mse_means,
-        stds=dataset_test_mse_stds,
-        plot_path=f"{plot_dir}/summarize_test_mse",
-        ylim_upper=10,
-    )
-    
-    error_bar_plot(
-        datasets=datasets,
-        means=dataset_baseline_train_mse_means,
-        stds=dataset_baseline_train_mse_stds,
-        plot_path=f"{plot_dir}/summarize_baseline_train_mse",
-        ylim_upper=10,
-    )
-    
-    error_bar_plot(
-        datasets=datasets,
-        means=dataset_baseline_test_mse_means,
-        stds=dataset_baseline_test_mse_stds,
-        plot_path=f"{plot_dir}/summarize_baseline_test_mse",
+    error_bar_plot_double(
+        datasets=datasets, 
+        means_1=dataset_baseline_train_mse_means,
+        stds_1=dataset_baseline_train_mse_stds,
+        means_2=dataset_baseline_test_mse_means,
+        stds_2=dataset_baseline_test_mse_stds,
+        plot_path=f"{plot_dir}/summarize_baseline_mse",
+        ylabel=r"MSE of Baseline Mean Prediction",
         ylim_upper=10,
     )
     

@@ -143,9 +143,10 @@ def theta_corr_ctt(
     
     if np.unique(ctt_scores).size <= 3:
         warnings.warn(f"ctt_scores has little value: {ctt_scores}", UserWarning)
-        return np.nan, theta_masked, ctt_scores_masked
-    
-    corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
+        corr = np.nan
+    else:
+        corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
+        
     return corr, theta_masked, ctt_scores_masked
 
 def theta_corr_ctt_plot(
