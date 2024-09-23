@@ -95,8 +95,8 @@ def goodness_of_fit_1PL(
                 diff_list.append(diff)
 
     diff_array = np.array(diff_list)
-    mean_diff, std_diff = np.mean(diff_array), np.std(diff_array)
-    return mean_diff, std_diff, diff_list
+    mean_diff = np.mean(diff_array)
+    return mean_diff, diff_list
 
 def goodness_of_fit_1PL_plot(
     z: torch.Tensor,
@@ -105,7 +105,8 @@ def goodness_of_fit_1PL_plot(
     plot_path: str,
     bin_size: int=7,
 ):
-    mean_diff, std_diff, diff_list = goodness_of_fit_1PL(z, theta, y, bin_size)
+    mean_diff, diff_list = goodness_of_fit_1PL(z, theta, y, bin_size)
+    std_diff = np.std(diff_list)
     plt.figure(figsize=(10, 6))
     plt.hist(diff_list, bins=40, density=True, alpha=0.4)
     plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
@@ -119,7 +120,6 @@ def goodness_of_fit_1PL_plot(
 def theta_corr_ctt(
     theta: np.array,
     y: np.array,
-    plot_path: str,
 ):
     assert y.shape[0] == theta.shape[0], f'{y.shape[1]} != {theta.shape[0]}'
     
@@ -139,13 +139,22 @@ def theta_corr_ctt(
     theta_masked, ctt_scores_masked = theta[mask], ctt_scores[mask]
     corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
     
+    return corr, theta_masked, ctt_scores_masked
+
+def theta_corr_ctt_plot(
+    theta: np.array,
+    y: np.array,
+    plot_path: str,
+):
+    corr, theta_masked, ctt_scores_masked = theta_corr_ctt(theta, y)
+    
     sample_corrs = []
     for _ in range(100):
         indices = np.random.choice(len(theta_masked), int(0.8 * len(theta_masked)), replace=False)
         sample_corr = np.corrcoef(theta_masked[indices], ctt_scores_masked[indices])[0, 1]
         sample_corrs.append(sample_corr)
     sample_std = np.std(sample_corrs)
-
+    
     plt.figure(figsize=(10, 10))
     plt.scatter(theta_masked, ctt_scores_masked)
     plt.xlabel(r'$\theta$ from calibration', fontsize=45)
@@ -154,20 +163,23 @@ def theta_corr_ctt(
     plt.tick_params(axis='both', labelsize=35)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     
-    return corr, sample_std
-    
 def error_bar_plot(datasets, means, stds, plot_path):
-    means, stds = np.array(means), np.array(stds)
-    plt.figure(figsize=(10, 6))
-    plt.errorbar(datasets, means, yerr=stds, elinewidth=0.75, fmt="o", ms=5)
-    plt.xticks(rotation=45, ha='right', fontsize=20)
+    plt.figure(figsize=(20, 6))
+    plt.errorbar(datasets, means, yerr=stds, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
+    plt.xticks(rotation=30, ha='right', fontsize=20)
     plt.tick_params(axis='both', labelsize=20)
     plt.ylim(0, 1)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
 
+def amorz_corr_nonamorz(
+    z_amor: np.array,
+    z_nonamor: np.array,
+):
+    assert z_amor.shape == z_nonamor.shape, f'{z_amor.shape} != {z_nonamor.shape}'
+    z_corr = np.corrcoef(z_amor, z_nonamor)[0, 1]
+    return z_corr
 
-    
-    
+
     
     
     

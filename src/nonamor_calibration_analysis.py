@@ -2,7 +2,7 @@ import os
 import torch
 import pandas as pd
 from tqdm import tqdm
-from utils import goodness_of_fit_1PL_plot, theta_corr_ctt, error_bar_plot
+from utils import goodness_of_fit_1PL_plot, theta_corr_ctt_plot, error_bar_plot
 
 if __name__ == "__main__":
     plot_dir = f'../plot/nonamor_calibration'
@@ -11,7 +11,8 @@ if __name__ == "__main__":
     input_dir = '../data/nonamor_calibration/'
     datasets = [f for f in os.listdir(input_dir)]
     
-    gof_means, gof_stds, corr_ctt_means, corr_ctt_stds = [], [], [], []
+    gof_means, gof_stds = [], []
+    corr_ctt_means, corr_ctt_stds = [], []
     for dataset in tqdm(datasets):
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
         theta_hat = pd.read_csv(f'{input_dir}/{dataset}/nonamor_theta.csv')['theta'].values
@@ -26,7 +27,7 @@ if __name__ == "__main__":
         gof_means.append(gof_mean)
         gof_stds.append(gof_std)
         
-        corr_ctt_mean, corr_ctt_std = theta_corr_ctt(
+        corr_ctt_mean, corr_ctt_std = theta_corr_ctt_plot(
             theta=theta_hat,
             y=y,
             plot_path=f"{plot_dir}/theta_corr_ctt_{dataset}",
