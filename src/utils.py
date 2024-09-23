@@ -163,12 +163,14 @@ def theta_corr_ctt_plot(
     plt.tick_params(axis='both', labelsize=35)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     
-def error_bar_plot(datasets, means, stds, plot_path):
+    return corr, sample_std
+    
+def error_bar_plot(datasets, means, stds, plot_path, ylim_upper=1):
     plt.figure(figsize=(20, 6))
-    plt.errorbar(datasets, means, yerr=stds, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
+    plt.errorbar(datasets, means, yerr=3*stds, elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1)
     plt.xticks(rotation=30, ha='right', fontsize=20)
     plt.tick_params(axis='both', labelsize=20)
-    plt.ylim(0, 1)
+    plt.ylim(0, ylim_upper)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
 
 def amorz_corr_nonamorz(
@@ -178,69 +180,6 @@ def amorz_corr_nonamorz(
     assert z_amor.shape == z_nonamor.shape, f'{z_amor.shape} != {z_nonamor.shape}'
     z_corr = np.corrcoef(z_amor, z_nonamor)[0, 1]
     return z_corr
-
-
-    
-    
-    
-    
-    
-def z_corr_plot(
-    x,
-    y,
-    plot_path,
-):
-    corr = np.corrcoef(x, y)[0, 1]
-    mse = np.mean((x - y) ** 2)
-    plt.figure(figsize=(10, 10))
-    plt.scatter(x, y)
-    plt.xlabel(r'$z$ from amortized IRT calibration', fontsize=45)
-    plt.ylabel(r'$z$ from non-amortized IRT calibration', fontsize=45)
-    plt.title(f'Correlation: {corr:.2f}, MSE: {mse:.2f}', fontsize=45)
-    plt.tick_params(axis='both', labelsize=35)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    
-def theta_corr_plot(
-    x,
-    y,
-    plot_path,
-):
-    corr = np.corrcoef(x, y)[0, 1]
-    plt.figure(figsize=(10, 10))
-    plt.scatter(x, y)
-    plt.xlabel(r'$\theta$ from calibration', fontsize=45)
-    plt.ylabel(r'CTT score', fontsize=45)
-    plt.title(f'Correlation: {corr:.2f}', fontsize=45)
-    plt.tick_params(axis='both', labelsize=35)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    
-def plot_scatter_with_histograms(z3_py, z3_r, save_path, x_label=r'Our $z_3$', y_label=r'mirt $z_3$'):
-    plt.figure(figsize=(10, 10))
-    gs = gridspec.GridSpec(2, 2, width_ratios=[4, 1], height_ratios=[1, 4], wspace=0.05, hspace=0.05)
-
-    # Scatter plot between z3_py and z3_r
-    ax_main = plt.subplot(gs[1, 0])
-    ax_main.scatter(z3_py, z3_r)
-    ax_main.set_xlabel(x_label)
-    ax_main.set_ylabel(y_label)
-
-    # Calculate correlation and add title at the bottom
-    corr_np = np.corrcoef(z3_py, z3_r)[0, 1]
-    plt.figtext(0.5, 0.02, f'Correlation: {corr_np:.2f}', ha='center')
-
-    # Histogram for z3_py (top)
-    ax_xhist = plt.subplot(gs[0, 0], sharex=ax_main)
-    ax_xhist.hist(z3_py, bins=30, color='gray', alpha=0.7)
-    ax_xhist.axis('off')
-
-    # Histogram for z3_r (right)
-    ax_yhist = plt.subplot(gs[1, 1], sharey=ax_main)
-    ax_yhist.hist(z3_r, bins=30, color='gray', alpha=0.7, orientation='horizontal')
-    ax_yhist.axis('off')
-
-    plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    plt.close()
-
 
 DESCRIPTION_MAP = {
     'synthetic_efficiency': '### DATASET: Synthetic efficiency, ### PUBLISH TIME: unknown, ### CONTENT: to better understand inference runtime performance of various models',

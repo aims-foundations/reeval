@@ -1,16 +1,12 @@
+import numpy as np
 import pandas as pd
 import os
 import torch
 from tqdm import tqdm
-from utils import goodness_of_fit_1PL, theta_corr_ctt, error_bar_plot, amorz_corr_nonamorz
+from utils import goodness_of_fit_1PL, error_bar_plot
+from sklearn.metrics import mean_squared_error
 
 if __name__ == "__main__":
-    output_dir = f'../data/plugin_regression/{args.dataset}'
-    hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
-    df_train_path=f'{output_dir}/train_{i}.csv',
-    df_test_path=f'{output_dir}/test_{i}.csv',
-    save_model_path=f'{output_dir}/bayridge.pkl' if i==0 else None,
-            
     input_dir = '../data/plugin_regression'
     datasets = [f for f in os.listdir(input_dir)]
     
@@ -19,65 +15,72 @@ if __name__ == "__main__":
     
     dataset_gof_train_means, dataset_gof_train_stds = [], []
     dataset_gof_test_means, dataset_gof_test_stds = [], []
+    dataset_train_mse_means, dataset_train_mse_stds = [], []
+    dataset_test_mse_means, dataset_test_mse_stds = [], []
+    dataset_baseline_train_mse_means, dataset_baseline_train_mse_stds = [], []
+    dataset_baseline_test_mse_means, dataset_baseline_test_mse_stds = [], []
     
     for dataset in tqdm(datasets):
         gof_train_means, gof_test_means = [], []
-        theta_corr_ctt_means = []
-        z_corr_train_means, z_corr_test_means = [], []
+        train_mses, test_mses = [], []
+        baseline_train_mses, baseline_test_mses = [], []
+        
         for i in range(10):
             y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
-            theta_train = pd.read_csv(f'{input_dir}/{dataset}/theta_{i}.csv')['theta'].values
-            df_z_train = pd.read_csv(f'{input_dir}/{dataset}/z_train_{i}.csv')
-            train_indices = df_z_train['index'].values
-            z_train = df_z_train['z'].values
-            df_z_test = pd.read_csv(f'{input_dir}/{dataset}/z_test_{i}.csv')
-            test_indices = df_z_test['index'].values
-            z_test = df_z_test['z'].values
-            nonamor_z = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_z.csv')['z'].values
+            df_train = pd.read_csv(f'{input_dir}/{dataset}/train_{i}.csv')
+            train_indices = df_train['index'].values
+            z_train_true = df_train['z_true'].values
+            z_train_pred = df_train['z_pred'].values
+            df_test = pd.read_csv(f'{input_dir}/{dataset}/test_{i}.csv')
+            test_indices = df_test['index'].values
+            z_test_true = df_test['z_true'].values
+            z_test_pred = df_test['z_pred'].values
+            theta = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_theta.csv')['theta'].values
             
             gof_train_mean, _ = goodness_of_fit_1PL(
-                z=torch.tensor(z_train, dtype=torch.float32),
-                theta=torch.tensor(theta_train, dtype=torch.float32),
+                z=torch.tensor(z_train_pred, dtype=torch.float32),
+                theta=torch.tensor(theta, dtype=torch.float32),
                 y=torch.tensor(y[:, train_indices], dtype=torch.float32),
             )
             gof_train_means.append(gof_train_mean)
             
             gof_test_mean, _ = goodness_of_fit_1PL(
-                z=torch.tensor(z_test, dtype=torch.float32),
-                theta=torch.tensor(theta_train, dtype=torch.float32),
+                z=torch.tensor(z_test_pred, dtype=torch.float32),
+                theta=torch.tensor(theta, dtype=torch.float32),
                 y=torch.tensor(y[:, test_indices], dtype=torch.float32),
             )
             gof_test_means.append(gof_test_mean)
             
-            theta_corr_ctt_mean, _, _ = theta_corr_ctt(
-                theta=theta_train,
-                y=y,
-            )
-            theta_corr_ctt_means.append(theta_corr_ctt_mean)
+            train_mse = mean_squared_error(z_train_true, z_train_pred)
+            test_mse = mean_squared_error(z_test_true, z_test_pred)
+            train_mses.append(train_mse)
+            test_mses.append(test_mse)
             
-            z_corr_train_mean = amorz_corr_nonamorz(
-                z_amor=z_train,
-                z_nonamor=nonamor_z[train_indices],
+            z_baseline_pred = np.mean(z_train_true)
+            baseline_train_mse = mean_squared_error(
+                z_train_true,
+                np.repeat(z_baseline_pred, len(z_train_true))
             )
-            z_corr_train_means.append(z_corr_train_mean)
+            baseline_test_mse = mean_squared_error(
+                z_test_true,
+                np.repeat(z_baseline_pred, len(z_test_true))
+            )
+            baseline_train_mses.append(baseline_train_mse)
+            baseline_test_mses.append(baseline_test_mse)
             
-            z_corr_test_mean = amorz_corr_nonamorz(
-                z_amor=z_test,
-                z_nonamor=nonamor_z[test_indices],
-            )
-            z_corr_test_means.append(z_corr_test_mean)
-
         dataset_gof_train_means.append(np.mean(gof_train_means))
         dataset_gof_test_means.append(np.mean(gof_test_means))
-        dataset_theta_corr_ctt_means.append(np.mean(theta_corr_ctt_means))
-        dataset_z_corr_train_means.append(np.mean(z_corr_train_means))
-        dataset_z_corr_test_means.append(np.mean(z_corr_test_means))
+        dataset_train_mse_means.append(np.mean(train_mses))
+        dataset_test_mse_means.append(np.mean(test_mses))
+        dataset_baseline_train_mse_means.append(np.mean(baseline_train_mses))
+        dataset_baseline_test_mse_means.append(np.mean(baseline_test_mses))
         
         dataset_gof_train_stds.append(np.std(gof_train_means))
         dataset_gof_test_stds.append(np.std(gof_test_means))
-        dataset_theta_corr_ctt_stds.append(np.std(theta_corr_ctt_means))
-        dataset_z_corr_train_stds.append(np.std(z_corr_train_means))
-        dataset_z_corr_test_stds.append(np.std(z_corr_test_means))
+        dataset_train_mse_stds.append(np.std(train_mses))
+        dataset_test_mse_stds.append(np.std(test_mses))
+        dataset_baseline_train_mse_stds.append(np.std(baseline_train_mses))
+        dataset_baseline_test_mse_stds.append(np.std(baseline_test_mses))
             
     error_bar_plot(
         datasets=datasets,
@@ -95,21 +98,33 @@ if __name__ == "__main__":
     
     error_bar_plot(
         datasets=datasets,
-        means=dataset_theta_corr_ctt_means,
-        stds=dataset_theta_corr_ctt_stds,
-        plot_path=f"{plot_dir}/summarize_theta_corr_ctt",
+        means=dataset_train_mse_means,
+        stds=dataset_train_mse_stds,
+        plot_path=f"{plot_dir}/summarize_train_mse",
+        ylim_upper=10,
     )
     
     error_bar_plot(
         datasets=datasets,
-        means=dataset_z_corr_train_means,
-        stds=dataset_z_corr_train_stds,
-        plot_path=f"{plot_dir}/summarize_z_corr_train",
+        means=dataset_test_mse_means,
+        stds=dataset_test_mse_stds,
+        plot_path=f"{plot_dir}/summarize_test_mse",
+        ylim_upper=10,
     )
     
     error_bar_plot(
         datasets=datasets,
-        means=dataset_z_corr_test_means,
-        stds=dataset_z_corr_test_stds,
-        plot_path=f"{plot_dir}/summarize_z_corr_test",
+        means=dataset_baseline_train_mse_means,
+        stds=dataset_baseline_train_mse_stds,
+        plot_path=f"{plot_dir}/summarize_baseline_train_mse",
+        ylim_upper=10,
     )
+    
+    error_bar_plot(
+        datasets=datasets,
+        means=dataset_baseline_test_mse_means,
+        stds=dataset_baseline_test_mse_stds,
+        plot_path=f"{plot_dir}/summarize_baseline_test_mse",
+        ylim_upper=10,
+    )
+    

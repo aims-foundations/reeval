@@ -17,10 +17,12 @@ if __name__ == "__main__":
     dataset_theta_corr_ctt_means, dataset_theta_corr_ctt_stds = [], []
     dataset_z_corr_train_means, dataset_z_corr_train_stds = [], []
     dataset_z_corr_test_means, dataset_z_corr_test_stds = [], []
+    
     for dataset in tqdm(datasets):
         gof_train_means, gof_test_means = [], []
         theta_corr_ctt_means = []
         z_corr_train_means, z_corr_test_means = [], []
+        
         for i in range(10):
             y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
             theta_train = pd.read_csv(f'{input_dir}/{dataset}/theta_{i}.csv')['theta'].values
