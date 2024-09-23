@@ -8,8 +8,6 @@ if __name__ == "__main__":
     
     ctt_tags, ctt_t_stats, irt_tags, irt_t_stats = [], [], [], []
     for dataset in DATASETS:
-        if dataset == "imdb":
-            continue
         input_df = pd.read_csv(f"../data/nonid_test/{dataset}/nonid_test.csv")
         ctt_tag = input_df['ctt_tag'].values
         ctt_t_stat = input_df['ctt_t_stat'].values
@@ -21,6 +19,7 @@ if __name__ == "__main__":
         irt_tags.append(irt_tag)
         irt_t_stats.append(irt_t_stat)
     
+    assert len(DATASETS) == len(ctt_tags) == len(irt_tags) == len(ctt_t_stats) == len(irt_t_stats)
     output_df = pd.DataFrame({
         'Dataset': DATASETS,
         'CTT Tag': ctt_tags,
