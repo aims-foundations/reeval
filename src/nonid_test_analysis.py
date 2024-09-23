@@ -11,10 +11,10 @@ if __name__ == "__main__":
         if dataset == "imdb":
             continue
         input_df = pd.read_csv(f"../data/nonid_test/{dataset}/nonid_test.csv")
-        ctt_tag = input_df['ctt_tag'].values()
-        ctt_t_stat = input_df['ctt_t_stat'].values()
-        irt_tag = input_df['irt_tag'].values()
-        irt_t_stat = input_df['irt_t_stat'].values()
+        ctt_tag = input_df['ctt_tag'].values
+        ctt_t_stat = input_df['ctt_t_stat'].values
+        irt_tag = input_df['irt_tag'].values
+        irt_t_stat = input_df['irt_t_stat'].values
 
         ctt_tags.append(ctt_tag)
         ctt_t_stats.append(ctt_t_stat)
