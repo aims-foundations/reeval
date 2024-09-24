@@ -24,7 +24,7 @@ def train_ridge_model(
     z_train, 
     emb_test, 
     l2_reg=0.1, 
-    max_epoch=10000, 
+    max_epoch=2000, 
     lr=0.01
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

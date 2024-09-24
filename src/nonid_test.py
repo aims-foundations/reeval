@@ -82,7 +82,7 @@ def main(
 ):
     theta = pd.read_csv(theta_path)['theta'].values
     y = pd.read_csv(y_path, index_col=0).values
-    subset_size = min(y.shape[1] // 10, 5000)
+    subset_size = min(y.shape[1] // 10, 1000)
     print(f"subset size = {subset_size}")
     
     i = np.abs(theta - 0.5).argmin()
