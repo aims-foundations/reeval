@@ -15,7 +15,7 @@ if __name__ == "__main__":
     output_dir = f'{input_dir}/new'
 
     agg_df = pd.concat(
-        [pd.read_csv(f'{output_dir}/new_embed_{dataset}.csv') for dataset in DATASETS],
+        [pd.read_csv(f'{output_dir}/new_embed_{dataset}.csv') for dataset in DATASETS if dataset != 'civil_comments'],
         ignore_index=True
     )
     
