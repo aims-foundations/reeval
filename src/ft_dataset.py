@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=str, required=True)
+    parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
     
     load_dotenv()
@@ -60,4 +61,4 @@ if __name__ == "__main__":
         "train": train_dataset,
         "test": test_dataset
     })
-    dataset_dict.push_to_hub(f'stair-lab/airbench-{args.task}')
+    dataset_dict.push_to_hub(f'stair-lab/{args.dataset}-{args.task}')
