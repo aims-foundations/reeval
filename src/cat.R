@@ -163,5 +163,5 @@ df.compare.all <- df.monte.carlo.simulation.compare %>%
 df.aggregrate.learning.curve.all <- func.visualize.differences.validate.all(df.compare.all) %>% 
   mutate(bias = abs(bias))
 
-write.csv(df.aggregrate.learning.curve.all, "../data/cat/catR_data.csv", row.names = FALSE)
+write.csv(df.aggregrate.learning.curve.all, save.path, row.names = FALSE)
 
