@@ -27,6 +27,8 @@ if __name__ == "__main__":
     answers = [o.outputs[0].text for o in outputs]
     answer_df = pd.DataFrame(answers, columns=["text"])
     answer_dataset = Dataset.from_pandas(answer_df)
+    
+    torch.cuda.empty_cache()
     answer_embs = get_embed(answer_dataset)
     
     with open('../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
