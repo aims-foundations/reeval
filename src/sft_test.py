@@ -1,5 +1,5 @@
 import torch
-from vllm import LLM
+from vllm import LLM, SamplingParams
 from peft import AutoPeftModelForCausalLM
 from transformers import AutoTokenizer
 
@@ -9,7 +9,8 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
     model = model.merge_and_unload().to(torch.bfloat16)
     model.save_pretrained(model_dir)
-
+    sampling_params = SamplingParams(max_tokens=128)
+    
     ppo_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": (
@@ -26,4 +27,4 @@ if __name__ == "__main__":
     llm = LLM(model=model_dir)
     outputs = llm.generate(template)
     print(f"Prompt: {template}")
-    print(f"Answer: {outputs.outputs[0].text}")
+    print(f"Answer: {outputs[0].outputs[0].text}")
