@@ -57,7 +57,7 @@ def model(z_asked, answers):
     probs = item_response_fn_1PL_jnp(z_asked, theta_hat)
     numpyro.sample("obs", dist.Bernoulli(probs), obs=answers)
     
-def fit_theta_mcmc(z_asked, answers, num_samples=9000, num_warmup=1000):
+def fit_theta_mcmc(z_asked, answers, num_samples=2000, num_warmup=1000):
     rng_key = random.PRNGKey(0)
     rng_key, rng_key_ = random.split(rng_key)
     

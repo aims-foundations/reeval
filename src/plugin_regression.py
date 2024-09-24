@@ -23,9 +23,9 @@ def train_ridge_model(
     emb_train, 
     z_train, 
     emb_test, 
-    l2_reg=1.0, 
-    max_epoch=1000, 
-    lr=1e-3
+    l2_reg=0.1, 
+    max_epoch=10000, 
+    lr=0.01
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -56,7 +56,6 @@ def train_ridge_model(
     with torch.no_grad():
         z_train_pred = model(emb_train_tensor).cpu().detach().numpy()
         z_test_pred = model(emb_test_tensor).cpu().detach().numpy()
-
     return z_train_pred, z_test_pred, model.cpu()
 
 def main(
@@ -77,19 +76,18 @@ def main(
     z_train_pred, z_test_pred, model = train_ridge_model(
         emb_train, z_train, emb_test
     )
-    print(z_train_pred.shape)
     
     df_train = pd.DataFrame({
         'index': train_indices,
         'z_true': z_train,
-        'z_pred': z_train_pred,
+        'z_pred': z_train_pred.flatten(),
     })
     df_train.to_csv(df_train_path, index=False)
     
     df_test = pd.DataFrame({
         'index': test_indices,
         'z_true': z_test,
-        'z_pred': z_test_pred,
+        'z_pred': z_test_pred.flatten(),
     })
     df_test.to_csv(df_test_path, index=False)
     
