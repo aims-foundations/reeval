@@ -29,7 +29,7 @@ def train_ridge_model(
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    input_dim = emb_train.shape[1]
+    input_dim = len(emb_train)
     model = RidgeRegression(input_dim).to(device)
     criterion = nn.MSELoss()
     optimizer = optim.Adam(
