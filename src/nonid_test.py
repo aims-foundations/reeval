@@ -35,9 +35,9 @@ def sample_subsets(
     mean_easy = inverse_item_response_fn_1PL(y_mean, dumb_theta).item()
     mean_hard = inverse_item_response_fn_1PL(y_mean, smart_theta).item()
 
-    easy_probs = torch.exp(-0.5 * ((z_sorted - mean_easy) / (std_all / 2)) ** 2)
+    easy_probs = torch.exp(-0.5 * ((z_sorted - mean_easy) / (std_all / 10)) ** 2)
     easy_probs /= easy_probs.sum()
-    hard_probs = torch.exp(-0.5 * ((z_sorted - mean_hard) / (std_all / 2)) ** 2)
+    hard_probs = torch.exp(-0.5 * ((z_sorted - mean_hard) / (std_all / 10)) ** 2)
     hard_probs /= hard_probs.sum()
 
     easy_indices_sorted = torch.multinomial(
