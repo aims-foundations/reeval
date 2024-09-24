@@ -33,7 +33,7 @@ class MyRewardModel(RewardModelTemplate):
         )
         
         answer_embs = emb['text']
-        pred_scores = self.model.predict(answer_embs).tolist()
+        pred_scores = self.reg_model.predict(answer_embs).tolist()
         
         rewards = [-abs(a - b) for a, b in zip(pred_scores, gt_scores)]
         return rewards
