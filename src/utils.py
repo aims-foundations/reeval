@@ -298,7 +298,19 @@ def plot_nonid_test(
     plt.tick_params(axis='both', labelsize=16)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
-    
+
+def plot_hist(
+    data,
+    plot_path,
+    ylabel,
+):
+    plt.figure(figsize=(6, 6))
+    plt.hist(data, bins=30, density=True, alpha=0.4)
+    plt.ylabel(ylabel, fontsize=25)
+    plt.tick_params(axis='both', labelsize=16)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
 DESCRIPTION_MAP = {
     'synthetic_efficiency': '### DATASET: Synthetic efficiency, ### PUBLISH TIME: unknown, ### CONTENT: to better understand inference runtime performance of various models',
     'wikifact': '### DATASET: WikiFact, ### PUBLISH TIME: 2019, ### CONTENT: knowledge base completion, entity-relation-entity triples in natural language form, to more extensively test factual knowledge',

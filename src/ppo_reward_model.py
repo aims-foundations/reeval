@@ -5,6 +5,10 @@ from embed_text_package.embed_text import Embedder
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
+def extract_score(input_str: str) -> int:
+    match = re.search(r'Your task is to output a prompt at score "([-+]?\d*\.\d+|\d+)"', input_str)
+    return float(match.group(1))
+
 class MessageDataset(Dataset):
     def __init__(self, messages):
         self.data = [m[1] for m in messages]
@@ -15,10 +19,6 @@ class MessageDataset(Dataset):
     def __getitem__(self, idx):
         return {"question_text": self.data[idx]}
     
-def extract_score(input_str: str) -> int:
-    match = re.search(r'Your task is to output a prompt at score "([-+]?\d*\.\d+|\d+)"', input_str)
-    return float(match.group(1))
-
 class MyRewardModel(RewardModelTemplate):
     def __init__(self, config):
         self.model = None

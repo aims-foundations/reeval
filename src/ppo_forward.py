@@ -1,29 +1,41 @@
 import os
+import pickle
+import pandas as pd
 import torch
 from vllm import LLM, SamplingParams
 from peft import AutoPeftModelForCausalLM
+from ppo_reward_model import extract_score
+from datasets import Dataset, load_dataset
+from utils import get_embed, plot_hist
 
 if __name__ == "__main__":
-    output_dir = "../data/ppo/llama3-ppo"
-    model = AutoPeftModelForCausalLM.from_pretrained(f'{output_dir}/checkpoint-399')
+    plot_dir = "../plot/ppo"
+    os.makedirs(plot_dir, exist_ok=True)
+    
+    model_dir = "../data/ppo/llama3-ppo"
+    model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-399')
     model = model.merge_and_unload().to(torch.bfloat16)
-    model.save_pretrained(output_dir)
+    model.save_pretrained(model_dir)
 
-    prompts = [
-        "Hello, my name is",
-        "The president of the United States is",
-        "The capital of France is",
-        "The future of AI is",
-    ]
-    sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
-
-    llm = LLM(model=output_dir)
-
-    outputs = llm.generate(prompts, sampling_params)
-
-    # Print the outputs.
-    for output in outputs:
-        prompt = output.prompt
-        generated_text = output.outputs[0].text
-        print(f"Prompt: {prompt!r}, Generated text: {generated_text!r}")
-        
+    test_dataset = load_dataset("stair-lab/airbench-ppo", split="test")
+    prompts = test_dataset['text']
+    gt_zs = [extract_score(p) for p in prompts]
+    
+    sampling_params = SamplingParams(temperature=0)
+    llm = LLM(model=model_dir)
+    answers = llm.generate(prompts, sampling_params)
+    answer_df = pd.DataFrame(answers, columns=["text"])
+    answer_dataset = Dataset.from_pandas(answer_df)
+    answer_embs = get_embed(answer_dataset)
+    
+    with open('../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
+        reward_model = pickle.load(f)
+    pred_zs = reward_model.predict(answer_embs).tolist()
+    
+    diffs = [abs(a - b) for a, b in zip(pred_zs, gt_zs)]
+    
+    plot_hist(
+        data=diffs,
+        plot_path=f"{plot_dir}/ppo_diff_hist.png",
+        ylabel=r"$z$ difference",
+    )
