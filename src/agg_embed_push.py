@@ -17,7 +17,7 @@ if __name__ == "__main__":
         [pd.read_csv(f'{input_dir}/embed_{dataset}.csv') for dataset in DATASETS],
         ignore_index=True
     )
-    agg_df['embed'] = agg_df['embed'].apply(lambda x: ast.literal_eval(x))
+    agg_df['embed'] = agg_df['embed'].apply(lambda x: eval(x))
     
     agg_dataset = Dataset.from_pandas(agg_df)
     dataset_dict = DatasetDict({'train': agg_dataset})
