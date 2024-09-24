@@ -4,7 +4,7 @@ from peft import AutoPeftModelForCausalLM
 from datasets import load_dataset
 
 if __name__ == "__main__":
-    model_dir = "../data/sft/llama3-ppo"
+    model_dir = "../data/sft"
     model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-2400')
     model = model.merge_and_unload().to(torch.bfloat16)
     model.save_pretrained(model_dir)
