@@ -11,6 +11,7 @@ from tqdm import tqdm
 import wandb
 from utils import set_seed, split_indices
 import ast
+from sklearn.metrics import mean_squared_error
 
 class RidgeRegression(nn.Module):
     def __init__(self, input_dim):
@@ -87,6 +88,11 @@ def main(
     z_train_pred, z_test_pred, model = train_ridge_model(
         emb_train, z_train, emb_test
     )
+    
+    # mse
+    mse_train = mean_squared_error(z_train, z_train_pred)
+    mse_test = mean_squared_error(z_test, z_test_pred)
+    print(f'MSE Train: {mse_train:.2f}, MSE Test: {mse_test:.2f}')
     
     df_train = pd.DataFrame({
         'index': train_indices,
