@@ -19,7 +19,7 @@ if __name__ == "__main__":
     login(token=hf_token)
     
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
-    hf_repo = "stair-lab/reeval_airbench-embed"
+    hf_repo = f"stair-lab/reeval_{args.dataset}-embed"
     dataset_train = load_dataset(hf_repo, split="train")
     dataset_test = load_dataset(hf_repo, split="test")
     dataset = concatenate_datasets([dataset_train, dataset_test])
