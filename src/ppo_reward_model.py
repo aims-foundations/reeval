@@ -1,8 +1,9 @@
 import pickle
 import re
+import pandas as pd
 from lampo.reward_model import RewardModelTemplate
-from embed_text_package.embed_text import Embedder
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
+from utils import get_embed
 
 def extract_score(input_str: str) -> float:
     match = re.search(r'Difficulty: "([-+]?\d*\.\d+|\d+)"', input_str)
@@ -19,26 +20,20 @@ class MessageDataset(Dataset):
         return {"question_text": self.data[idx]}
     
 class MyRewardModel(RewardModelTemplate):
-    def __init__(self):
+    def __init__(self, config):
         self.model = None
         self.load()
 
     async def compute(self, messages):
-        objective_scores = [extract_score(m[0]) for m in messages]
+        gt_scores = [extract_score(m[0]) for m in messages]
         
-        dataset = MessageDataset(messages)
-        model_name = "meta-llama/Meta-Llama-3-8B"
-        cols_to_be_embded = ['question_text']
-        embdr = Embedder()
-        embdr.load(model_name)
-        dataloader = DataLoader(dataset, batch_size=len(messages))
-        emb = embdr.get_embeddings(
-            dataloader, model_name, cols_to_be_embded
-        )
-        X = emb['question_text']
-        scores = self.model.predict(X).tolist()
-
-        rewards = [-abs(a - b) for a, b in zip(scores, objective_scores)]
+        answers = [m[1] for m in messages]
+        answer_df = pd.DataFrame(answers, columns=["text"])
+        answer_dataset = Dataset.from_pandas(answer_df)
+        answer_embs = get_embed(answer_dataset)
+        pred_scores = self.model.predict(answer_embs).tolist()
+        
+        rewards = [-abs(a - b) for a, b in zip(pred_scores, gt_scores)]
         return rewards
     
     def load(self):
