@@ -37,7 +37,7 @@ class MyRewardModel(RewardModelTemplate):
         return rewards
     
     def load(self):
-        with open('../../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
+        with open('../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
             self.model = pickle.load(f)
 
     def unload(self):
