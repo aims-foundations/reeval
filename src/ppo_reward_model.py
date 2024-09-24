@@ -9,23 +9,15 @@ def extract_score(input_str: str) -> float:
     match = re.search(r'Difficulty: ([-+]?\d*\.\d+|\d+)', input_str)
     return float(match.group(1))
 
-class MessageDataset(Dataset):
-    def __init__(self, messages):
-        self.data = [m[1] for m in messages]
-  
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        return {"question_text": self.data[idx]}
-    
 class MyRewardModel(RewardModelTemplate):
     def __init__(self, config):
         self.model = None
         self.load()
 
     async def compute(self, messages):
+        print(messages[0])
         gt_scores = [extract_score(m[0]) for m in messages]
+        print(gt_scores)
         
         answers = [m[1] for m in messages]
         answer_df = pd.DataFrame(answers, columns=["text"])
