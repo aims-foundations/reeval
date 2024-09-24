@@ -87,10 +87,6 @@ def main(
         emb_train, z_train, emb_test
     )
     
-    trian_mse = np.mean((z_train - z_train_pred.flatten())**2)
-    test_mse = np.mean((z_test - z_test_pred.flatten())**2)
-    print(f'Train MSE: {trian_mse}, Test MSE: {test_mse}')
-    
     df_train = pd.DataFrame({
         'index': train_indices,
         'z_true': z_train,
