@@ -12,9 +12,9 @@ discount_reward_factor: 0.99
 
 # Dataset
 query_dataset: stair-lab/airbench-ppo
-ppo_epochs: 2
+ppo_epochs: 1
 mini_batch_size: 2
-batch_size: 1
+batch_size: 2
 
 # Hyperparameters
 gradient_accumulation_steps: 1
