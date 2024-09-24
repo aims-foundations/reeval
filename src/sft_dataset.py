@@ -51,4 +51,4 @@ if __name__ == "__main__":
         "train": train_dataset,
         "test": test_dataset
     })
-    dataset_dict.push_to_hub('stair-lab/airbench-ppo')
+    dataset_dict.push_to_hub('stair-lab/airbench-sft')
