@@ -1,3 +1,4 @@
+import pandas as pd
 import torch
 import numpy as np
 import random
@@ -201,9 +202,35 @@ def error_bar_plot_single(
     means,
     stds, 
     plot_path,
-    ylabel,
-    ylim_upper=1
+    xlabel,
+    xlim_upper=1
 ):
+    data = {
+        'dataset': datasets,
+        'mean': means,
+        'std': stds,
+    }
+    df = pd.DataFrame(data)
+
+    fig, ax = plt.subplots(figsize=(8, 20))
+    ax.barh(df['dataset'], df['DQN_Percentage'], color='skyblue', label='DQN', 
+            xerr=[np.zeros(len(df)), df['DQN_std']], capsize=5, error_kw={'elinewidth': 2, 'capthick': 2, 'ecolor': 'red'})  # 误差线只向右侧显示
+    ax.barh(df['Gme'], df['Linear_Percentage'], color='gray', label='Best linear learner', 
+            xerr=[np.zeros(len(df)), df['Linear_std']], capsize=5)  # 误差线只向右侧显示
+
+    # 添加图例
+    ax.legend()
+
+    # 设置轴标签和标题
+    ax.set_xlabel('Performance (%)')
+    ax.set_title('DQN vs Best Linear Learner Performance on Atari Games')
+
+    
+    
+    
+    
+    
+    
     sorted_data = sorted(zip(datasets, means, stds), key=lambda x: x[1])
     datasets, means, stds = zip(*sorted_data)
     stds_mul3 = [s*3 for s in stds]
@@ -225,9 +252,34 @@ def error_bar_plot_double(
     means_train, stds_train, 
     means_test, stds_test,
     plot_path,
-    ylabel,
-    ylim_upper=1
+    xlabel,
+    xlim_upper=1
 ):
+    data = {
+        'dataset': datasets,
+        'means_train': means_train,
+        'stds_train': stds_train,
+        'means_test': means_test,
+        'stds_test': stds_test,
+    }
+    df = pd.DataFrame(data)
+
+    fig, ax = plt.subplots(figsize=(8, 20))
+    ax.barh(df['dataset'], df['means_train'], label='train', 
+            xerr=[np.zeros(len(df)), df['DQN_std']], capsize=5, error_kw={'elinewidth': 2, 'capthick': 2, 'ecolor': 'red'})  # 误差线只向右侧显示
+    ax.barh(df['Gme'], df['Linear_Percentage'], color='gray', label='Best linear learner', 
+            xerr=[np.zeros(len(df)), df['Linear_std']], capsize=5)  # 误差线只向右侧显示
+
+    # 添加图例
+    ax.legend()
+
+    # 设置轴标签和标题
+    ax.set_xlabel('Performance (%)')
+    ax.set_title('DQN vs Best Linear Learner Performance on Atari Games')
+    
+    
+    
+    
     sorted_data = sorted(
         zip(datasets, means_train, stds_train, means_test, stds_test),
         key=lambda x: x[3]
