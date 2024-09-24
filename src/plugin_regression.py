@@ -2,12 +2,62 @@ import argparse
 import numpy as np
 from datasets import load_dataset, concatenate_datasets
 import pandas as pd
-from sklearn.linear_model import BayesianRidge
 import pickle
 import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
 from tqdm import tqdm
 import wandb
 from utils import set_seed, split_indices
+
+class RidgeRegression(nn.Module):
+    def __init__(self, input_dim):
+        super(RidgeRegression, self).__init__()
+        self.linear = nn.Linear(input_dim, 1)
+
+    def forward(self, x):
+        return self.linear(x)
+
+def train_ridge_model(
+    emb_train, 
+    z_train, 
+    emb_test, 
+    l2_reg=1.0, 
+    max_epoch=1000, 
+    lr=1e-3
+):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    input_dim = emb_train.shape[1]
+    model = RidgeRegression(input_dim).to(device)
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(
+        model.parameters(),
+        lr=lr,
+        weight_decay=l2_reg
+    )
+
+    emb_train_tensor = torch.tensor(emb_train, dtype=torch.float32, device=device)
+    z_train_tensor = torch.tensor(z_train, dtype=torch.float32, device=device)
+    emb_test_tensor = torch.tensor(emb_test, dtype=torch.float32, device=device)
+
+    pbar = tqdm(range(max_epoch))
+    for _ in pbar:
+        model.train()
+        optimizer.zero_grad()
+        outputs = model(emb_train_tensor)
+        loss = criterion(outputs, z_train_tensor)
+        loss.backward()
+        optimizer.step()
+        pbar.set_postfix({'loss': loss.item()})
+    
+    model.eval()
+    with torch.no_grad():
+        z_train_pred = model(emb_train_tensor).cpu().detach().numpy()
+        z_test_pred = model(emb_test_tensor).cpu().detach().numpy()
+
+    return z_train_pred, z_test_pred, model.cpu()
 
 def main(
     hf_repo,
@@ -24,10 +74,10 @@ def main(
     emb_train, z_train = emb[train_indices], z[train_indices]
     emb_test, z_test = emb[test_indices], z[test_indices]
     
-    model = BayesianRidge()
-    model.fit(emb_train, z_train)
-
-    z_train_pred, z_test_pred = model.predict(emb_train), model.predict(emb_test)
+    z_train_pred, z_test_pred, model = train_ridge_model(
+        emb_train, z_train, emb_test
+    )
+    print(z_train_pred.shape)
     
     df_train = pd.DataFrame({
         'index': train_indices,

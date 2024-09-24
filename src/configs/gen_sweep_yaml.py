@@ -1,5 +1,7 @@
 import argparse
 import yaml
+import sys
+sys.path.append('..')
 from utils import DATASETS
 
 if __name__ == "__main__":
