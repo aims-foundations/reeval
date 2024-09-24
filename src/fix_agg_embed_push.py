@@ -8,11 +8,6 @@ from huggingface_hub import login
 from dotenv import load_dotenv
 
 if __name__ == "__main__":
-    wandb.init(project="fix_agg_embed_push")
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, required=True)
-    args = parser.parse_args()
-    
     load_dotenv()
     hf_token = os.getenv('HF_TOKEN')
     login(token=hf_token)
