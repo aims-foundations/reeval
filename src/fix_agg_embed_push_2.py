@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 
 if __name__ == "__main__":
-    wandb.init(project="fix_agg_embed_push")
+    wandb.init(project="fix_agg_embed_push_2")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
