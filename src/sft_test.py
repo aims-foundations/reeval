@@ -9,7 +9,7 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
     model = model.merge_and_unload().to(torch.bfloat16)
     model.save_pretrained(model_dir)
-    sampling_params = SamplingParams(max_tokens=128)
+    sampling_params = SamplingParams(max_tokens=2048, temperature=0.6, top_p=0.9)
     
     ppo_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
