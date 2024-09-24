@@ -45,3 +45,6 @@ class MyRewardModel(RewardModelTemplate):
     def load(self):
         with open('../../data/real/ppo/bayesian_ridge_model.pkl', 'rb') as f:
             self.model = pickle.load(f)
+
+    def unload(self):
+        pass
