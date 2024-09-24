@@ -32,7 +32,7 @@ if __name__ == "__main__":
     ]
     
     template = tokenizer.apply_chat_template(
-        chat, tokenize=False, add_generation_prompt=True
+        chat, tokenize=False, add_generation_prompt=False
     )
     
     new_texts = []
