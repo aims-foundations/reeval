@@ -1,4 +1,5 @@
-from tqdm import tqdm
+import argparse
+import wandb
 from utils import DATASETS
 from datasets import Dataset, DatasetDict
 import pandas as pd
@@ -7,23 +8,22 @@ from huggingface_hub import login
 from dotenv import load_dotenv
 
 if __name__ == "__main__":
+    wandb.init(project="fix_agg_embed_push")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, required=True)
+    args = parser.parse_args()
+    
     load_dotenv()
     hf_token = os.getenv('HF_TOKEN')
     login(token=hf_token)
     
     input_dir = f'../data/reeval-agg_embed_folder'
     
-    dfs = []
-    for dataset in tqdm(DATASETS):
-        df = pd.read_csv(f'{input_dir}/embed_{dataset}.csv')
-        embed_list = df['embed'].tolist()
-        eval_embed_list = []
-        for x in tqdm(embed_list):
-            eval_embed_list.append(eval(x))
-        df['embed'] = eval_embed_list
-        dfs.append(df)
-
-    agg_df = pd.concat(dfs, ignore_index=True)
+    agg_df = pd.concat(
+        [pd.read_csv(f'{input_dir}/embed_{dataset}.csv') for dataset in DATASETS],
+        ignore_index=True
+    )
+    agg_df['embed'] = agg_df['embed'].apply(lambda x: eval(x))
     
     agg_dataset = Dataset.from_pandas(agg_df)
     dataset_dict = DatasetDict({'train': agg_dataset})
