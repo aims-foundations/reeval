@@ -11,7 +11,7 @@ if __name__ == "__main__":
     hf_token = os.getenv('HF_TOKEN')
     login(token=hf_token)
     
-    input_dir = f'../data/reeval-agg_embed_folder'
+    input_dir = '/lfs/local/0/nqduc/.cache/huggingface/hub/datasets--stair-lab--reeval-agg_embed_folder/snapshots/07bcb8c88effd0fbd9b5811a0dc84235ebcdb1bf'
     
     dfs = []
     for dataset in tqdm(DATASETS):
