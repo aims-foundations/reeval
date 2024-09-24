@@ -29,7 +29,7 @@ if __name__ == "__main__":
     answer_dataset = Dataset.from_pandas(answer_df)
     
     torch.cuda.empty_cache()
-    answer_embs = get_embed(answer_dataset, bs=128)
+    answer_embs = get_embed(answer_dataset, bs=32)
     
     with open('../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
         reward_model = pickle.load(f)
