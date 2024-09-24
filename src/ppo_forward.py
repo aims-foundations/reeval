@@ -8,16 +8,6 @@ from ppo_reward_model import extract_score
 from datasets import Dataset, load_dataset
 from utils import get_embed, plot_hist
 
-class MessageDataset(Dataset):
-    def __init__(self, messages):
-        self.data = [m[1] for m in messages]
-  
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        return {"text": self.data[idx]}
-    
 if __name__ == "__main__":
     plot_dir = "../plot/ppo"
     os.makedirs(plot_dir, exist_ok=True)
@@ -33,8 +23,10 @@ if __name__ == "__main__":
     
     sampling_params = SamplingParams(temperature=0)
     llm = LLM(model=model_dir)
-    answers = llm.generate(prompts, sampling_params)
-    answer_dataset = MessageDataset(answers)
+    outputs = llm.generate(prompts, sampling_params)
+    answers = [o.outputs[0].text for o in outputs]
+    answer_df = pd.DataFrame(answers, columns=["text"])
+    answer_dataset = Dataset.from_pandas(answer_df)
     answer_embs = get_embed(answer_dataset)
     
     with open('../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
