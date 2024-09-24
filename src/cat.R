@@ -9,6 +9,8 @@ library(Metrics)
 library(corrplot)
 library(rstudioapi)
 library(patchwork)
+library("glue")
+library("readr")
 
 inv_logit<-function(theta, b) {
   return (1/(1+exp(-theta+b)))
@@ -109,6 +111,7 @@ set.seed(42)
 np <- 500
 iter <- 5
 
+args <- commandArgs(trailingOnly = TRUE)
 arg1 <- args[1]
 arg2 <- args[2]
 
@@ -116,6 +119,7 @@ if (arg1 == "syn") {
   ni <- 200
   theta <- rnorm(np, mean=0, sd=1)
   b <- rnorm(ni, mean=0, sd=1)
+  save.path <- glue("../data/cat/{arg1}/cat.csv")
 } else if (arg1 == "semi_syn") {
   thata.path <- glue("../data/nonamor_calibration/{arg2}/nonamor_theta.csv")
   df.theta <- read_csv(thata.path, col_select = 1)

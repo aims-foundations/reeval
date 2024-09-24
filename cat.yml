@@ -14,3 +14,6 @@ dependencies:
   - r-corrplot
   - r-rstudioapi
   - r-patchwork
+  - r-glue
+  - r-readr
+

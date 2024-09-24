@@ -24,7 +24,7 @@ class MyRewardModel(RewardModelTemplate):
         answer_df = pd.DataFrame(answers, columns=["text"])
         answer_dataset = Dataset.from_pandas(answer_df)
         
-        bs = 8
+        bs = 1024
         cols_to_be_embded = ['text']
         model_name="meta-llama/Meta-Llama-3-8B"
         
