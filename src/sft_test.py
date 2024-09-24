@@ -12,7 +12,7 @@ if __name__ == "__main__":
     test_dataset = load_dataset("stair-lab/airbench-ppo", split="test")
     prompts = test_dataset['text'][:5]
     
-    sampling_params = SamplingParams(temperature=0)
+    sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
     llm = LLM(model=model_dir)
     outputs = llm.generate(prompts, sampling_params)
     answers = [o.outputs[0].text for o in outputs]
