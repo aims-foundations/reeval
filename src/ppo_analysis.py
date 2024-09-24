@@ -13,9 +13,9 @@ if __name__ == "__main__":
     os.makedirs(plot_dir, exist_ok=True)
     
     model_dir = "../data/ppo/llama3-ppo"
-    # model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-399')
-    # model = model.merge_and_unload().to(torch.bfloat16)
-    # model.save_pretrained(model_dir)
+    model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-399')
+    model = model.merge_and_unload().to(torch.bfloat16)
+    model.save_pretrained(model_dir)
 
     test_dataset = load_dataset("stair-lab/airbench-ppo", split="test")
     prompts = test_dataset['text']

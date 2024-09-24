@@ -91,7 +91,7 @@ if __name__ == "__main__":
         means_test=dataset_gof_test_means,
         stds_test=dataset_gof_test_stds,
         plot_path=f"{plot_dir}/amor_calibration_summarize_gof",
-        ylabel=r"Goodness of Fit",
+        xlabel=r"Goodness of Fit",
     )   
     
     error_bar_plot_single(
@@ -99,7 +99,7 @@ if __name__ == "__main__":
         means=dataset_theta_corr_ctt_means,
         stds=dataset_theta_corr_ctt_stds,
         plot_path=f"{plot_dir}/amor_calibration_summarize_theta_corr_ctt",
-        ylabel=r"$\theta$ correlation with CTT",
+        xlabel=r"$\theta$ correlation with CTT",
     )
     
     error_bar_plot_double(
@@ -109,6 +109,6 @@ if __name__ == "__main__":
         means_test=dataset_z_corr_test_means,
         stds_test=dataset_z_corr_test_stds,
         plot_path=f"{plot_dir}/amor_calibration_summarize_z_corr",
-        ylabel=r"correlation of $z$",
+        xlabel=r"correlation of $z$",
     )   
     

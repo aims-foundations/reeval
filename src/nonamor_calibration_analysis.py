@@ -44,7 +44,7 @@ if __name__ == "__main__":
         means=gof_means,
         stds=gof_stds,
         plot_path=f"{plot_dir}/nonamor_calibration_summarize_gof",
-        ylabel=r"Goodness of Fit",
+        xlabel=r"Goodness of Fit",
     )
     
     error_bar_plot_single(
@@ -52,6 +52,6 @@ if __name__ == "__main__":
         means=corr_ctt_means,
         stds=corr_ctt_stds,
         plot_path=f"{plot_dir}/nonamor_calibration_summarize_theta_corr_ctt",
-        ylabel=r"$\theta$ correlation with CTT",
+        xlabel=r"$\theta$ correlation with CTT",
     )
     

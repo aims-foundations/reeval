@@ -205,45 +205,20 @@ def error_bar_plot_single(
     xlabel,
     xlim_upper=1
 ):
-    data = {
-        'dataset': datasets,
-        'mean': means,
-        'std': stds,
-    }
-    df = pd.DataFrame(data)
-
-    fig, ax = plt.subplots(figsize=(8, 20))
-    ax.barh(df['dataset'], df['DQN_Percentage'], color='skyblue', label='DQN', 
-            xerr=[np.zeros(len(df)), df['DQN_std']], capsize=5, error_kw={'elinewidth': 2, 'capthick': 2, 'ecolor': 'red'})  # 误差线只向右侧显示
-    ax.barh(df['Gme'], df['Linear_Percentage'], color='gray', label='Best linear learner', 
-            xerr=[np.zeros(len(df)), df['Linear_std']], capsize=5)  # 误差线只向右侧显示
-
-    # 添加图例
-    ax.legend()
-
-    # 设置轴标签和标题
-    ax.set_xlabel('Performance (%)')
-    ax.set_title('DQN vs Best Linear Learner Performance on Atari Games')
-
-    
-    
-    
-    
-    
-    
     sorted_data = sorted(zip(datasets, means, stds), key=lambda x: x[1])
     datasets, means, stds = zip(*sorted_data)
     stds_mul3 = [s*3 for s in stds]
-    
-    plt.figure(figsize=(20, 8))
-    plt.errorbar(
-        datasets, means, yerr=stds_mul3, 
-        elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1
+   
+    fig, ax = plt.subplots(figsize=(8, 20))
+    ax.barh(
+        datasets, means, xerr=[np.zeros(len(datasets)), stds_mul3],
+        capsize=5, color='blue', alpha=0.4,
+        error_kw={'elinewidth': 1, 'capthick': 1, 'ecolor': 'blue'}
     )
-    plt.xticks(rotation=30, ha='right', fontsize=35)
-    plt.tick_params(axis='both', labelsize=35)
-    plt.ylabel(ylabel, fontsize=35)
-    plt.ylim(0, ylim_upper)
+    
+    ax.set_xlabel(xlabel, fontsize=35)
+    ax.tick_params(axis='both', labelsize=30)
+    ax.set_xlim(0, xlim_upper)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     
@@ -255,31 +230,6 @@ def error_bar_plot_double(
     xlabel,
     xlim_upper=1
 ):
-    data = {
-        'dataset': datasets,
-        'means_train': means_train,
-        'stds_train': stds_train,
-        'means_test': means_test,
-        'stds_test': stds_test,
-    }
-    df = pd.DataFrame(data)
-
-    fig, ax = plt.subplots(figsize=(8, 20))
-    ax.barh(df['dataset'], df['means_train'], label='train', 
-            xerr=[np.zeros(len(df)), df['DQN_std']], capsize=5, error_kw={'elinewidth': 2, 'capthick': 2, 'ecolor': 'red'})  # 误差线只向右侧显示
-    ax.barh(df['Gme'], df['Linear_Percentage'], color='gray', label='Best linear learner', 
-            xerr=[np.zeros(len(df)), df['Linear_std']], capsize=5)  # 误差线只向右侧显示
-
-    # 添加图例
-    ax.legend()
-
-    # 设置轴标签和标题
-    ax.set_xlabel('Performance (%)')
-    ax.set_title('DQN vs Best Linear Learner Performance on Atari Games')
-    
-    
-    
-    
     sorted_data = sorted(
         zip(datasets, means_train, stds_train, means_test, stds_test),
         key=lambda x: x[3]
@@ -287,20 +237,23 @@ def error_bar_plot_double(
     datasets, means_train, stds_train, means_test, stds_test = zip(*sorted_data)
     stds_train_mul3 = [s*3 for s in stds_train]
     stds_test_mul3 = [s*3 for s in stds_test]
-    
-    plt.figure(figsize=(20, 8))
-    plt.errorbar(
-        datasets, means_train, yerr=stds_train_mul3, 
-        elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1
+
+    fig, ax = plt.subplots(figsize=(8, 20))
+    ax.barh(
+        datasets, means_train, xerr=[np.zeros(len(datasets)), stds_train_mul3],
+        label='train', capsize=5, color='blue', alpha=0.4,
+        error_kw={'elinewidth': 1, 'capthick': 1, 'ecolor': 'blue'}
     )
-    plt.errorbar(
-        datasets, means_test, yerr=stds_test_mul3, 
-        elinewidth=1, fmt="o", ms=5, capsize=8, capthick=1
+    ax.barh(
+        datasets, means_test, xerr=[np.zeros(len(datasets)), stds_test_mul3],
+        label='test', capsize=5, color='orange', alpha=0.4,
+        error_kw={'elinewidth': 2, 'capthick': 2, 'ecolor': 'orange'}
     )
-    plt.xticks(rotation=30, ha='right', fontsize=35)
-    plt.tick_params(axis='both', labelsize=35)
-    plt.ylabel(ylabel, fontsize=35)
-    plt.ylim(0, ylim_upper)
+
+    ax.legend(fontsize=35)
+    ax.set_xlabel(xlabel, fontsize=35)
+    ax.tick_params(axis='both', labelsize=30)
+    ax.set_xlim(0, xlim_upper)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     

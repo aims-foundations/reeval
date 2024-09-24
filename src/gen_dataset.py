@@ -1,4 +1,4 @@
-from sklearn.model_selection import train_test_split
+import argparse
 from transformers import AutoTokenizer
 from datasets import Dataset, DatasetDict
 import pandas as pd
@@ -6,8 +6,13 @@ import os
 from huggingface_hub import login
 from dotenv import load_dotenv
 from datasets import load_dataset, concatenate_datasets
+from sklearn.model_selection import train_test_split
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--task', type=str, required=True)
+    args = parser.parse_args()
+    
     load_dotenv()
     hf_token = os.getenv('HF_TOKEN')
     login(token=hf_token)
@@ -18,7 +23,7 @@ if __name__ == "__main__":
     dataset_test = load_dataset(hf_repo, split="test")
     dataset = concatenate_datasets([dataset_train, dataset_test])
     
-    chat = [
+    ppo_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": (
             """Generate a question with a given difficulty score, which range from -5 to 5. """
@@ -28,12 +33,13 @@ if __name__ == "__main__":
             """Difficulty: %s. Question: """
         )
         },
-        {"role": "assistant", "content": """%s"""},
     ]
+    sft_chat = ppo_chat.append({"role": "assistant", "content": """%s"""})
     
-    template = tokenizer.apply_chat_template(
-        chat, tokenize=False, add_generation_prompt=False
-    )
+    if args.task == 'ppo':
+        template = tokenizer.apply_chat_template(ppo_chat, tokenize=False, add_generation_prompt=True)
+    elif args.task == 'sft':
+        template = tokenizer.apply_chat_template(sft_chat, tokenize=False, add_generation_prompt=False)
     
     new_texts = []
     for i in range(len(dataset)):
@@ -51,4 +57,4 @@ if __name__ == "__main__":
         "train": train_dataset,
         "test": test_dataset
     })
-    dataset_dict.push_to_hub('stair-lab/airbench-sft')
+    dataset_dict.push_to_hub(f'stair-lab/airbench-{args.task}')

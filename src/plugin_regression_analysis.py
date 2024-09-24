@@ -87,7 +87,7 @@ if __name__ == "__main__":
         means_test=dataset_gof_test_means,
         stds_test=dataset_gof_test_stds,
         plot_path=f"{plot_dir}/plugin_regression_summarize_gof",
-        ylabel=r"Goodness of Fit",
+        xlabel=r"Goodness of Fit",
     )   
     
     error_bar_plot_double(
@@ -97,8 +97,8 @@ if __name__ == "__main__":
         means_test=dataset_test_mse_means,
         stds_test=dataset_test_mse_stds,
         plot_path=f"{plot_dir}/plugin_regression_summarize_mse",
-        ylabel=r"MSE of Bayesian Ridge Regression",
-        ylim_upper=10,
+        xlabel=r"MSE",
+        xlim_upper=10,
     )
     
     error_bar_plot_double(
@@ -108,7 +108,7 @@ if __name__ == "__main__":
         means_test=dataset_baseline_test_mse_means,
         stds_test=dataset_baseline_test_mse_stds,
         plot_path=f"{plot_dir}/plugin_regression_summarize_baseline_mse",
-        ylabel=r"MSE of Baseline Mean Prediction",
-        ylim_upper=10,
+        xlabel=r"Baseline MSE",
+        xlim_upper=10,
     )
     
