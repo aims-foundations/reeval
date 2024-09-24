@@ -1,6 +1,7 @@
 scikit-learn
 numpy
 embed_text_package @ git+https://github.com/stair-lab/embedder.git
+lampo @ git+https://github.com/stair-lab/lampo.git
 torch
 datasets
 xgboost
@@ -17,3 +18,4 @@ webdriver_manager
 numpyro
 vllm
 peft
+pip install flash-attn
