@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 from utils import get_embed
 
 def extract_score(input_str: str) -> float:
-    match = re.search(r'Difficulty: "([-+]?\d*\.\d+|\d+)"', input_str)
+    match = re.search(r'Difficulty: ([-+]?\d*\.\d+|\d+)', input_str)
     return float(match.group(1))
 
 class MessageDataset(Dataset):
