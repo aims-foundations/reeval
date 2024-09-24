@@ -1,3 +1,4 @@
+from sklearn.model_selection import train_test_split
 from transformers import AutoTokenizer
 from datasets import Dataset, DatasetDict
 import pandas as pd
@@ -43,8 +44,11 @@ if __name__ == "__main__":
     print(new_texts[0])
         
     push_df = pd.DataFrame(new_texts, columns=['text'])
-    push_dataset = Dataset.from_pandas(push_df)
-    push_dict = DatasetDict({
-        "train": push_dataset,
+    train_df, test_df = train_test_split(push_df, test_size=0.2, random_state=42)
+    train_dataset = Dataset.from_pandas(train_df)
+    test_dataset = Dataset.from_pandas(test_df)
+    dataset_dict = DatasetDict({
+        "train": train_dataset,
+        "test": test_dataset
     })
-    push_dict.push_to_hub('stair-lab/airbench-sft')
+    dataset_dict.push_to_hub('stair-lab/airbench-ppo')
