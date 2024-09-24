@@ -16,11 +16,12 @@ class MyRewardModel(RewardModelTemplate):
 
     async def compute(self, messages):
         gt_scores = [extract_score(m[0]) for m in messages]
+        print(len(messages))
         
         answers = [m[1] for m in messages]
         answer_df = pd.DataFrame(answers, columns=["text"])
         answer_dataset = Dataset.from_pandas(answer_df)
-        answer_embs = get_embed(answer_dataset)
+        answer_embs = get_embed(answer_dataset, bs=len(answer_dataset))
         pred_scores = self.model.predict(answer_embs).tolist()
         
         rewards = [-abs(a - b) for a, b in zip(pred_scores, gt_scores)]
