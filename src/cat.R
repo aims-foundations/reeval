@@ -43,7 +43,7 @@ func.catSim <- function(resp, item.bank, method){
   final <- list(method = 'ML')
   for (i in 1:np){
     pid <- pids[i]
-    random_number <- 33
+    random_number <- 1
     start <- list(fixItems = random_number, nrItems = 1, theta = 0)
     res <- randomCAT(itemBank = item.bank, 
                      responses = as.numeric(resp[i,]), 
@@ -108,7 +108,7 @@ func.visualize.differences.validate.all <- function(df.compare){
 }
 
 set.seed(42)
-np <- 500
+np <- 200
 iter <- 5
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -116,7 +116,7 @@ arg1 <- args[1]
 arg2 <- args[2]
 
 if (arg1 == "syn") {
-  ni <- 200
+  ni <- 500
   theta <- rnorm(np, mean=0, sd=1)
   b <- rnorm(ni, mean=0, sd=1)
   save.path <- glue("../data/cat/{arg1}/cat.csv")
@@ -139,7 +139,7 @@ if (arg1 == "syn") {
 item.bank <- data.frame(
   a = rep(1, ni),
   b = b,       
-  c = rep(0.5, ni),
+  c = rep(0, ni),
   d = rep(1, ni)
 )
 
@@ -162,7 +162,6 @@ df.compare.all <- df.monte.carlo.simulation.compare %>%
 
 df.aggregrate.learning.curve.all <- func.visualize.differences.validate.all(df.compare.all) %>% 
   mutate(bias = abs(bias))
-
 
 write.csv(df.aggregrate.learning.curve.all, "../data/cat/catR_data.csv", row.names = FALSE)
 
