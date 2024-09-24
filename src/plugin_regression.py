@@ -73,13 +73,11 @@ def main(
     df_test_path,
     save_model_path=None,
 ):
-    # dataset_train = load_dataset(hf_repo, split="train")
-    # dataset_test = load_dataset(hf_repo, split="test")
-    # dataset = concatenate_datasets([dataset_train, dataset_test])
-    dataset = load_dataset(hf_repo, split="train")
-    emb_list_of_str = dataset['embed']
-    emb = np.array([ast.literal_eval(emb_str) for emb_str in emb_list_of_str])
-    z = np.array(dataset['z']) 
+    dataset_train = load_dataset(hf_repo, split="train")
+    dataset_test = load_dataset(hf_repo, split="test")
+    dataset = concatenate_datasets([dataset_train, dataset_test])
+    emb = np.array(dataset['embed'])
+    z = np.array(dataset['z'])
     
     train_indices, test_indices = split_indices(z.shape[0])    
     emb_train, z_train = emb[train_indices], z[train_indices]
