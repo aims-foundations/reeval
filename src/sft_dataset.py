@@ -5,7 +5,6 @@ import os
 from huggingface_hub import login
 from dotenv import load_dotenv
 from datasets import load_dataset, concatenate_datasets
-from sklearn.model_selection import train_test_split
 
 if __name__ == "__main__":
     load_dotenv()
@@ -13,7 +12,7 @@ if __name__ == "__main__":
     login(token=hf_token)
     
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
-    hf_repo = "stair-lab/airbench-difficulty"
+    hf_repo = "stair-lab/reeval_airbench-embed"
     dataset_train = load_dataset(hf_repo, split="train")
     dataset_test = load_dataset(hf_repo, split="test")
     dataset = concatenate_datasets([dataset_train, dataset_test])
