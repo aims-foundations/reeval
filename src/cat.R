@@ -123,13 +123,13 @@ if (arg1 == "syn") {
 } else if (arg1 == "semi_syn") {
   thata.path <- glue("../data/nonamor_calibration/{arg2}/nonamor_theta.csv")
   df.theta <- read_csv(thata.path, col_select = 1)
-  theta_mean <- mean(df.theta$F1)
-  theta_std <- sd(df.theta$F1)
+  theta_mean <- mean(df.theta$theta)
+  theta_std <- sd(df.theta$theta)
   theta <- rnorm(np, mean = theta_mean, sd = theta_std)
   
   b.path <- glue("../data/nonamor_calibration/{arg2}/nonamor_z.csv")
   df.b <- read_csv(b.path, col_select = 1)
-  b <- df.b$z3
+  b <- df.b$z
   b <- b * -1
   ni <- length(b)
   
