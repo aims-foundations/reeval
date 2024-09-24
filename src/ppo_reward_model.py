@@ -17,13 +17,14 @@ class MyRewardModel(RewardModelTemplate):
         self.load()
 
     async def compute(self, messages):
+        print(f"{len(messages)} !!!!!!!!!!!!!!!!!!!!!!")
         gt_scores = [extract_score(m[0]) for m in messages]
         
         answers = [m[1] for m in messages]
         answer_df = pd.DataFrame(answers, columns=["text"])
         answer_dataset = Dataset.from_pandas(answer_df)
         
-        bs = 1024
+        bs = 8
         cols_to_be_embded = ['text']
         model_name="meta-llama/Meta-Llama-3-8B"
         
