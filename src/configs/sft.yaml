@@ -8,7 +8,7 @@ dataset_train_split: train
 dataset_test_split: test
 dataset_text_field: text
 
-bf16: true
+# bf16: true
 ddp_timeout: 180000000
 gradient_accumulation_steps: 1
 gradient_checkpointing: true
