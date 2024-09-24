@@ -2,7 +2,7 @@ import pickle
 import re
 import pandas as pd
 from lampo.reward_model import RewardModelTemplate
-from torch.utils.data import Dataset
+from datasets import Dataset
 from utils import get_embed
 
 def extract_score(input_str: str) -> float:
@@ -15,9 +15,7 @@ class MyRewardModel(RewardModelTemplate):
         self.load()
 
     async def compute(self, messages):
-        print(messages[0])
         gt_scores = [extract_score(m[0]) for m in messages]
-        print(gt_scores)
         
         answers = [m[1] for m in messages]
         answer_df = pd.DataFrame(answers, columns=["text"])
