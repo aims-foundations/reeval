@@ -25,6 +25,6 @@ if __name__ == "__main__":
     template = tokenizer.apply_chat_template(ppo_chat, tokenize=False, add_generation_prompt=True)
     
     llm = LLM(model=model_dir)
-    outputs = llm.generate(template)
+    outputs = llm.generate(template, sampling_params)
     print(f"Prompt: {template}")
     print(f"Answer: {outputs[0].outputs[0].text}")
