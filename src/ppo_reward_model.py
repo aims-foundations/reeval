@@ -17,7 +17,8 @@ class MyRewardModel(RewardModelTemplate):
         self.load()
 
     async def compute(self, messages): # messages: List[list[qstr,astr], list[qstr,astr]]
-        print(f"messages[0]: {messages[0]}")
+        print(f"messages[0][0]: {messages[0][0]}")
+        print(f"messages[0][1]: {messages[0][1]}")
         print(f"len(messages): {len(messages)}")
         gt_scores = [extract_score(m[0]) for m in messages]
         
