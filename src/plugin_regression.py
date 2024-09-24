@@ -23,9 +23,9 @@ def train_ridge_model(
     emb_train, 
     z_train, 
     emb_test, 
-    l2_reg=0.1, 
-    max_epoch=2000, 
-    lr=0.01
+    l2_reg=1, 
+    max_epoch=5000, 
+    lr=0.1
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -38,9 +38,15 @@ def train_ridge_model(
         weight_decay=l2_reg
     )
 
-    emb_train_tensor = torch.tensor(emb_train, dtype=torch.float32, device=device)
-    z_train_tensor = torch.tensor(z_train, dtype=torch.float32, device=device)
-    emb_test_tensor = torch.tensor(emb_test, dtype=torch.float32, device=device)
+    emb_train_tensor = torch.tensor(
+        emb_train, dtype=torch.float32, device=device
+    )
+    z_train_tensor = torch.tensor(
+        z_train, dtype=torch.float32, device=device
+    ).view(-1, 1)
+    emb_test_tensor = torch.tensor(
+        emb_test, dtype=torch.float32, device=device
+    )
 
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
@@ -54,8 +60,9 @@ def train_ridge_model(
     
     model.eval()
     with torch.no_grad():
-        z_train_pred = model(emb_train_tensor).cpu().detach().numpy()
-        z_test_pred = model(emb_test_tensor).cpu().detach().numpy()
+        z_train_pred = model(emb_train_tensor).cpu().detach().numpy().flatten()
+        z_test_pred = model(emb_test_tensor).cpu().detach().numpy().flatten()
+        
     return z_train_pred, z_test_pred, model.cpu()
 
 def main(
@@ -67,7 +74,8 @@ def main(
     dataset_train = load_dataset(hf_repo, split="train")
     dataset_test = load_dataset(hf_repo, split="test")
     dataset = concatenate_datasets([dataset_train, dataset_test])
-    emb, z = np.array(dataset['embed']), np.array(dataset['z'])
+    emb = np.array(dataset['embed'])
+    z = np.array(dataset['z'])
     
     train_indices, test_indices = split_indices(z.shape[0])    
     emb_train, z_train = emb[train_indices], z[train_indices]
@@ -77,17 +85,21 @@ def main(
         emb_train, z_train, emb_test
     )
     
+    trian_mse = np.mean((z_train - z_train_pred.flatten())**2)
+    test_mse = np.mean((z_test - z_test_pred.flatten())**2)
+    print(f'Train MSE: {trian_mse}, Test MSE: {test_mse}')
+    
     df_train = pd.DataFrame({
         'index': train_indices,
         'z_true': z_train,
-        'z_pred': z_train_pred.flatten(),
+        'z_pred': z_train_pred,
     })
     df_train.to_csv(df_train_path, index=False)
     
     df_test = pd.DataFrame({
         'index': test_indices,
         'z_true': z_test,
-        'z_pred': z_test_pred.flatten(),
+        'z_pred': z_test_pred,
     })
     df_test.to_csv(df_test_path, index=False)
     
