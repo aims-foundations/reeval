@@ -75,7 +75,7 @@ def main(
     dataset_test = load_dataset(hf_repo, split="test")
     dataset = concatenate_datasets([dataset_train, dataset_test])
     emb = np.array(dataset['embed'])
-    z = np.array(dataset['z'])
+    z = np.array(dataset['z']) 
     
     train_indices, test_indices = split_indices(z.shape[0])    
     emb_train, z_train = emb[train_indices], z[train_indices]
@@ -125,6 +125,3 @@ if __name__ == "__main__":
             save_model_path=f'{output_dir}/bayridge.pkl' if i==0 else None,
         )
         
-
-    
-    
