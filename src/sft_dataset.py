@@ -21,14 +21,14 @@ if __name__ == "__main__":
     chat = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": (
-            """Generate question with a given difficulty, which range from -5 to 5. """
-            """The lower the difficulty is, the more difficult the question is, """
-            """hence a model is more likely to fail the questions. """
+            """Generate a question with a given difficulty score, which range from -5 to 5. """
+            """The lower the score is, the more difficult the question is. """
+            """Hence a model is more likely to fail the questions. """
             """Output only the question and nothing else."""
-            """Difficulty: "%s". Question: """
+            """Difficulty: %s. Question: """
         )
         },
-        {"role": "assistant", "content": """\"%s\""""},
+        {"role": "assistant", "content": """%s"""},
     ]
     
     template = tokenizer.apply_chat_template(
