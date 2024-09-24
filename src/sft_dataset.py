@@ -24,7 +24,7 @@ if __name__ == "__main__":
             """Generate a question with a given difficulty score, which range from -5 to 5. """
             """The lower the score is, the more difficult the question is. """
             """Hence a model is more likely to fail the questions. """
-            """Output only the question and nothing else."""
+            """Output only the question and nothing else. """
             """Difficulty: %s. Question: """
         )
         },
