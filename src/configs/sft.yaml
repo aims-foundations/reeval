@@ -1,0 +1,14 @@
+env:
+  CUDA_VISIBLE_DEVICES: 0
+model_name_or_path:
+  meta-llama/Meta-Llama-3-8B-Instruct
+dataset_name:
+  stair-lab/airbench-sft
+dataset_text_field:
+  text
+report_to:
+  wandb
+learning_rate:
+  0.0001
+lr_scheduler_type:
+  cosine_with_restarts
