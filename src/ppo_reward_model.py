@@ -3,7 +3,8 @@ import re
 import pandas as pd
 from lampo.reward_model import RewardModelTemplate
 from datasets import Dataset
-from utils import get_embed
+from embed_text_package.embed_text import Embedder
+from torch.utils.data import DataLoader
 
 def extract_score(input_str: str) -> float:
     match = re.search(r'Difficulty: ([-+]?\d*\.\d+|\d+)', input_str)
@@ -11,25 +12,40 @@ def extract_score(input_str: str) -> float:
 
 class MyRewardModel(RewardModelTemplate):
     def __init__(self, config):
-        self.model = None
+        self.reg_model = None
+        self.emb_model = None
         self.load()
 
     async def compute(self, messages):
         gt_scores = [extract_score(m[0]) for m in messages]
-        print(len(messages))
         
         answers = [m[1] for m in messages]
         answer_df = pd.DataFrame(answers, columns=["text"])
         answer_dataset = Dataset.from_pandas(answer_df)
-        answer_embs = get_embed(answer_dataset, bs=len(answer_dataset))
+        
+        bs = 1024
+        cols_to_be_embded = ['text']
+        model_name="meta-llama/Meta-Llama-3-8B"
+        
+        dataloader = DataLoader(answer_dataset, batch_size=bs)
+        emb = self.emb_model.get_embeddings(
+            dataloader, model_name, cols_to_be_embded
+        )
+        
+        answer_embs = emb['text']
         pred_scores = self.model.predict(answer_embs).tolist()
         
         rewards = [-abs(a - b) for a, b in zip(pred_scores, gt_scores)]
         return rewards
     
-    def load(self):
+    def load(self,):
         with open('../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
-            self.model = pickle.load(f)
+            self.reg_model = pickle.load(f)
+
+        model_name="meta-llama/Meta-Llama-3-8B"
+        embdr = Embedder()
+        embdr.load(model_name)
+        self.emb_model = embdr 
 
     def unload(self):
         pass
