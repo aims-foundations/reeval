@@ -39,7 +39,7 @@ if __name__ == "__main__":
     for i in range(len(dataset)):
         z = dataset[i]['z']
         question =  dataset[i]['text']
-        text = template % (question, round(z, 2))
+        text = template % (round(z, 2), question)
         new_texts.append(text)
     print(new_texts[0])
         
