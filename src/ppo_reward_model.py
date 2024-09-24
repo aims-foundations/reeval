@@ -2,8 +2,7 @@ import pickle
 import re
 from lampo.reward_model import RewardModelTemplate
 from embed_text_package.embed_text import Embedder
-from torch.utils.data import DataLoader
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 
 def extract_score(input_str: str) -> float:
     match = re.search(r'Difficulty: "([-+]?\d*\.\d+|\d+)"', input_str)
@@ -20,7 +19,7 @@ class MessageDataset(Dataset):
         return {"question_text": self.data[idx]}
     
 class MyRewardModel(RewardModelTemplate):
-    def __init__(self, config):
+    def __init__(self):
         self.model = None
         self.load()
 
@@ -43,7 +42,7 @@ class MyRewardModel(RewardModelTemplate):
         return rewards
     
     def load(self):
-        with open('../../data/real/ppo/bayesian_ridge_model.pkl', 'rb') as f:
+        with open('../../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
             self.model = pickle.load(f)
 
     def unload(self):
