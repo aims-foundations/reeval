@@ -76,9 +76,8 @@ def main(
     # dataset_test = load_dataset(hf_repo, split="test")
     # dataset = concatenate_datasets([dataset_train, dataset_test])
     dataset = load_dataset(hf_repo, split="train")
-    emb = dataset['embed']
-    print(type(emb))
-    print(type(emb[0]))
+    emb_list_of_str = dataset['embed']
+    emb = np.array([ast.literal_eval(emb_str) for emb_str in emb_list_of_str])
     z = np.array(dataset['z']) 
     
     train_indices, test_indices = split_indices(z.shape[0])    
