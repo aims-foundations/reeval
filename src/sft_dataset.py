@@ -33,7 +33,6 @@ if __name__ == "__main__":
     template = tokenizer.apply_chat_template(
         chat, tokenize=False, add_generation_prompt=True
     )
-    print(template)
     
     new_texts = []
     for i in range(len(dataset)):
@@ -41,6 +40,7 @@ if __name__ == "__main__":
         question =  dataset[i]['text']
         text = template % (question, round(z, 2))
         new_texts.append(text)
+    print(new_texts[0])
         
     push_df = pd.DataFrame(new_texts, columns=['text'])
     push_dataset = Dataset.from_pandas(push_df)
