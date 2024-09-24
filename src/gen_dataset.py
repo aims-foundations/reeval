@@ -34,7 +34,7 @@ if __name__ == "__main__":
         )
         },
     ]
-    sft_chat = ppo_chat.append({"role": "assistant", "content": """%s"""})
+    sft_chat = ppo_chat + [{"role": "assistant", "content": """%s"""}]
     
     if args.task == 'ppo':
         template = tokenizer.apply_chat_template(ppo_chat, tokenize=False, add_generation_prompt=True)
@@ -45,7 +45,10 @@ if __name__ == "__main__":
     for i in range(len(dataset)):
         z = dataset[i]['z']
         question =  dataset[i]['text']
-        text = template % (round(z, 2), question)
+        if args.task == 'ppo':
+            text = template % round(z, 2)
+        elif args.task == 'sft':
+            text = template % (round(z, 2), question)
         new_texts.append(text)
     print(new_texts[0])
         

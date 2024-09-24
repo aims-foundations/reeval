@@ -5,8 +5,8 @@ from embed_text_package.embed_text import Embedder
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
-def extract_score(input_str: str) -> int:
-    match = re.search(r'Your task is to output a prompt at score "([-+]?\d*\.\d+|\d+)"', input_str)
+def extract_score(input_str: str) -> float:
+    match = re.search(r'Difficulty: "([-+]?\d*\.\d+|\d+)"', input_str)
     return float(match.group(1))
 
 class MessageDataset(Dataset):
