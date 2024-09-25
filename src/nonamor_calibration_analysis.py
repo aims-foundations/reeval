@@ -5,6 +5,7 @@ from tqdm import tqdm
 from utils import (
     goodness_of_fit_1PL_plot, 
     theta_corr_ctt_plot, 
+    theta_corr_helm_plot,
     error_bar_plot_single,
     DATASETS
 )
@@ -16,6 +17,7 @@ if __name__ == "__main__":
     
     gof_means, gof_stds = [], []
     corr_ctt_means, corr_ctt_stds = [], []
+    corr_helm_means, corr_helm_stds = [], []
     for dataset in tqdm(DATASETS):
         print(f"Processing {dataset}")
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
@@ -38,6 +40,14 @@ if __name__ == "__main__":
         )
         corr_ctt_means.append(corr_ctt_mean)
         corr_ctt_stds.append(corr_ctt_std)
+        
+        corr_helm_mean, corr_helm_std = theta_corr_helm_plot(
+            theta=theta_hat,
+            dataset=dataset,
+            plot_path=f"{plot_dir}/theta_corr_helm_{dataset}",
+        )
+        corr_helm_means.append(corr_helm_mean)
+        corr_helm_stds.append(corr_helm_std)
     
     error_bar_plot_single(
         datasets=DATASETS,
@@ -53,5 +63,13 @@ if __name__ == "__main__":
         stds=corr_ctt_stds,
         plot_path=f"{plot_dir}/nonamor_calibration_summarize_theta_corr_ctt",
         xlabel=r"$\theta$ correlation with CTT",
+    )
+    
+    error_bar_plot_single(
+        datasets=DATASETS,
+        means=corr_helm_means,
+        stds=corr_helm_stds,
+        plot_path=f"{plot_dir}/nonamor_calibration_summarize_theta_corr_helm",
+        xlabel=r"$\theta$ correlation with HELM",
     )
     

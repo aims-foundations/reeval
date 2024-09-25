@@ -6,6 +6,7 @@ from tqdm import tqdm
 from utils import (
     goodness_of_fit_1PL, 
     theta_corr_ctt, 
+    theta_corr_helm,
     error_bar_plot_single,
     error_bar_plot_double, 
     amorz_corr_nonamorz,
@@ -20,6 +21,7 @@ if __name__ == "__main__":
     dataset_gof_train_means, dataset_gof_train_stds = [], []
     dataset_gof_test_means, dataset_gof_test_stds = [], []
     dataset_theta_corr_ctt_means, dataset_theta_corr_ctt_stds = [], []
+    dataset_theta_corr_helm_means, dataset_theta_corr_helm_stds = [], []
     dataset_z_corr_train_means, dataset_z_corr_train_stds = [], []
     dataset_z_corr_test_means, dataset_z_corr_test_stds = [], []
     
@@ -27,9 +29,10 @@ if __name__ == "__main__":
         print(f"Processing {dataset}")
         gof_train_means, gof_test_means = [], []
         theta_corr_ctt_means = []
+        theta_corr_helm_means = []
         z_corr_train_means, z_corr_test_means = [], []
         
-        for i in range(2):
+        for i in range(10):
             y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
             theta_train = pd.read_csv(f'{input_dir}/{dataset}/theta_{i}.csv')['theta'].values
             df_z_train = pd.read_csv(f'{input_dir}/{dataset}/z_train_{i}.csv')
@@ -60,6 +63,12 @@ if __name__ == "__main__":
             )
             theta_corr_ctt_means.append(theta_corr_ctt_mean)
             
+            theta_corr_helm_mean, _, _ = theta_corr_helm(
+                theta=theta_train,
+                dataset=dataset,
+            )
+            theta_corr_helm_means.append(theta_corr_helm_mean)
+            
             z_corr_train_mean = amorz_corr_nonamorz(
                 z_amor=z_train,
                 z_nonamor=nonamor_z[train_indices],
@@ -75,12 +84,14 @@ if __name__ == "__main__":
         dataset_gof_train_means.append(np.mean(gof_train_means))
         dataset_gof_test_means.append(np.mean(gof_test_means))
         dataset_theta_corr_ctt_means.append(np.mean(theta_corr_ctt_means))
+        dataset_theta_corr_helm_means.append(np.mean(theta_corr_helm_means))
         dataset_z_corr_train_means.append(np.mean(z_corr_train_means))
         dataset_z_corr_test_means.append(np.mean(z_corr_test_means))
         
         dataset_gof_train_stds.append(np.std(gof_train_means))
         dataset_gof_test_stds.append(np.std(gof_test_means))
         dataset_theta_corr_ctt_stds.append(np.std(theta_corr_ctt_means))
+        dataset_theta_corr_helm_stds.append(np.std(theta_corr_helm_means))
         dataset_z_corr_train_stds.append(np.std(z_corr_train_means))
         dataset_z_corr_test_stds.append(np.std(z_corr_test_means))
     
@@ -100,6 +111,14 @@ if __name__ == "__main__":
         stds=dataset_theta_corr_ctt_stds,
         plot_path=f"{plot_dir}/amor_calibration_summarize_theta_corr_ctt",
         xlabel=r"$\theta$ correlation with CTT",
+    )
+    
+    error_bar_plot_single(
+        datasets=DATASETS,
+        means=dataset_theta_corr_helm_means,
+        stds=dataset_theta_corr_helm_stds,
+        plot_path=f"{plot_dir}/amor_calibration_summarize_theta_corr_helm",
+        xlabel=r"$\theta$ correlation with HELM",
     )
     
     error_bar_plot_double(
