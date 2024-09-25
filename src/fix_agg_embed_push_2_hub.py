@@ -22,7 +22,7 @@ if __name__ == "__main__":
     agg_df['embed'] = agg_df[[f'embed_{i}' for i in range(4096)]].values.tolist()
     agg_df = agg_df.drop(columns=[f'embed_{i}' for i in range(4096)])
 
-    test_df, train_df = train_test_split(agg_df, test_size=0.2, random_state=42)
+    train_df, test_df = train_test_split(agg_df, test_size=0.2, random_state=42)
 
     train_dataset = Dataset.from_pandas(train_df)
     test_dataset = Dataset.from_pandas(test_df)
