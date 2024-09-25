@@ -27,7 +27,7 @@ func.create.response <- function(b, th, np, ni) {
   return (data.frame(resp))
 }
 
-func.catSim <- function(resp, item.bank, method){
+func.catSim <- function(resp, item.bank, method, stop.size){
   ni = length(resp)-1
   np = length(resp[[1]])
   list.thetas <- NULL
@@ -36,10 +36,11 @@ func.catSim <- function(resp, item.bank, method){
   list.item <- NULL
   
   pids <- resp$pid
+  # delete pid column
   resp <- resp %>% select(-pid)
   
   test <- list(method = 'ML', itemSelect = method, infoType = "Fisher")
-  stop <- list(rule = 'length',thr = ni)
+  stop <- list(rule = 'length', thr = stop.size)
   final <- list(method = 'ML')
   for (i in 1:np){
     pid <- pids[i]
@@ -52,11 +53,11 @@ func.catSim <- function(resp, item.bank, method){
                      final = final, 
                      stop = stop)
     list.thetas <- c(list.thetas, res$thetaProv)
-    list.pid <- c(list.pid, rep(pid, times = ni))
+    list.pid <- c(list.pid, rep(pid, times = stop.size))
     list.se <- c(list.se, res$seProv)
     list.item <- c(list.item, res$testItems)
   }
-  list.trialNumBlock <- rep(1:ni, np)
+  list.trialNumBlock <- rep(1:stop.size, np)
   return(data.frame(pid = list.pid, 
                     trialNumTotal = list.trialNumBlock, 
                     item = list.item,
@@ -64,9 +65,10 @@ func.catSim <- function(resp, item.bank, method){
                     thetaSE = list.se))
 }
 
-monte.carlo.cat.simulation <- function(th.sample, item.bank, iteration){
+monte.carlo.cat.simulation <- function(th.sample, item.bank, iteration, stop.size){
   resp.sample <- func.create.response(item.bank$b, th.sample, np, ni)
   
+  # add simulated_pid to first column
   simulated_pid <- sprintf("sim_%03d", 1:np)
   df <- resp.sample %>%
     mutate(pid = simulated_pid) %>%
@@ -75,6 +77,7 @@ monte.carlo.cat.simulation <- function(th.sample, item.bank, iteration){
   df.results <- NULL
   for (i in 1:iteration) {
     print(i)
+    # shuffle rows of response matrix
     df.shuffle <- df %>% 
       sample_n(size = n(), replace = FALSE)
     
@@ -82,13 +85,14 @@ monte.carlo.cat.simulation <- function(th.sample, item.bank, iteration){
     n_rows <- nrow(df.shuffle)
     midpoint <- ceiling(n_rows / 2)
     
-    # Split the data frame into two halves
+    # Split the response matrix into two halves
     half1 <- df.shuffle[1:midpoint, ]
     half2 <- df.shuffle[(midpoint + 1):n_rows, ]
     
-    df.mfi.real <- func.catSim(half1, item.bank, "MFI")
-    df.random.real <- func.catSim(half2, item.bank, "random")
+    df.mfi.real <- func.catSim(half1, item.bank, "MFI", stop.size)
+    df.random.real <- func.catSim(half2, item.bank, "random", stop.size)
     
+    # add column: variant and iteration
     df.results <- df.results %>% 
       rbind(rbind(df.mfi.real %>% add_column(variant = "adaptive"), 
                   df.random.real %>% add_column(variant = "random")) %>% 
@@ -110,6 +114,7 @@ func.visualize.differences.validate.all <- function(df.compare){
 set.seed(42)
 np <- 200
 iter <- 5
+stop.size <- 400
 
 args <- commandArgs(trailingOnly = TRUE)
 arg1 <- args[1]
@@ -131,13 +136,12 @@ if (arg1 == "syn") {
   df.b <- read_csv(b.path, col_select = 1)
   b <- df.b$z
   b <- b * -1
-  if (length(b) > 400) {
-    b <- sample(b, 400, replace = FALSE)
-  } 
   ni <- length(b)
   
   save.path <- glue("../data/cat/{arg2}/cat.csv")
 }
+
+stop.size <- min(stop.size, ni)
 
 item.bank <- data.frame(
   a = rep(1, ni),
@@ -146,13 +150,12 @@ item.bank <- data.frame(
   d = rep(1, ni)
 )
 
-resp.sample <- func.create.response(b, theta, np, ni)
+df.monte.carlo.results.v2 <- monte.carlo.cat.simulation(theta, item.bank, iter, stop.size)
 
-df.monte.carlo.results.v2 <- monte.carlo.cat.simulation(theta, item.bank, iter)
-
+# set the true estimate as the final theta estimate
 df.monte.carlo.simulation.compare <- df.monte.carlo.results.v2  %>%
   mutate(thetaEstimate = round(thetaEstimate, digits = 6)) %>%
-  filter(trialNumTotal == ni) %>%
+  filter(trialNumTotal == stop.size) %>%
   select(pid, thetaEstimate) %>%
   dplyr :: rename(trueEstimate = thetaEstimate) %>%
   left_join(df.monte.carlo.results.v2 %>%

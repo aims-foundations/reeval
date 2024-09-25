@@ -1,4 +1,5 @@
 import argparse
+import numpy as np
 import torch
 from transformers import AutoTokenizer
 from datasets import Dataset, DatasetDict
@@ -70,13 +71,17 @@ if __name__ == "__main__":
     elif args.task == 'sft':
         template = tokenizer.apply_chat_template(sft_chat, tokenize=False, add_generation_prompt=False)
     
+    mean_pred_z = np.mean(np.array(pred_zs))
+    std_pred_z = np.std(np.array(pred_zs))
+    
     new_texts = []
     for i in range(len(dataset)):
-        z = pred_zs[i]
-        question =  dataset[i]['text']
         if args.task == 'ppo':
+            z = np.random.normal(mean_pred_z, std_pred_z)
             text = template % round(z, 2)
         elif args.task == 'sft':
+            z = pred_zs[i]
+            question =  dataset[i]['text']
             text = template % (round(z, 2), question)
         new_texts.append(text)
     print(new_texts[0])
