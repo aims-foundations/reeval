@@ -100,7 +100,7 @@ def train_model(
             outputs = model(emb_batch)
             z_test_pred.append(outputs.cpu().numpy())
         z_test_pred = np.concatenate(z_test_pred).flatten()
-            
+    
     return z_train_pred, z_test_pred, model.cpu()
 
 def main(
