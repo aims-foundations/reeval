@@ -50,7 +50,7 @@ def train_model(
     emb_train: torch.Tensor, 
     z_train: torch.Tensor, 
     emb_test: torch.Tensor,
-    batch_size: int=524288, 
+    batch_size: int=403800, 
     # batch_size: int=65536, 
     max_epoch: int=1000, 
     lr: float=0.01
