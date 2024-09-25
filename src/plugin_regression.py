@@ -10,7 +10,6 @@ import torch.optim as optim
 from tqdm import tqdm
 import wandb
 from utils import set_seed, split_indices
-import ast
 from sklearn.metrics import mean_squared_error
 
 class RidgeRegression(nn.Module):

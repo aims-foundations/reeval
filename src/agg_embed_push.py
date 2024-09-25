@@ -3,7 +3,6 @@ from datasets import Dataset, DatasetDict
 import pandas as pd
 import os
 from huggingface_hub import login
-import ast
 from dotenv import load_dotenv
 
 if __name__ == "__main__":
