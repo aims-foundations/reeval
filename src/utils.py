@@ -241,7 +241,7 @@ def theta_corr_helm(
         index_col=0
     ).index.tolist()
     helm_models = helm_df['model_name'].tolist()
-    helm_models = [HELM_MODEL_MAP[m] for m in helm_models if m in list(HELM_MODEL_MAP.keys())]
+    helm_models = [HELM_MODEL_MAP[m] if m in HELM_MODEL_MAP else m for m in helm_models]
     assert y_model_names == helm_models, f'{y_model_names} != {helm_models}'
     
     helm_scores = helm_df['score'].values
