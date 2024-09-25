@@ -24,6 +24,9 @@ if __name__ == "__main__":
     dataset_test = load_dataset(hf_repo, split="test")
     dataset = concatenate_datasets([dataset_train, dataset_test])
     
+    if len(dataset) > 125000:
+        dataset = dataset.select(range(125000))
+    
     ppo_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": (
