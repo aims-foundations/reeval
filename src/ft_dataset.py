@@ -50,7 +50,7 @@ if __name__ == "__main__":
     elif args.model == 'mlp':
         with open(model_path, 'rb') as f:
             model = pickle.load(f)
-        pred_zs = mlp_predict(embs).tolist()
+        pred_zs = mlp_predict(model, embs).tolist()
     
     ppo_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
