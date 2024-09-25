@@ -20,23 +20,44 @@ class RidgeRegression(nn.Module):
     def forward(self, x):
         return self.linear(x)
 
+class MLP(nn.Module):
+    def __init__(self, input_dim):
+        super(MLP, self).__init__()
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, input_dim),
+            nn.ELU(),
+            nn.Linear(input_dim, input_dim),
+            nn.ELU(),
+            nn.Linear(input_dim, 2048),
+            nn.ELU(),
+            nn.Linear(2048, 1024),
+            nn.ELU(),
+            nn.Linear(1024, 1)
+        )
+
+    def forward(self, x):
+        return self.model(x)
+
 def train_ridge_model(
+    model_name,
     emb_train, 
     z_train, 
     emb_test, 
-    l2_reg=1, 
     max_epoch=5000, 
     lr=0.1
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     input_dim = emb_train.shape[1]
-    model = RidgeRegression(input_dim).to(device)
+    if model_name == 'ridge':
+        model = RidgeRegression(input_dim).to(device)
+    elif model_name == 'mlp':
+        model = MLP(input_dim).to(device)
+        
     criterion = nn.MSELoss()
     optimizer = optim.Adam(
         model.parameters(),
         lr=lr,
-        weight_decay=l2_reg
     )
 
     emb_train_tensor = torch.tensor(
@@ -113,6 +134,7 @@ if __name__ == "__main__":
     wandb.init(project="plugin_regression")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
+    parser.add_argument('--model', type=str, default='mlp', choices=['ridge', 'mlp'])
     args = parser.parse_args()
     
     output_dir = f'../data/plugin_regression/{args.dataset}'
@@ -121,9 +143,10 @@ if __name__ == "__main__":
     for i in tqdm(range(10)):
         set_seed(i)
         main(
+            model_name=args.model,
             hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
             df_train_path=f'{output_dir}/train_{i}.csv',
             df_test_path=f'{output_dir}/test_{i}.csv',
-            save_model_path=f'{output_dir}/bayridge.pkl' if i==0 else None,
+            save_model_path=f'{output_dir}/{args.dataset}.pkl' if i==0 else None,
         )
         
