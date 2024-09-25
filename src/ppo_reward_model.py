@@ -5,6 +5,7 @@ from lampo.reward_model import RewardModelTemplate
 from datasets import Dataset
 from embed_text_package.embed_text import Embedder
 from torch.utils.data import DataLoader
+from plugin_regression import MLP
 
 def extract_score(input_str: str) -> float:
     match = re.search(r'Difficulty: ([-+]?\d*\.\d+|\d+)', input_str)
@@ -45,7 +46,7 @@ class MyRewardModel(RewardModelTemplate):
         return rewards
     
     def load(self,):
-        with open('../data/plugin_regression/airbench/mlp.pkl', 'rb') as f:
+        with open('../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
             self.reg_model = pickle.load(f)
 
         model_name="meta-llama/Meta-Llama-3-8B"
