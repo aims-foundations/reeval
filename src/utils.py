@@ -235,7 +235,7 @@ def theta_corr_helm(
     theta: np.array,
     dataset: str,
 ):
-    helm_df = pd.read_csv('../data/gather_data/crawl_real/helm_score.csv')
+    helm_df = pd.read_csv(f'../data/gather_data/crawl_real/helm_score/{dataset}.csv')
     y_model_names = pd.read_csv(
         f'../data/pre_calibration/{dataset}/matrix.csv', 
         index_col=0

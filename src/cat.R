@@ -131,8 +131,8 @@ if (arg1 == "syn") {
   df.b <- read_csv(b.path, col_select = 1)
   b <- df.b$z
   b <- b * -1
-  if (length(b) > ni) {
-    b <- sample(b, ni, replace = FALSE)
+  if (length(b) > 400) {
+    b <- sample(b, 400, replace = FALSE)
   } 
   ni <- length(b)
   
