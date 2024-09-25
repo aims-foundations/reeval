@@ -239,9 +239,10 @@ def theta_corr_helm(
     y_model_names = pd.read_csv(
         f'../data/pre_calibration/{dataset}/matrix.csv', 
         index_col=0
-    ).index.values
-    helm_models = helm_df['model_name'].values
-    assert np.array_equal(y_model_names, helm_models)
+    ).index.tolist()
+    helm_models = helm_df['model_name'].tolist()
+    helm_models = [HELM_MODEL_MAP[m] for m in helm_models if m in list(HELM_MODEL_MAP.keys())]
+    assert y_model_names == helm_models, f'{y_model_names} != {helm_models}'
     
     helm_scores = helm_df['score'].values
     assert helm_scores.shape[0] == theta.shape[0]
