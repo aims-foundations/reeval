@@ -148,6 +148,6 @@ if __name__ == "__main__":
             hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
             df_train_path=f'{output_dir}/train_{i}.csv',
             df_test_path=f'{output_dir}/test_{i}.csv',
-            save_model_path=f'{output_dir}/{args.dataset}.pkl' if i==0 else None,
+            save_model_path=f'{output_dir}/{args.model}.pkl' if i==0 else None,
         )
         

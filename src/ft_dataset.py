@@ -12,6 +12,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=str, required=True)
     parser.add_argument('--dataset', type=str, required=True)
+    parser.add_argument('--model', type=str, default='mlp', choices=['ridge', 'mlp'])
     args = parser.parse_args()
     
     load_dotenv()
@@ -26,6 +27,8 @@ if __name__ == "__main__":
     
     if len(dataset) > 125000:
         dataset = dataset.select(range(125000))
+    
+    model_path = f'../data/plugin_regression/{args.dataset}'
     
     ppo_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
