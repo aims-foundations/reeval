@@ -24,14 +24,14 @@ if __name__ == "__main__":
             randoms=random_reliability_list,
             cats=cat_reliability_list,
             plot_path=f"{plot_dir}/reliability_{dataset}",
-            ylabel=r'Reliability',
+            ylabel='Reliability',
         )
         
         plot_cat(
             randoms=random_mse_list,
             cats=cat_mse_list,
             plot_path=f"{plot_dir}/mse_{dataset}",
-            ylabel=r'MSE',
+            ylabel='MSE',
         )
 
         cat_reliability_95 = min([i for i in range(len(cat_reliability_list)) if cat_reliability_list[i] >= 0.95]) + 1
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         means_test=cat_reliability_95s,
         stds_test=[0] * len(DATASETS),
         plot_path=f"{plot_dir}/cat_summarize_reliability_95",
-        xlabel=r"Realiablity Reach 0.95",
+        xlabel="Realiablity Reach 0.95",
         xlim_upper=400,
     )
     
@@ -62,7 +62,7 @@ if __name__ == "__main__":
         means_test=cat_mse_02s,
         stds_test=[0] * len(DATASETS),
         plot_path=f"{plot_dir}/cat_summarize_mse_95",
-        xlabel=r"MSE Reach 0.2",
+        xlabel="MSE Reach 0.2",
         xlim_upper=400,
     )
     
