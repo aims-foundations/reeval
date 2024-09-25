@@ -27,7 +27,6 @@ class MLP(nn.Module):
             nn.ELU(),
             nn.Linear(1024, 1)
         )
-
     def forward(self, x):
         return self.model(x)
 
@@ -68,21 +67,17 @@ def train_model(
             optimizer.step()
             total_train_loss += loss.item()
 
+        total_test_loss = 0
         model.eval()
         with torch.no_grad():
-            test_preds = []
-            test_targets = []
             for emb_batch, z_batch in test_loader:
                 emb_batch = emb_batch.to(device)
                 outputs = model(emb_batch)
-                test_preds.append(outputs.cpu().numpy())
-                test_targets.append(z_batch.cpu().numpy())
+                loss = criterion(outputs, z_batch)
+                total_test_loss += loss.item()
             
-            test_preds = np.concatenate(test_preds).flatten()
-            test_targets = np.concatenate(test_targets).flatten()
-            test_loss = np.mean((test_preds - test_targets) ** 2)
-        
-        pbar.set_postfix({'train_loss': total_train_loss / len(train_loader), 'test_loss': test_loss})
+        print(f'train_loss: {total_train_loss / len(train_loader)}, test_loss: {total_test_loss / len(test_loader)}')
+        # pbar.set_postfix({'train_loss': total_train_loss / len(train_loader), 'test_loss': total_test_loss / len(test_loader)})
 
     model.eval()
     with torch.no_grad():
@@ -103,18 +98,13 @@ def train_model(
     return z_train_pred, z_test_pred, model.cpu()
 
 def main(
+    emb,
+    z,
     model_name,
-    hf_repo,
     df_train_path,
     df_test_path,
     save_model_path=None,
 ):
-    dataset_train = load_dataset(hf_repo, split="train")
-    dataset_test = load_dataset(hf_repo, split="test")
-    dataset = concatenate_datasets([dataset_train, dataset_test])
-    emb = np.array(dataset['embed'])
-    z = np.array(dataset['z'])
-    
     train_indices, test_indices = split_indices(z.shape[0])    
     emb_train, z_train = emb[train_indices], z[train_indices]
     emb_test, z_test = emb[test_indices], z[test_indices]
@@ -159,11 +149,19 @@ if __name__ == "__main__":
     output_dir = f'../data/plugin_regression/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     
+    hf_repo=f'stair-lab/reeval_{args.dataset}-embed'
+    dataset_train = load_dataset(hf_repo, split="train")
+    dataset_test = load_dataset(hf_repo, split="test")
+    dataset = concatenate_datasets([dataset_train, dataset_test])
+    emb = np.array(dataset['embed'])
+    z = np.array(dataset['z'])
+
     for i in tqdm(range(10)):
         set_seed(i)
         main(
+            emb = emb,
+            z = z,
             model_name=args.model,
-            hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
             df_train_path=f'{output_dir}/train_{i}.csv',
             df_test_path=f'{output_dir}/test_{i}.csv',
             save_model_path=f'{output_dir}/{args.model}.pkl' if i==0 else None,
