@@ -39,7 +39,7 @@ func.catSim <- function(resp, item.bank, method){
   resp <- resp %>% select(-pid)
   
   test <- list(method = 'ML', itemSelect = method, infoType = "Fisher")
-  stop <- list(rule = 'length',thr = 400)
+  stop <- list(rule = 'length',thr = ni)
   final <- list(method = 'ML')
   for (i in 1:np){
     pid <- pids[i]
@@ -110,13 +110,13 @@ func.visualize.differences.validate.all <- function(df.compare){
 set.seed(42)
 np <- 200
 iter <- 5
+ni <- 400
 
 args <- commandArgs(trailingOnly = TRUE)
 arg1 <- args[1]
 arg2 <- args[2]
 
 if (arg1 == "syn") {
-  ni <- 500
   theta <- rnorm(np, mean=0, sd=1)
   b <- rnorm(ni, mean=0, sd=1)
   save.path <- glue("../data/cat/{arg1}/cat.csv")
@@ -131,7 +131,7 @@ if (arg1 == "syn") {
   df.b <- read_csv(b.path, col_select = 1)
   b <- df.b$z
   b <- b * -1
-  ni <- length(b)
+  b <- sample(b, ni)
   
   save.path <- glue("../data/cat/{arg2}/cat.csv")
 }
