@@ -51,7 +51,7 @@ if __name__ == "__main__":
         means_test=cat_reliability_95s,
         stds_test=[0] * len(DATASETS),
         plot_path=f"{plot_dir}/cat_summarize_reliability_95",
-        xlabel=r"Realiablity Reach 95%",
+        xlabel=r"Realiablity Reach 0.95",
         xlim_upper=400,
     )
     
