@@ -1,4 +1,5 @@
 import argparse
+import torch
 from transformers import AutoTokenizer
 from datasets import Dataset, DatasetDict
 import pandas as pd
@@ -8,6 +9,15 @@ from dotenv import load_dotenv
 from datasets import load_dataset, concatenate_datasets
 from sklearn.model_selection import train_test_split
 import pickle
+
+def mlp_predict(model, emb_input):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    model.eval()
+    emb_input = torch.tensor(emb_input, dtype=torch.float32).to(device)
+    with torch.no_grad():
+        output = model(emb_input)
+    return output.cpu().numpy()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -29,11 +39,17 @@ if __name__ == "__main__":
     if len(dataset) > 125000:
         dataset = dataset.select(range(125000))
     
-    model_path = f'../data/plugin_regression/{args.dataset}/{args.model}.pkl'
-    with open(model_path, 'rb') as f:
-        reg_model = pickle.load(f)
     embs = dataset['embed']
-    pred_zs = reg_model.predict(embs).tolist()
+    
+    model_path = f'../data/plugin_regression/{args.dataset}/{args.model}.pkl'
+    if args.model == 'bayridge':
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        pred_zs = model.predict(embs).tolist()
+    elif args.model == 'mlp':
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        pred_zs = mlp_predict(embs).tolist()
     
     ppo_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
