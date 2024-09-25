@@ -1,6 +1,5 @@
 import argparse
 import numpy as np
-from datasets import load_dataset, concatenate_datasets
 import pandas as pd
 import pickle
 import os
@@ -11,14 +10,8 @@ from tqdm import tqdm
 import wandb
 from utils import set_seed, split_indices
 from sklearn.metrics import mean_squared_error
-
-class RidgeRegression(nn.Module):
-    def __init__(self, input_dim):
-        super(RidgeRegression, self).__init__()
-        self.linear = nn.Linear(input_dim, 1)
-
-    def forward(self, x):
-        return self.linear(x)
+from torch.utils.data import DataLoader, TensorDataset
+from datasets import load_dataset, concatenate_datasets
 
 class MLP(nn.Module):
     def __init__(self, input_dim):
@@ -38,20 +31,33 @@ class MLP(nn.Module):
     def forward(self, x):
         return self.model(x)
 
+def eval_model(model, emb_data, batch_size, device):
+    model.eval()
+    emb_dataset = TensorDataset(emb_data)
+    data_loader = DataLoader(emb_dataset, batch_size=batch_size)
+
+    preds = []
+    with torch.no_grad():
+        for emb_batch in data_loader:
+            emb_batch = emb_batch[0].to(device)
+            outputs = model(emb_batch)
+            preds.append(outputs.cpu().numpy())
+    
+    return np.concatenate(preds).flatten()
+
 def train_model(
-    model_name,
-    emb_train, 
-    z_train, 
-    emb_test, 
-    max_epoch=10000, 
-    lr=0.01
+    model_name: str,
+    emb_train: torch.Tensor, 
+    z_train: torch.Tensor, 
+    emb_test: torch.Tensor,
+    batch_size: int=2048, 
+    max_epoch: int=1000, 
+    lr: float=0.01
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     input_dim = emb_train.shape[1]
-    if model_name == 'ridge':
-        model = RidgeRegression(input_dim).to(device)
-    elif model_name == 'mlp':
+    if model_name == 'mlp':
         model = MLP(input_dim).to(device)
         
     criterion = nn.MSELoss()
@@ -59,32 +65,26 @@ def train_model(
         model.parameters(),
         lr=lr,
     )
-
-    emb_train_tensor = torch.tensor(
-        emb_train, dtype=torch.float32, device=device
-    )
-    z_train_tensor = torch.tensor(
-        z_train, dtype=torch.float32, device=device
-    ).view(-1, 1)
-    emb_test_tensor = torch.tensor(
-        emb_test, dtype=torch.float32, device=device
-    )
+    
+    train_dataset = TensorDataset(emb_train, z_train)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
-        model.train()
-        optimizer.zero_grad()
-        outputs = model(emb_train_tensor)
-        loss = criterion(outputs, z_train_tensor)
-        loss.backward()
-        optimizer.step()
-        pbar.set_postfix({'loss': loss.item()})
-    
-    model.eval()
-    with torch.no_grad():
-        z_train_pred = model(emb_train_tensor).cpu().detach().numpy().flatten()
-        z_test_pred = model(emb_test_tensor).cpu().detach().numpy().flatten()
+        total_loss = 0
+        for emb_batch, z_batch in train_loader:
+            emb_batch, z_batch = emb_batch.to(device), z_batch.to(device)
+            optimizer.zero_grad()
+            outputs = model(emb_batch)
+            loss = criterion(outputs, z_batch)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+        pbar.set_postfix({'loss': total_loss / len(train_loader)})
         
+    z_train_pred = eval_model(model, emb_train, batch_size, device)
+    z_test_pred = eval_model(model, emb_test, batch_size, device)
+    
     return z_train_pred, z_test_pred, model.cpu()
 
 def main(
@@ -105,10 +105,12 @@ def main(
     emb_test, z_test = emb[test_indices], z[test_indices]
     
     z_train_pred, z_test_pred, model = train_model(
-        model_name, emb_train, z_train, emb_test
+        model_name=model_name,
+        emb_train=torch.tensor(emb_train, dtype=torch.float32),
+        z_train=torch.tensor(z_train, dtype=torch.float32).view(-1, 1),
+        emb_test=torch.tensor(emb_test, dtype=torch.float32),
     )
     
-    # mse
     mse_train = mean_squared_error(z_train, z_train_pred)
     mse_test = mean_squared_error(z_test, z_test_pred)
     print(f'MSE Train: {mse_train:.2f}, MSE Test: {mse_test:.2f}')
@@ -135,7 +137,7 @@ if __name__ == "__main__":
     wandb.init(project="plugin_regression")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
-    parser.add_argument('--model', type=str, default='mlp', choices=['ridge', 'mlp'])
+    parser.add_argument('--model', type=str, default='mlp', choices=['mlp'])
     args = parser.parse_args()
     
     output_dir = f'../data/plugin_regression/{args.dataset}'

@@ -45,7 +45,7 @@ class MyRewardModel(RewardModelTemplate):
         return rewards
     
     def load(self,):
-        with open('../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
+        with open('../data/plugin_regression/airbench/mlp.pkl', 'rb') as f:
             self.reg_model = pickle.load(f)
 
         model_name="meta-llama/Meta-Llama-3-8B"
