@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from datasets import load_dataset, concatenate_datasets
 from sklearn.model_selection import train_test_split
 import pickle
+from plugin_regression import MLP
 
 def mlp_predict(model, emb_input):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
