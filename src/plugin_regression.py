@@ -43,8 +43,8 @@ def train_ridge_model(
     emb_train, 
     z_train, 
     emb_test, 
-    max_epoch=5000, 
-    lr=0.1
+    max_epoch=10000, 
+    lr=0.01
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -88,6 +88,7 @@ def train_ridge_model(
     return z_train_pred, z_test_pred, model.cpu()
 
 def main(
+    model_name,
     hf_repo,
     df_train_path,
     df_test_path,
