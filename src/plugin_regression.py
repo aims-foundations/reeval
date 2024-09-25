@@ -52,9 +52,8 @@ def train_model(
     
     train_dataset = TensorDataset(emb_train, z_train)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    train_loader_eval = DataLoader(train_dataset, batch_size=len(train_dataset))
     test_dataset = TensorDataset(emb_test, z_test)
-    test_loader_eval = DataLoader(test_dataset, batch_size=len(test_dataset))
+    test_loader = DataLoader(test_dataset, batch_size=batch_size)
     
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
@@ -73,7 +72,7 @@ def train_model(
         with torch.no_grad():
             test_preds = []
             test_targets = []
-            for emb_batch, z_batch in test_loader_eval:
+            for emb_batch, z_batch in test_loader:
                 emb_batch = emb_batch.to(device)
                 outputs = model(emb_batch)
                 test_preds.append(outputs.cpu().numpy())
@@ -88,14 +87,14 @@ def train_model(
     model.eval()
     with torch.no_grad():
         z_train_pred = []
-        for emb_batch in train_loader_eval:
+        for emb_batch in train_loader:
             emb_batch = emb_batch[0].to(device)
             outputs = model(emb_batch)
             z_train_pred.append(outputs.cpu().numpy())
         z_train_pred = np.concatenate(z_train_pred).flatten()
 
         z_test_pred = []
-        for emb_batch in test_loader_eval:
+        for emb_batch in test_loader:
             emb_batch = emb_batch[0].to(device)
             outputs = model(emb_batch)
             z_test_pred.append(outputs.cpu().numpy())
