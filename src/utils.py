@@ -298,7 +298,7 @@ def error_bar_plot_single(
     datasets, means, stds = zip(*sorted_data)
     stds_mul3 = [s*3 for s in stds]
    
-    fig, ax = plt.subplots(figsize=(18, 8))
+    fig, ax = plt.subplots(figsize=(8, 18))
     ax.barh(
         datasets, means, xerr=[np.zeros(len(datasets)), stds_mul3],
         capsize=5, color='blue', alpha=0.4,
@@ -306,7 +306,7 @@ def error_bar_plot_single(
     )
     
     ax.set_xlabel(xlabel, fontsize=35)
-    ax.tick_params(axis='both', labelsize=30)
+    ax.tick_params(axis='both', labelsize=25)
     ax.set_xlim(0, xlim_upper)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
@@ -328,7 +328,7 @@ def error_bar_plot_double(
     stds_train_mul3 = [s*3 for s in stds_train]
     stds_test_mul3 = [s*3 for s in stds_test]
 
-    fig, ax = plt.subplots(figsize=(18, 8))
+    fig, ax = plt.subplots(figsize=(8, 18))
     ax.barh(
         datasets, means_train, xerr=[np.zeros(len(datasets)), stds_train_mul3],
         capsize=5, color='blue', alpha=0.4,
@@ -341,7 +341,7 @@ def error_bar_plot_double(
     )
 
     ax.set_xlabel(xlabel, fontsize=35)
-    ax.tick_params(axis='both', labelsize=30)
+    ax.tick_params(axis='both', labelsize=25)
     ax.set_xlim(0, xlim_upper)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
