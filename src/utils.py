@@ -12,7 +12,7 @@ plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
 
 DESCRIPTION_MAP = {
-    'synthetic_efficiency': '### DATASET: Synthetic efficiency, ### PUBLISH TIME: unknown, ### CONTENT: to better understand inference runtime performance of various models',
+    # 'synthetic_efficiency': '### DATASET: Synthetic efficiency, ### PUBLISH TIME: unknown, ### CONTENT: to better understand inference runtime performance of various models',
     'wikifact': '### DATASET: WikiFact, ### PUBLISH TIME: 2019, ### CONTENT: knowledge base completion, entity-relation-entity triples in natural language form, to more extensively test factual knowledge',
     'entity_data_imputation': '### DATASET: Data imputation, ### PUBLISH TIME: 2021, ### CONTENT: tests the ability to impute missing entities in a data table',
     'commonsense': '### DATASET: HellaSwag, ### PUBLISH TIME: 2019, ### CONTENT: commonsense reasoning in question answering',
@@ -351,7 +351,6 @@ def plot_hist(
     plt.close()
 
 PLOT_NAME_MAP = {
-    'synthetic_efficiency': 'syn_eff',
     'wikifact': 'wikifact',
     'entity_data_imputation': 'ent_data_imp',
     'commonsense': 'commonsense',
@@ -377,3 +376,4 @@ PLOT_NAME_MAP = {
     'mmlu': 'mmlu',
     'airbench': 'airbench',
 }
+
