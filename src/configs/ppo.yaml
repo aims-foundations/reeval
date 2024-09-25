@@ -21,3 +21,5 @@ gradient_accumulation_steps: 1
 gradient_checkpointing: true
 learning_rate: 1.0e-4
 save_steps: 1
+
+max_new_tokens: 256

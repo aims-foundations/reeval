@@ -51,7 +51,6 @@ if __name__ == "__main__":
         with open(model_path, 'rb') as f:
             model = pickle.load(f)
         pred_zs = mlp_predict(model, embs).tolist()
-        print(pred_zs)
     
     ppo_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
