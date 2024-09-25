@@ -147,8 +147,8 @@ def main(
             pickle.dump(model, f)
             
     if train_loss_plot_path is not None and test_loss_plot_path is not None:
-        plot_loss(train_losses, train_loss_plot_path)
-        plot_loss(test_losses, test_loss_plot_path)
+        plot_loss(train_losses, train_loss_plot_path, r'Train Loss')
+        plot_loss(test_losses, test_loss_plot_path, r'Test Loss')
     
 if __name__ == "__main__":
     wandb.init(project="plugin_regression")

@@ -405,13 +405,32 @@ def plot_hist(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
-def plot_loss(losses, plot_path):
-    plt.figure(figsize=(10, 6))
+def plot_loss(
+    losses,
+    plot_path,
+    ylabel,
+):
+    plt.figure(figsize=(6, 6))
     plt.plot(losses)
     plt.tick_params(axis='both', labelsize=16)
+    plt.ylabel(ylabel, fontsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
+def plot_cat(
+    randoms,
+    cats,
+    plot_path,
+    ylabel,
+):
+    plt.figure(figsize=(6, 6))
+    plt.plot(randoms, label='random')
+    plt.plot(cats, label='cat')
+    plt.tick_params(axis='both', labelsize=16)
+    plt.ylabel(ylabel, fontsize=25)
+    plt.legend(fontsize=16)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
 
 PLOT_NAME_MAP = {
     'wikifact': 'wikifact',
