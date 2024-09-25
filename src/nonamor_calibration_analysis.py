@@ -41,13 +41,14 @@ if __name__ == "__main__":
         corr_ctt_means.append(corr_ctt_mean)
         corr_ctt_stds.append(corr_ctt_std)
         
-        corr_helm_mean, corr_helm_std = theta_corr_helm_plot(
-            theta=theta_hat,
-            dataset=dataset,
-            plot_path=f"{plot_dir}/theta_corr_helm_{dataset}",
-        )
-        corr_helm_means.append(corr_helm_mean)
-        corr_helm_stds.append(corr_helm_std)
+        if dataset != "airbench":
+            corr_helm_mean, corr_helm_std = theta_corr_helm_plot(
+                theta=theta_hat,
+                dataset=dataset,
+                plot_path=f"{plot_dir}/theta_corr_helm_{dataset}",
+            )
+            corr_helm_means.append(corr_helm_mean)
+            corr_helm_stds.append(corr_helm_std)
     
     error_bar_plot_single(
         datasets=DATASETS,
@@ -66,7 +67,7 @@ if __name__ == "__main__":
     )
     
     error_bar_plot_single(
-        datasets=DATASETS,
+        datasets=[d for d in DATASETS if d != "airbench"],
         means=corr_helm_means,
         stds=corr_helm_stds,
         plot_path=f"{plot_dir}/nonamor_calibration_summarize_theta_corr_helm",

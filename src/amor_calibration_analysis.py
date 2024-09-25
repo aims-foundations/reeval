@@ -63,11 +63,12 @@ if __name__ == "__main__":
             )
             theta_corr_ctt_means.append(theta_corr_ctt_mean)
             
-            theta_corr_helm_mean, _, _ = theta_corr_helm(
-                theta=theta_train,
-                dataset=dataset,
-            )
-            theta_corr_helm_means.append(theta_corr_helm_mean)
+            if dataset != "airbench":
+                theta_corr_helm_mean, _, _ = theta_corr_helm(
+                    theta=theta_train,
+                    dataset=dataset,
+                )
+                theta_corr_helm_means.append(theta_corr_helm_mean)
             
             z_corr_train_mean = amorz_corr_nonamorz(
                 z_amor=z_train,
@@ -114,7 +115,7 @@ if __name__ == "__main__":
     )
     
     error_bar_plot_single(
-        datasets=DATASETS,
+        datasets=[d for d in DATASETS if d != "airbench"],
         means=dataset_theta_corr_helm_means,
         stds=dataset_theta_corr_helm_stds,
         plot_path=f"{plot_dir}/amor_calibration_summarize_theta_corr_helm",

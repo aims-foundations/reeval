@@ -25,6 +25,8 @@ if __name__ == "__main__":
     output_dir = "../../../data/gather_data/crawl_real/helm_socre"
     os.makedirs(output_dir, exist_ok=True)
     
+    # hrefs = ["https://crfm.stanford.edu/helm/mmlu/latest/#/leaderboard"]
+    
     for url in tqdm(hrefs):
         try:
             driver.get(url)
