@@ -18,7 +18,7 @@ def mlp_predict(model, emb_input):
     emb_input = torch.tensor(emb_input, dtype=torch.float32).to(device)
     with torch.no_grad():
         output = model(emb_input)
-    return output.cpu().numpy()
+    return output.cpu().numpy().flatten()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -51,6 +51,7 @@ if __name__ == "__main__":
         with open(model_path, 'rb') as f:
             model = pickle.load(f)
         pred_zs = mlp_predict(model, embs).tolist()
+        print(pred_zs)
     
     ppo_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
