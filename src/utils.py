@@ -235,19 +235,28 @@ def theta_corr_helm(
     theta: np.array,
     dataset: str,
 ):
-    helm_df = pd.read_csv(f'../data/gather_data/crawl_real/helm_score/{dataset}.csv')
     y_model_names = pd.read_csv(
         f'../data/pre_calibration/{dataset}/matrix.csv', 
         index_col=0
     ).index.tolist()
+    
+    helm_df = pd.read_csv(f'../data/gather_data/crawl_real/helm_score/{dataset}.csv')
     helm_models = helm_df['model_name'].tolist()
     helm_models = [HELM_MODEL_MAP[m] if m in HELM_MODEL_MAP else m for m in helm_models]
-    assert y_model_names == helm_models, f'{y_model_names} != {helm_models}'
-    
     helm_scores = helm_df['score'].values
+    
     assert helm_scores.shape[0] == theta.shape[0]
-    corr = np.corrcoef(theta, helm_scores)[0, 1]
-    return corr, theta, helm_scores
+    assert set(helm_models) == set(y_model_names)
+    
+    helm_df_aligned = pd.DataFrame({'model_name': helm_models, 'score': helm_scores})
+    theta_df_aligned = pd.DataFrame({'model_name': y_model_names, 'theta': theta})
+    merged_df = pd.merge(helm_df_aligned, theta_df_aligned, on='model_name', how='inner')
+
+    aligned_helm_scores = merged_df['score'].values
+    aligned_theta = merged_df['theta'].values
+    
+    corr = np.corrcoef(aligned_theta, aligned_helm_scores)[0, 1]
+    return corr, aligned_theta, aligned_helm_scores
 
 def theta_corr_helm_plot(
     theta: np.array,
