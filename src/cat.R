@@ -39,7 +39,7 @@ func.catSim <- function(resp, item.bank, method){
   resp <- resp %>% select(-pid)
   
   test <- list(method = 'ML', itemSelect = method, infoType = "Fisher")
-  stop <- list(rule = 'length',thr = ni)
+  stop <- list(rule = 'length',thr = 400)
   final <- list(method = 'ML')
   for (i in 1:np){
     pid <- pids[i]
