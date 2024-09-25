@@ -39,6 +39,8 @@ class MyRewardModel(RewardModelTemplate):
         pred_scores = self.reg_model.predict(answer_embs).tolist()
         
         rewards = [-abs(a - b) for a, b in zip(pred_scores, gt_scores)]
+        print(f"gt scores: {gt_scores}")
+        print(f"pred scores: {pred_scores}")
         print(f"reward scores: {rewards}")
         return rewards
     
