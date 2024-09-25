@@ -31,29 +31,15 @@ class MLP(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-def eval_model(model, emb_data, batch_size, device):
-    model.eval()
-    emb_dataset = TensorDataset(emb_data)
-    data_loader = DataLoader(emb_dataset, batch_size=batch_size)
-
-    preds = []
-    with torch.no_grad():
-        for emb_batch in data_loader:
-            emb_batch = emb_batch[0].to(device)
-            outputs = model(emb_batch)
-            preds.append(outputs.cpu().numpy())
-    
-    return np.concatenate(preds).flatten()
-
 def train_model(
     model_name: str,
     emb_train: torch.Tensor, 
-    z_train: torch.Tensor, 
     emb_test: torch.Tensor,
-    batch_size: int=403800, 
-    # batch_size: int=65536, 
-    max_epoch: int=1000, 
-    lr: float=0.01
+    z_train: torch.Tensor, 
+    z_test: torch.Tensor,
+    batch_size: int=4096, 
+    max_epoch: int=10, 
+    lr: float=0.001,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -62,17 +48,18 @@ def train_model(
         model = MLP(input_dim).to(device)
         
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(
-        model.parameters(),
-        lr=lr,
-    )
+    optimizer = optim.Adam(model.parameters(), lr=lr)
     
     train_dataset = TensorDataset(emb_train, z_train)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-
+    train_loader_eval = DataLoader(train_dataset, batch_size=len(train_dataset))
+    test_dataset = TensorDataset(emb_test, z_test)
+    test_loader_eval = DataLoader(test_dataset, batch_size=len(test_dataset))
+    
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
-        total_loss = 0
+        total_train_loss = 0
+        model.train()
         for emb_batch, z_batch in train_loader:
             emb_batch, z_batch = emb_batch.to(device), z_batch.to(device)
             optimizer.zero_grad()
@@ -80,12 +67,40 @@ def train_model(
             loss = criterion(outputs, z_batch)
             loss.backward()
             optimizer.step()
-            total_loss += loss.item()
-        pbar.set_postfix({'loss': total_loss / len(train_loader)})
+            total_train_loss += loss.item()
+
+        model.eval()
+        with torch.no_grad():
+            test_preds = []
+            test_targets = []
+            for emb_batch, z_batch in test_loader_eval:
+                emb_batch = emb_batch.to(device)
+                outputs = model(emb_batch)
+                test_preds.append(outputs.cpu().numpy())
+                test_targets.append(z_batch.cpu().numpy())
+            
+            test_preds = np.concatenate(test_preds).flatten()
+            test_targets = np.concatenate(test_targets).flatten()
+            test_loss = np.mean((test_preds - test_targets) ** 2)
         
-    z_train_pred = eval_model(model, emb_train, batch_size, device)
-    z_test_pred = eval_model(model, emb_test, batch_size, device)
-    
+        pbar.set_postfix({'train_loss': total_train_loss / len(train_loader), 'test_loss': test_loss})
+
+    model.eval()
+    with torch.no_grad():
+        z_train_pred = []
+        for emb_batch in train_loader_eval:
+            emb_batch = emb_batch[0].to(device)
+            outputs = model(emb_batch)
+            z_train_pred.append(outputs.cpu().numpy())
+        z_train_pred = np.concatenate(z_train_pred).flatten()
+
+        z_test_pred = []
+        for emb_batch in test_loader_eval:
+            emb_batch = emb_batch[0].to(device)
+            outputs = model(emb_batch)
+            z_test_pred.append(outputs.cpu().numpy())
+        z_test_pred = np.concatenate(z_test_pred).flatten()
+            
     return z_train_pred, z_test_pred, model.cpu()
 
 def main(
