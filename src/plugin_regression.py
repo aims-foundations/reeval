@@ -123,8 +123,9 @@ def main(
     z_train_pred, z_test_pred, model = train_model(
         model_name=model_name,
         emb_train=torch.tensor(emb_train, dtype=torch.float32),
-        z_train=torch.tensor(z_train, dtype=torch.float32).view(-1, 1),
         emb_test=torch.tensor(emb_test, dtype=torch.float32),
+        z_train=torch.tensor(z_train, dtype=torch.float32).view(-1, 1),
+        z_test = torch.tensor(z_test, dtype=torch.float32).view(-1, 1),
     )
     
     mse_train = mean_squared_error(z_train, z_train_pred)
