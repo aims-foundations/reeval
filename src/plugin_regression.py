@@ -37,7 +37,7 @@ def train_model(
     z_train: torch.Tensor, 
     z_test: torch.Tensor,
     batch_size: int=4096, 
-    max_epoch: int=50, 
+    max_epoch: int=200, 
     lr: float=0.001,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

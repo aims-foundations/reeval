@@ -1,3 +1,4 @@
+import pandas as pd
 import torch
 import numpy as np
 import random
@@ -230,6 +231,50 @@ def theta_corr_ctt_plot(
     
     return corr, sample_std
     
+def theta_corr_helm(
+    theta: np.array,
+    dataset: str,
+):
+    helm_df = pd.read_csv('../data/gather_data/crawl_real/helm_score.csv')
+    y_model_names = pd.read_csv(
+        f'../data/pre_calibration/{dataset}/matrix.csv', 
+        index_col=0
+    ).index.values
+    helm_models = helm_df['model_name'].values
+    assert np.array_equal(y_model_names, helm_models)
+    
+    helm_scores = helm_df['score'].values
+    assert helm_scores.shape[0] == theta.shape[0]
+    corr = np.corrcoef(theta, helm_scores)[0, 1]
+    return corr, theta, helm_scores
+
+def theta_corr_helm_plot(
+    theta: np.array,
+    dataset: np.array,
+    plot_path: str,
+):
+    corr, theta, helm_scores = theta_corr_helm(theta, dataset)
+    
+    sample_corrs = []
+    for _ in range(100):
+        indices = np.random.choice(
+            len(theta), int(0.8 * len(theta)), replace=False
+        )
+        sample_corr = np.corrcoef(theta[indices], helm_scores[indices])[0, 1]
+        sample_corrs.append(sample_corr)
+    sample_std = np.std(sample_corrs)
+    
+    plt.figure(figsize=(18, 10))
+    plt.scatter(theta, helm_scores)
+    plt.xlabel(r'$\theta$ from calibration', fontsize=45)
+    plt.ylabel(r'HELM score', fontsize=45)
+    plt.title(f'Correlation: {corr:.2f} $\\pm$ {3 * sample_std:.2f}', fontsize=45)
+    plt.tick_params(axis='both', labelsize=35)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    return corr, sample_std
+
 def error_bar_plot_single(
     datasets, 
     means,
@@ -376,4 +421,18 @@ PLOT_NAME_MAP = {
     'mmlu': 'mmlu',
     'airbench': 'airbench',
 }
+
+HELM_MODEL_MAP = {
+    'text-davinci-002': 'openai_text-davinci-002',
+    'text-babbage-001': 'openai_text-babbage-001',
+    'ada (350M)': 'openai_ada',
+    'text-ada-001': 'openai_text-ada-001',
+    'babbage (1.3B)': 'openai_babbage',
+    'T0pp (11B)☠': 'together_t0pp',
+    'text-davinci-003': 'openai_text-davinci-003',
+    'text-curie-001': 'openai_text-curie-001',
+    'davinci (175B)': 'openai_davinci',
+    'curie (6.7B)': 'openai_curie',
+}
+
 
