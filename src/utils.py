@@ -396,6 +396,14 @@ def plot_hist(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
+def plot_loss(losses, plot_path):
+    plt.figure(figsize=(10, 6))
+    plt.plot(losses)
+    plt.tick_params(axis='both', labelsize=16)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
+
 PLOT_NAME_MAP = {
     'wikifact': 'wikifact',
     'entity_data_imputation': 'ent_data_imp',
