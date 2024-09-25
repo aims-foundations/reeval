@@ -71,7 +71,7 @@ def train_model(
         model.eval()
         with torch.no_grad():
             for emb_batch, z_batch in test_loader:
-                emb_batch = emb_batch.to(device)
+                emb_batch, z_batch = emb_batch.to(device), z_batch.to(device)
                 outputs = model(emb_batch)
                 loss = criterion(outputs, z_batch)
                 total_test_loss += loss.item()
