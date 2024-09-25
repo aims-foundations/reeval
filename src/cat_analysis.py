@@ -16,7 +16,7 @@ if __name__ == "__main__":
         cat_reliability_list = cat_data['reliability'].tolist()
         cat_mse_list = cat_data['mse'].tolist()
 
-        random_data = input_df[input_df['variant'] == 'random']
+        random_data = input_df[input_df['variant'] == 'Random']
         random_reliability_list = random_data['reliability'].tolist()
         random_mse_list = random_data['mse'].tolist()
 

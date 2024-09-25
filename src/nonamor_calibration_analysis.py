@@ -56,6 +56,7 @@ if __name__ == "__main__":
         stds=gof_stds,
         plot_path=f"{plot_dir}/nonamor_calibration_summarize_gof",
         xlabel=r"Goodness of Fit",
+        xlim_upper=0.5,
     )
     
     error_bar_plot_single(
