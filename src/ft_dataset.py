@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--task', type=str, required=True, choices=['sft', 'ppo'])
     parser.add_argument('--dataset', type=str, required=True)
-    parser.add_argument('--model', type=str, default='mlp', choices=['ridge', 'mlp'])
+    parser.add_argument('--model', type=str, default='mlp', choices=['bayridge', 'mlp'])
     args = parser.parse_args()
     
     load_dotenv()
