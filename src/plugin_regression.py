@@ -38,7 +38,7 @@ class MLP(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-def train_ridge_model(
+def train_model(
     model_name,
     emb_train, 
     z_train, 
@@ -104,8 +104,8 @@ def main(
     emb_train, z_train = emb[train_indices], z[train_indices]
     emb_test, z_test = emb[test_indices], z[test_indices]
     
-    z_train_pred, z_test_pred, model = train_ridge_model(
-        emb_train, z_train, emb_test
+    z_train_pred, z_test_pred, model = train_model(
+        model_name, emb_train, z_train, emb_test
     )
     
     # mse
