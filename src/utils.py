@@ -209,7 +209,7 @@ def error_bar_plot_single(
     datasets, means, stds = zip(*sorted_data)
     stds_mul3 = [s*3 for s in stds]
    
-    fig, ax = plt.subplots(figsize=(8, 20))
+    fig, ax = plt.subplots(figsize=(20, 20))
     ax.barh(
         datasets, means, xerr=[np.zeros(len(datasets)), stds_mul3],
         capsize=5, color='blue', alpha=0.4,
@@ -238,7 +238,7 @@ def error_bar_plot_double(
     stds_train_mul3 = [s*3 for s in stds_train]
     stds_test_mul3 = [s*3 for s in stds_test]
 
-    fig, ax = plt.subplots(figsize=(8, 20))
+    fig, ax = plt.subplots(figsize=(18, 25))
     ax.barh(
         datasets, means_train, xerr=[np.zeros(len(datasets)), stds_train_mul3],
         label='train', capsize=5, color='blue', alpha=0.4,
@@ -273,7 +273,7 @@ def plot_bar(
 ):
     sorted_by_nums = sorted(zip(datasets, nums), key=lambda x: x[1])
     sorted_datasets, sorted_nums = zip(*sorted_by_nums)
-    plt.figure(figsize=(20, 8))
+    plt.figure(figsize=(18, 25))
     plt.bar(sorted_datasets, sorted_nums)
     plt.xticks(rotation=30, ha='right', fontsize=35)
     plt.tick_params(axis='both', labelsize=35)
