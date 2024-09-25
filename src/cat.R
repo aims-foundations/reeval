@@ -110,13 +110,13 @@ func.visualize.differences.validate.all <- function(df.compare){
 set.seed(42)
 np <- 200
 iter <- 5
-ni <- 400
 
 args <- commandArgs(trailingOnly = TRUE)
 arg1 <- args[1]
 arg2 <- args[2]
 
 if (arg1 == "syn") {
+  ni <- 400
   theta <- rnorm(np, mean=0, sd=1)
   b <- rnorm(ni, mean=0, sd=1)
   save.path <- glue("../data/cat/{arg1}/cat.csv")
@@ -131,7 +131,10 @@ if (arg1 == "syn") {
   df.b <- read_csv(b.path, col_select = 1)
   b <- df.b$z
   b <- b * -1
-  b <- sample(b, ni)
+  if (length(b) > ni) {
+    b <- sample(b, ni, replace = FALSE)
+  } 
+  ni <- length(b)
   
   save.path <- glue("../data/cat/{arg2}/cat.csv")
 }
