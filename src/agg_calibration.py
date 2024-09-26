@@ -1,4 +1,5 @@
 import json
+import warnings
 import os
 import pandas as pd
 import torch
@@ -68,6 +69,10 @@ def agg_amor_calibration(
             mask = y!=-1
             masked_y = y.flatten()[mask.flatten()].float()
             masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
+            
+            if torch.isnan(masked_prob_matrix).any():
+                warnings.warn(f'all NaN in masked_prob_matrix in {dataset}', UserWarning)
+                continue
             
             berns = torch.distributions.Bernoulli(masked_prob_matrix)
             loss = -berns.log_prob(masked_y).mean()
