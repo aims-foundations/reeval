@@ -99,16 +99,18 @@ def get_embed(
     )
     return emb['text']
 
-def bootstrap_mean_std(data: np.array):
-    mean = np.mean(data)
-    bootstrap_means = []
-    for _ in range(1000):
-        bootstrap_sample = np.random.choice(
-            data, size=int(0.8 * data.shape[0]), replace=True
+def sample_mean_std(data: np.array):
+    masked_data = data[data != -1]
+    mean = np.mean(masked_data)
+    sample_means = []
+    for _ in range(100):
+        indices = np.random.choice(
+            len(masked_data), int(0.8 * masked_data.shape[0]), replace=False
         )
-        bootstrap_means.append(np.mean(bootstrap_sample))
-    std_bootstrap = np.std(bootstrap_means)
-    return mean, std_bootstrap
+        sample_mean = np.mean(masked_data[indices])
+        sample_means.append(sample_mean)
+    sample_std = np.std(sample_means)
+    return mean, sample_std
     
 def perform_t_test(sample_1, sample_2, label=""):
     print(f"{label} T-test:")

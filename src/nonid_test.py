@@ -13,7 +13,7 @@ from nonamor_calibration import nonamor_calibration
 from utils import (
     set_seed,
     perform_t_test,
-    bootstrap_mean_std, 
+    sample_mean_std, 
     item_response_fn_1PL_jnp,
     plot_nonid_test
 )
@@ -35,9 +35,9 @@ def sample_subsets(
     mean_easy = inverse_item_response_fn_1PL(y_mean, dumb_theta).item()
     mean_hard = inverse_item_response_fn_1PL(y_mean, smart_theta).item()
 
-    easy_probs = torch.exp(-0.5 * ((z_sorted - mean_easy) / (std_all / 10)) ** 2)
+    easy_probs = torch.exp(-0.5 * ((z_sorted - mean_easy) / (std_all / 4)) ** 2)
     easy_probs /= easy_probs.sum()
-    hard_probs = torch.exp(-0.5 * ((z_sorted - mean_hard) / (std_all / 10)) ** 2)
+    hard_probs = torch.exp(-0.5 * ((z_sorted - mean_hard) / (std_all / 4)) ** 2)
     hard_probs /= hard_probs.sum()
 
     easy_indices_sorted = torch.multinomial(
@@ -53,9 +53,14 @@ def sample_subsets(
     return z_easy, z_hard, easy_indices, hard_indices
 
 def model(z_asked, answers):
+    answers = answers.flatten()
+    mask = (answers != -1)
     theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0)) # prior
     probs = item_response_fn_1PL_jnp(z_asked, theta_hat)
-    numpyro.sample("obs", dist.Bernoulli(probs), obs=answers)
+    probs = probs.flatten()
+    probs_masked = probs[mask]
+    answers_masked = answers[mask]
+    numpyro.sample("obs", dist.Bernoulli(probs_masked), obs=answers_masked)
     
 def fit_theta_mcmc(z_asked, answers, num_samples=2000, num_warmup=1000):
     rng_key = random.PRNGKey(0)
@@ -71,7 +76,8 @@ def fit_theta_mcmc(z_asked, answers, num_samples=2000, num_warmup=1000):
     mcmc.print_summary()
     
     theta_samples = mcmc.get_samples()["theta_hat"]
-    theta_mean, theta_std = jnp.mean(theta_samples), jnp.std(theta_samples)
+    theta_mean = jnp.mean(theta_samples)
+    theta_std = jnp.std(theta_samples)
     return theta_mean, theta_std, theta_samples
 
 def main(
@@ -104,15 +110,13 @@ def main(
     dumb_answers = y[i][easy_indices]
     smart_answers = y[j][hard_indices]
     
-    # pickout -1
-    
     # CTT
     print("CTT")
-    mean_dumb, std_dumb = bootstrap_mean_std(dumb_answers)
+    mean_dumb, std_dumb = sample_mean_std(dumb_answers)
     print(f"dumb CTT mean = {mean_dumb}")
     print(f"dumb CTT std= {std_dumb}")
     
-    mean_smart, std_smart = bootstrap_mean_std(smart_answers)
+    mean_smart, std_smart = sample_mean_std(smart_answers)
     print(f"smart CTT mean = {mean_smart}")
     print(f"smart CTT std = {std_smart}")
     

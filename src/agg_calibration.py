@@ -4,7 +4,6 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 import torch.optim as optim
-import torch.nn as nn
 from datasets import load_dataset
 from utils import (
     set_seed, 
