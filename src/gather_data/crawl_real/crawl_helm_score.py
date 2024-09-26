@@ -9,28 +9,28 @@ from selenium.common.exceptions import TimeoutException
 
 if __name__ == "__main__":
     driver = webdriver.Chrome()
-    url = 'https://crfm.stanford.edu/helm/classic/latest/#/scenarios'
-    driver.get(url)
-    wait = WebDriverWait(driver, 120)
-    wait.until(EC.presence_of_element_located((By.TAG_NAME, 'tr')))
-    rows = driver.find_elements(By.TAG_NAME, 'tr')
-    hrefs = []
-    for row in rows:
-        links = row.find_elements(By.TAG_NAME, 'a')
-        for link in links:
-            href = link.get_attribute('href')
-            if "#/groups" in href:
-                hrefs.append(href)
+    # url = 'https://crfm.stanford.edu/helm/classic/latest/#/scenarios'
+    # driver.get(url)
+    # wait = WebDriverWait(driver, 300)
+    # wait.until(EC.presence_of_element_located((By.TAG_NAME, 'tr')))
+    # rows = driver.find_elements(By.TAG_NAME, 'tr')
+    # hrefs = []
+    # for row in rows:
+    #     links = row.find_elements(By.TAG_NAME, 'a')
+    #     for link in links:
+    #         href = link.get_attribute('href')
+    #         if "#/groups" in href:
+    #             hrefs.append(href)
     
     output_dir = "../../../data/gather_data/crawl_real/helm_socre"
     os.makedirs(output_dir, exist_ok=True)
     
-    # hrefs = ["https://crfm.stanford.edu/helm/mmlu/latest/#/leaderboard"]
+    hrefs = ["https://crfm.stanford.edu/helm/mmlu/latest/#/leaderboard"]
     
     for url in tqdm(hrefs):
         try:
             driver.get(url)
-            wait = WebDriverWait(driver, 120)
+            wait = WebDriverWait(driver, 300)
             wait.until(EC.presence_of_element_located((By.TAG_NAME, 'tr')))
         except TimeoutException:
             print(f"{url} failed to load")
