@@ -83,7 +83,7 @@ def split_indices(length):
     train_size = int(0.8 * len(indices))
     train_indices = indices[:train_size]
     test_indices = indices[train_size:]
-    return train_indices, test_indices
+    return train_indices.tolist(), test_indices.tolist()
 
 def get_embed(
     dataset,
