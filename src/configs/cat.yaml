@@ -1,0 +1,31 @@
+method: grid
+parameters:
+  dataset:
+    values:
+    - synthetic_efficiency
+    - wikifact
+    - entity_data_imputation
+    - commonsense
+    - quac
+    - imdb
+    - bbq
+    - math
+    - twitter_aae
+    - truthful_qa
+    - legal_support
+    - boolq
+    - narrative_qa
+    - real_toxicity_prompts
+    - bold
+    - babi_qa
+    - synthetic_reasoning_natural
+    - dyck_language_np3
+    - civil_comments
+    - lsat_qa
+    - raft
+    - entity_matching
+    - synthetic_reasoning
+    - mmlu
+    - airbench
+program: cat.py
+project: cat
