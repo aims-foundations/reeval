@@ -193,12 +193,11 @@ def goodness_of_fit_1PL_plot(
     
     return mean_diff, std_diff
 
-def theta_corr_ctt(
+def get_theta_ctt(
     theta: np.array,
-    y: np.array,
+    y: np.array
 ):
     assert y.shape[0] == theta.shape[0], f'{y.shape[1]} != {theta.shape[0]}'
-    
     ctt_scores = []
     for row in y:
         valid_values = row[row != -1]
@@ -207,13 +206,19 @@ def theta_corr_ctt(
         else:
             ctt_scores.append(np.nan)
     ctt_scores = np.array(ctt_scores)
-    assert ctt_scores.shape[0] == theta.shape[0]
     
     if np.isnan(ctt_scores).any():
         warnings.warn("ctt_scores contains nan", UserWarning)
     mask = ~np.isnan(ctt_scores)
     theta_masked, ctt_scores_masked = theta[mask], ctt_scores[mask]
     
+    return theta_masked, ctt_scores_masked
+
+def theta_corr_ctt(
+    theta: np.array,
+    y: np.array,
+):
+    theta_masked, ctt_scores_masked = get_theta_ctt(theta, y)
     if np.unique(ctt_scores_masked).size <= 3:
         warnings.warn(f"ctt_scores_masked has little value: {ctt_scores_masked}", UserWarning)
     corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
@@ -383,29 +388,6 @@ def plot_bar(
     plt.tick_params(axis='both', labelsize=35)
     plt.ylabel(ylabel, fontsize=35)
     plt.savefig(plot_path, dpi = 300, bbox_inches='tight')
-    plt.close()
-
-def plot_nonid_test(
-    theta_dumb_samples,
-    theta_smart_samples,
-    z_easy,
-    z_hard,
-    plot_path
-):
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    plt.hist(theta_dumb_samples, bins=30, density=True, alpha=0.4)
-    plt.hist(theta_smart_samples, bins=30, density=True, alpha=0.4)
-    plt.xlabel(r'$\theta$', fontsize=25)
-    plt.tick_params(axis='both', labelsize=16)
-
-    plt.subplot(1, 2, 2)
-    plt.hist(z_easy, bins=30, density=True, alpha=0.4)
-    plt.hist(z_hard, bins=30, density=True, alpha=0.4)
-    plt.xlabel(r'$z$')
-    plt.xlabel(r'$z$', fontsize=25)
-    plt.tick_params(axis='both', labelsize=16)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
 def plot_hist(

@@ -21,7 +21,7 @@ def agg_amor_calibration(
     emb_hf_repo: str,
     model_id_path: str,
     lr_theta=0.01,
-    lr_mlp=0.0001,
+    lr_mlp=1e-5,
     max_epoch=10,
     embed_dim=4096,
 ):
