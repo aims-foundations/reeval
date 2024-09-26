@@ -9,7 +9,7 @@ from datasets import load_dataset,  concatenate_datasets
 from utils import set_seed, item_response_fn_1PL, split_indices
 
 def agg_amor_calibration(
-    response_matrix: torch.Tensor, # response_matrix [69, 959]
+    datasets: list[str], 
     embedding: torch.Tensor, # embedding [959, 4096]
     W_init_std=5e-5,
     lr_theta=0.01,

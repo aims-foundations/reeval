@@ -79,7 +79,6 @@ def get_embed(
     emb = embdr.get_embeddings(
         dataloader, model_name, cols_to_be_embded
     )
-    
     return emb['text']
 
 def bootstrap_mean_std(data: np.array):
