@@ -1,135 +1,154 @@
-import argparse
+import json
 import os
-import wandb
 import pandas as pd
 import torch
 from tqdm import tqdm
 import torch.optim as optim
-from datasets import load_dataset,  concatenate_datasets
-from utils import set_seed, item_response_fn_1PL, split_indices
+from datasets import load_dataset
+from utils import set_seed, item_response_fn_1PL, split_indices, DATASETS
 
 def agg_amor_calibration(
     datasets: list[str], 
-    embedding: torch.Tensor, # embedding [959, 4096]
+    train_indices: list[list[int]],
+    test_indices: list[list[int]],
+    emb_hf_repo: str,
+    model_id_path: str,
     W_init_std=5e-5,
     lr_theta=0.01,
     lr_W=5e-6,
     max_epoch=10,
-    patience=5000
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    response_matrix = response_matrix.to(device)
-    embedding = embedding.to(device)
-    theta_hat = torch.normal(
+    with open(model_id_path, 'r') as f:
+        model_id_dict = json.load(f)
+    hf_repo = load_dataset(emb_hf_repo, split="train")
+    
+    theta_train = torch.normal(
         mean=0.0, std=1.0,
-        size=(response_matrix.size(0),),
+        size=(len(model_id_dict),),
         requires_grad=True,
         dtype=torch.float32,
         device=device
     )
     W = torch.normal(
         mean=0.0, std=W_init_std, 
-        size=(embedding.size(1),),
+        size=(len(hf_repo[0]['embed']),),
         requires_grad=True,
         dtype=torch.float32,
         device=device
     )
-    
-    optimizer_theta = optim.Adam([theta_hat], lr=lr_theta)
+            
+    optimizer_theta = optim.Adam([theta_train], lr=lr_theta)
     optimizer_W = optim.Adam([W], lr=lr_W)
+            
+    z_trains = []
+    for epoch in tqdm(range(max_epoch), desc='Training'):
+        pbar = tqdm(datasets)
+        for i, dataset in enumerate(pbar):
+            train_index = train_indices[i]
+            
+            y_df = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+            y = torch.tensor(y_df.values[train_index]).to(device)
+            
+            model_names = y_df.index.tolist()
+            model_ids = [model_id_dict[name] for name in model_names]
+            theta_train_subset = theta_train[model_ids]
+            
+            filtered_repo = hf_repo.filter(lambda x: x['dataset'] == dataset)
+            emb = torch.tensor(filtered_repo['embed'][train_index]).to(device)
+            
+            assert y.shape[0] == theta_train_subset.shape[0]
+            assert y.shape[1] == emb.shape[0]
+            
+            z_train = torch.matmul(emb, W) 
+            theta_train_matrix = theta_train_subset.unsqueeze(1) # (n, 1)
+            z_train_matrix = z_train.unsqueeze(0) # (1, m)
+            prob_matrix = item_response_fn_1PL(z_train_matrix, theta_train_matrix)
+            
+            mask = y!=-1
+            masked_y = y.flatten()[mask.flatten()]
+            masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
+            
+            berns = torch.distributions.Bernoulli(masked_prob_matrix)
+            loss = -berns.log_prob(masked_y).mean()
+            loss.backward()
+            optimizer_theta.step()
+            optimizer_W.step()
+            optimizer_theta.zero_grad()
+            optimizer_W.zero_grad()
+            
+            pbar.set_postfix({'loss': loss.item()})
+            
+            if epoch == max_epoch-1:
+                z_trains.append(z_train)
     
-    no_improvement_count = 0
-    best_loss = float('inf')
+    z_tests = []
+    for i, dataset in enumerate(tqdm(datasets), desc='Testing'):
+        test_index = test_indices[i]
+        
+        y_df = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+        y = torch.tensor(y_df.values[train_index]).to(device)
+        
+        filtered_repo = hf_repo.filter(lambda x: x['dataset'] == dataset)
+        emb = torch.tensor(filtered_repo['embed'][test_index]).to(device)
+        
+        z_test = torch.matmul(emb, W)
+        z_tests.append(z_test)
     
-    pbar = tqdm(range(max_epoch))
-    for _ in pbar:
-        z_hat = torch.matmul(embedding, W) # z_hat [959]
-        theta_hat_matrix = theta_hat.unsqueeze(1) # (n, 1)
-        z_hat_matrix = z_hat.unsqueeze(0) # (1, m)
-        prob_matrix = item_response_fn_1PL(z_hat_matrix, theta_hat_matrix)
-        
-        mask = response_matrix != -1
-        masked_response_matrix = response_matrix.flatten()[mask.flatten()]
-        masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
-        
-        berns = torch.distributions.Bernoulli(masked_prob_matrix)
-        loss = -berns.log_prob(masked_response_matrix).mean()
-        loss.backward()
-        optimizer_theta.step()
-        optimizer_W.step()
-        optimizer_theta.zero_grad()
-        optimizer_W.zero_grad()
-        
-        pbar.set_postfix({'loss': loss.item()})
-        
-        if abs(loss.item() - best_loss) < 1e-5:
-            no_improvement_count += 1
-        else:
-            no_improvement_count = 0
-            best_loss = loss.item()
-        
-        if no_improvement_count >= patience:
-            break
-
-    return theta_hat, z_hat, W
+    return theta_train, z_trains, z_tests
 
 def main(
-    hf_repo,
-    y_path,
-    df_z_train_path,
-    df_z_test_path,
-    df_theta_path,
+    datasets,
+    emb_hf_repo,
+    model_id_path,
+    iteration,
 ):
-    y = pd.read_csv(y_path, index_col=0).values
-    y = torch.tensor(y, dtype=torch.float32)
+    train_indices, test_indices = [], []
+    for dataset in datasets:
+        y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+        train_index, test_index = split_indices(y.shape[1])
+        train_indices.append(train_index)
+        test_indices.append(test_index)
     
-    dataset_train = load_dataset(hf_repo, split="train")
-    dataset_test = load_dataset(hf_repo, split="test")
-    dataset = concatenate_datasets([dataset_train, dataset_test])
-    emb = torch.tensor(dataset['embed'], dtype=torch.float32)
+    theta_train, z_trains, z_tests = agg_amor_calibration(
+        datasets=datasets, 
+        train_indices=train_indices,
+        test_indices=test_indices,
+        emb_hf_repo=emb_hf_repo,
+        model_id_path=model_id_path,
+    )
     
-    assert y.shape[1] == emb.shape[0]
-    train_indices, test_indices = split_indices(emb.shape[0])    
-    emb_train, emb_test = emb[train_indices], emb[test_indices]
-    y_train = y[:, train_indices]
-    
-    theta_train, z_train, W_train = amor_calibration(y_train, emb_train)
-    z_test = torch.matmul(emb_test, W_train.cpu().detach())
-    
-    df_z_train = pd.DataFrame({
-        'index': train_indices,
-        'z': z_train.cpu().detach().numpy(),
-    })
-    df_z_train.to_csv(df_z_train_path, index=False)
-    
-    df_z_test = pd.DataFrame({
-        'index': test_indices,
-        'z': z_test.cpu().detach().numpy(),
-    })
-    df_z_test.to_csv(df_z_test_path, index=False)
-    
+    for i, dataset in enumerate(datasets):
+        output_dir = f'../data/agg_calibration/{dataset}'
+        os.makedirs(output_dir, exist_ok=True)
+        df_z_train_path=f'{output_dir}/z_train_{iteration}.csv',
+        df_z_test_path=f'{output_dir}/z_test_{iteration}.csv',
+        
+        df_z_train = pd.DataFrame({
+            'index': train_indices[i],
+            'z': z_trains[i].cpu().detach().numpy(),
+        })
+        df_z_train.to_csv(df_z_train_path, index=False)
+        
+        df_z_test = pd.DataFrame({
+            'index': test_indices[i],
+            'z': z_tests[i].cpu().detach().numpy(),
+        })
+        df_z_test.to_csv(df_z_test_path, index=False)
+        
+    df_theta_path=f'../data/agg_calibration/theta_{iteration}.csv',
     df_theta = pd.DataFrame({
         'theta': theta_train.cpu().detach().numpy(),
     })
     df_theta.to_csv(df_theta_path, index=False)
 
 if __name__ == "__main__":
-    wandb.init(project="amor_calibration")
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, required=True)
-    args = parser.parse_args()
-    
-    input_dir = '../data/pre_calibration/'
-    output_dir = f'../data/amor_calibration/{args.dataset}'
-    os.makedirs(output_dir, exist_ok=True)
-    
-    for i in tqdm(range(10)):
+    for i in tqdm(range(10), desc='Seed'):
         set_seed(i)
         main(
-            hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
-            y_path=f'{input_dir}/{args.dataset}/matrix.csv',
-            df_z_train_path=f'{output_dir}/z_train_{i}.csv',
-            df_z_test_path=f'{output_dir}/z_test_{i}.csv',
-            df_theta_path=f'{output_dir}/theta_{i}.csv',
+            datasets=DATASETS,
+            emb_hf_repo=f'stair-lab/reeval_aggregate-embed',
+            model_id_path='configs/model_id.json',
+            iteration=i,
         )
         

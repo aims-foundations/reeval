@@ -12,6 +12,6 @@ if __name__ == "__main__":
     model_names = list(set(model_names))
     model_name_dict = {name: idx for idx, name in enumerate(model_names)}
 
-    output_path = 'model_id.json'
+    output_path = 'configs/model_id.json'
     with open(output_path, 'w') as json_file:
         json.dump(model_name_dict, json_file, ensure_ascii=False, indent=4)
