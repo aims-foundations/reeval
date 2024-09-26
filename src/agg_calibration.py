@@ -21,7 +21,7 @@ def agg_amor_calibration(
     emb_hf_repo: str,
     model_id_path: str,
     lr_theta=0.01,
-    lr_mlp=0.01,
+    lr_mlp=0.0001,
     max_epoch=10,
     embed_dim=4096,
 ):
@@ -65,13 +65,15 @@ def agg_amor_calibration(
             theta_train_matrix = theta_train_subset.unsqueeze(1) # (n, 1)
             z_train_matrix = z_train.unsqueeze(0) # (1, m)
             prob_matrix = item_response_fn_1PL(z_train_matrix, theta_train_matrix)
+            print(prob_matrix[:5])
             
             mask = y!=-1
             masked_y = y.flatten()[mask.flatten()].float()
             masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
+            print(masked_prob_matrix[:5])
             
             if torch.isnan(masked_prob_matrix).any():
-                warnings.warn(f'all NaN in masked_prob_matrix in {dataset}', UserWarning)
+                warnings.warn(f'all nan in masked_prob_matrix in {dataset}, skip', UserWarning)
                 continue
             
             berns = torch.distributions.Bernoulli(masked_prob_matrix)
