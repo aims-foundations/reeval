@@ -66,7 +66,7 @@ def agg_amor_calibration(
             prob_matrix = item_response_fn_1PL(z_train_matrix, theta_train_matrix)
             
             mask = y!=-1
-            masked_y = y.flatten()[mask.flatten()]
+            masked_y = y.flatten()[mask.flatten()].float()
             masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
             
             berns = torch.distributions.Bernoulli(masked_prob_matrix)
