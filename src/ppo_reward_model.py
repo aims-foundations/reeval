@@ -5,7 +5,7 @@ from lampo.reward_model import RewardModelTemplate
 from datasets import Dataset
 from embed_text_package.embed_text import Embedder
 from torch.utils.data import DataLoader
-from plugin_regression import MLP
+from utils import MLP
 
 def extract_score(input_str: str) -> float:
     match = re.search(r'Difficulty: ([-+]?\d*\.\d+|\d+)', input_str)

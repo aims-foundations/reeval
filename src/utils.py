@@ -6,12 +6,30 @@ import jax.numpy as jnp
 import warnings
 from scipy.stats import ttest_ind
 from embed_text_package.embed_text import Embedder
+import torch.nn as nn
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
 
+class MLP(nn.Module):
+    def __init__(self, input_dim):
+        super(MLP, self).__init__()
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, input_dim),
+            nn.ELU(),
+            nn.Linear(input_dim, input_dim),
+            nn.ELU(),
+            nn.Linear(input_dim, 2048),
+            nn.ELU(),
+            nn.Linear(2048, 1024),
+            nn.ELU(),
+            nn.Linear(1024, 1)
+        )
+    def forward(self, x):
+        return self.model(x)
+    
 DESCRIPTION_MAP = {
     # 'synthetic_efficiency': '### DATASET: Synthetic efficiency, ### PUBLISH TIME: unknown, ### CONTENT: to better understand inference runtime performance of various models',
     'airbench': '### DATASET: AirBench, ### PUBLISH TIME: 2024, ### CONTENT: AI safety benchmark that aligns with emerging government regulations and company policies',

@@ -21,9 +21,10 @@ if __name__ == "__main__":
     agg_df['embed'] = agg_df[[f'embed_{i}' for i in range(4096)]].values.tolist()
     agg_df = agg_df.drop(columns=[f'embed_{i}' for i in range(4096)])
 
-    train_dataset = Dataset.from_pandas(agg_df)
-    
-    dataset_dict = DatasetDict({
-        'train': train_dataset,
-    })
+    grouped_datasets = {}
+    for dataset_name, group in agg_df.groupby('dataset'):
+        hf_dataset = Dataset.from_pandas(group.drop(columns=['dataset']))
+        grouped_datasets[dataset_name] = hf_dataset
+
+    dataset_dict = DatasetDict(grouped_datasets)
     dataset_dict.push_to_hub("stair-lab/reeval_aggregate-embed")

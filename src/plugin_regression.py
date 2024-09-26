@@ -8,27 +8,10 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 import wandb
-from utils import set_seed, split_indices, plot_loss
+from utils import set_seed, split_indices, plot_loss, MLP
 from sklearn.metrics import mean_squared_error
 from torch.utils.data import DataLoader, TensorDataset
 from datasets import load_dataset, concatenate_datasets
-
-class MLP(nn.Module):
-    def __init__(self, input_dim):
-        super(MLP, self).__init__()
-        self.model = nn.Sequential(
-            nn.Linear(input_dim, input_dim),
-            nn.ELU(),
-            nn.Linear(input_dim, input_dim),
-            nn.ELU(),
-            nn.Linear(input_dim, 2048),
-            nn.ELU(),
-            nn.Linear(2048, 1024),
-            nn.ELU(),
-            nn.Linear(1024, 1)
-        )
-    def forward(self, x):
-        return self.model(x)
 
 def train_model(
     model_name: str,

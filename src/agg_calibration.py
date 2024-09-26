@@ -5,7 +5,13 @@ import torch
 from tqdm import tqdm
 import torch.optim as optim
 from datasets import load_dataset
-from utils import set_seed, item_response_fn_1PL, split_indices, DATASETS
+from utils import (
+    set_seed, 
+    item_response_fn_1PL, 
+    split_indices, 
+    DATASETS, 
+    MLP
+)
 
 def agg_amor_calibration(
     datasets: list[str], 
