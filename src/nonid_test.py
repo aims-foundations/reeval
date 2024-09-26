@@ -104,6 +104,8 @@ def main(
     dumb_answers = y[i][easy_indices]
     smart_answers = y[j][hard_indices]
     
+    # pickout -1
+    
     # CTT
     print("CTT")
     mean_dumb, std_dumb = bootstrap_mean_std(dumb_answers)
