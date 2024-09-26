@@ -55,7 +55,7 @@ def agg_amor_calibration(
             theta_train_subset = theta_train[model_ids]
             
             hf_repo = load_dataset(emb_hf_repo, split=dataset)
-            emb = torch.tensor(hf_repo['embed'][train_index]).to(device)
+            emb = torch.tensor(hf_repo['embed'])[train_index].to(device)
             
             assert y.shape[0] == theta_train_subset.shape[0]
             assert y.shape[1] == emb.shape[0]
@@ -90,7 +90,7 @@ def agg_amor_calibration(
         y = torch.tensor(y_df.values[:, test_index]).to(device)
         
         hf_repo = load_dataset(emb_hf_repo, split=dataset)
-        emb = torch.tensor(hf_repo['embed'][test_index]).to(device)
+        emb = torch.tensor(hf_repo['embed'])[test_index].to(device)
         
         z_test = mlp_model(emb).flatten()
         z_tests.append(z_test)

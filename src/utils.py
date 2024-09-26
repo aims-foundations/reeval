@@ -2,7 +2,6 @@ import pandas as pd
 import torch
 import numpy as np
 import random
-import jax.numpy as jnp
 import warnings
 from scipy.stats import ttest_ind
 from embed_text_package.embed_text import Embedder
@@ -65,9 +64,6 @@ DATASETS = list(DESCRIPTION_MAP.keys())
 
 def item_response_fn_1PL(z3, theta):
     return 1 / (1 + torch.exp(-(theta + z3)))
-
-def item_response_fn_1PL_jnp(z3, theta):
-    return 1 / (1 + jnp.exp(-(theta + z3)))
     
 def set_seed(seed):
     random.seed(seed)

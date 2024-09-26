@@ -3,18 +3,13 @@ import os
 import numpy as np
 import pandas as pd
 import torch
-import numpyro
-import numpyro.distributions as dist
-from numpyro.infer import MCMC, NUTS
-import jax.numpy as jnp
-import jax.random as random
 import wandb
 from nonamor_calibration import nonamor_calibration
 from utils import (
     set_seed,
     perform_t_test,
     sample_mean_std, 
-    item_response_fn_1PL_jnp,
+    item_response_fn_1PL,
     plot_nonid_test
 )
 
@@ -52,36 +47,29 @@ def sample_subsets(
     z_easy, z_hard = z[easy_indices], z[hard_indices]
     return z_easy, z_hard, easy_indices, hard_indices
 
-def model(z_asked, answers):
-    answers = answers.flatten()
-    mask = (answers != -1)
-    indices = jnp.nonzero(mask, size=None)[0] 
+def fit_theta_mle(z_asked, asked_answers, epoch=300):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    Z = Z.cuda()
+    asked_question_list = asked_question_list.cuda()
+    asked_answer_list = asked_answer_list.cuda()
     
-    theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0)) # prior
-    probs = item_response_fn_1PL_jnp(z_asked, theta_hat)
-    probs = probs.flatten()
+    theta_hat = torch.normal(mean=0.0, std=1.0, size=(1,), requires_grad=True, device=device)
+    optimizer = optim.Adam([theta_hat], lr=0.01)
     
-    probs_masked = probs[indices]
-    answers_masked = answers[indices]
-    numpyro.sample("obs", dist.Bernoulli(probs_masked), obs=answers_masked)
-    
-def fit_theta_mcmc(z_asked, answers, num_samples=2000, num_warmup=1000):
-    rng_key = random.PRNGKey(0)
-    rng_key, rng_key_ = random.split(rng_key)
-    
-    nuts_kernel = NUTS(model)
-    mcmc = MCMC(nuts_kernel, num_samples=num_samples, num_warmup=num_warmup)
-    mcmc.run(
-        rng_key_,
-        z_asked=z_asked,
-        answers=answers,
-    )
-    mcmc.print_summary()
-    
-    theta_samples = mcmc.get_samples()["theta_hat"]
-    theta_mean = jnp.mean(theta_samples)
-    theta_std = jnp.std(theta_samples)
-    return theta_mean, theta_std, theta_samples
+    for _ in range(epoch):
+        log_prob = 0
+        for i, asked_question_index in enumerate(asked_question_list):
+            prob = item_response_fn_1PL(Z[asked_question_index], theta_hat)
+            bernoulli = torch.distributions.Bernoulli(prob)
+            log_prob = log_prob + bernoulli.log_prob(asked_answer_list[i].float())
+        
+        loss = -log_prob / len(asked_question_list)
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+        # print(theta_hat)
+
+    return theta_hat.cpu()
 
 def main(
     theta_path, 
