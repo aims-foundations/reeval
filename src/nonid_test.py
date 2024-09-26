@@ -55,11 +55,14 @@ def sample_subsets(
 def model(z_asked, answers):
     answers = answers.flatten()
     mask = (answers != -1)
+    indices = jnp.nonzero(mask, size=None)[0] 
+    
     theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0)) # prior
     probs = item_response_fn_1PL_jnp(z_asked, theta_hat)
     probs = probs.flatten()
-    probs_masked = probs[mask]
-    answers_masked = answers[mask]
+    
+    probs_masked = probs[indices]
+    answers_masked = answers[indices]
     numpyro.sample("obs", dist.Bernoulli(probs_masked), obs=answers_masked)
     
 def fit_theta_mcmc(z_asked, answers, num_samples=2000, num_warmup=1000):
@@ -88,7 +91,7 @@ def main(
 ):
     theta = pd.read_csv(theta_path)['theta'].values
     y = pd.read_csv(y_path, index_col=0).values
-    subset_size = min(y.shape[1], 1000)
+    subset_size = min(y.shape[1], 500)
     print(f"subset size = {subset_size}")
     
     i = np.abs(theta - 0.5).argmin()
