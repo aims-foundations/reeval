@@ -181,4 +181,3 @@ if __name__ == "__main__":
             train_loss_plot_path=f'{plot_dir}/train_loss.png' if i==0 else None,
             test_loss_plot_path=f'{plot_dir}/test_loss.png' if i==0 else None,
         )
-        
