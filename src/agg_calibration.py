@@ -43,12 +43,12 @@ def agg_amor_calibration(
             
     z_trains = []
     for epoch in tqdm(range(max_epoch), desc='Training'):
-        pbar = tqdm(datasets)
+        pbar = tqdm(datasets, desc='Dataset')
         for i, dataset in enumerate(pbar):
             train_index = train_indices[i]
             
             y_df = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-            y = torch.tensor(y_df.values[train_index]).to(device)
+            y = torch.tensor(y_df.values[:, train_index]).to(device)
             
             model_names = y_df.index.tolist()
             model_ids = [model_id_dict[name] for name in model_names]
@@ -87,7 +87,7 @@ def agg_amor_calibration(
         test_index = test_indices[i]
         
         y_df = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-        y = torch.tensor(y_df.values[train_index]).to(device)
+        y = torch.tensor(y_df.values[:, test_index]).to(device)
         
         filtered_repo = hf_repo.filter(lambda x: x['dataset'] == dataset)
         emb = torch.tensor(filtered_repo['embed'][test_index]).to(device)
