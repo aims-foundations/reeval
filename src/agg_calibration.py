@@ -72,10 +72,6 @@ def agg_amor_calibration(
             masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
             print(masked_prob_matrix[:5])
             
-            if torch.isnan(masked_prob_matrix).any():
-                warnings.warn(f'all nan in masked_prob_matrix in {dataset}, skip', UserWarning)
-                continue
-            
             berns = torch.distributions.Bernoulli(masked_prob_matrix)
             loss = -berns.log_prob(masked_y).mean()
             loss.backward()

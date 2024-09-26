@@ -16,22 +16,28 @@ from utils import (
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 
-def fit_theta(asked_z, y, epoch=300):
-    non_missing_indicators = y != -1    
+def fit_theta(
+    asked_z: torch.Tensor,
+    answers: torch.Tensor,
+    max_epoch: int=300
+):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    mask = answers != -1    
     theta_hat = torch.normal(
         mean=0.0, std=1.0,
-        size=(y.shape[0],),
+        size=(1,),
         requires_grad=True,
-        device=y.device,
+        device=device,
     )
     optimizer = optim.Adam([theta_hat], lr=0.01)
-    epoch = 100
-    pbar = tqdm(range(epoch))
+    pbar = tqdm(range(max_epoch))
     for _ in pbar:
-        prob_matrix = item_response_fn_1PL(asked_z[None, :], theta_hat[:, None])
-        prob_matrix = prob_matrix.flatten()[non_missing_indicators.flatten()]
-        berns = torch.distributions.Bernoulli(prob_matrix)
-        loss = -berns.log_prob(y.flatten()[non_missing_indicators.flatten()]).mean()
+        prob_matrix = item_response_fn_1PL(asked_z[:, None], theta_hat[None, :])
+        assert prob_matrix.shape == answers.shape
+        
+        berns = torch.distributions.Bernoulli(prob_matrix.flatten()[mask.flatten()])
+        loss = -berns.log_prob(answers.flatten()[mask.flatten()]).mean()
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
@@ -39,28 +45,26 @@ def fit_theta(asked_z, y, epoch=300):
     pbar.set_postfix({'loss': loss.item()})
 
 def main(
-    # theta_path, 
+    theta_path, 
     y_path,
     # plot_path,
     # output_path
 ):
     y = pd.read_csv(y_path, index_col=0).values
-    non_missing_indicators = y != -1
+    theta = pd.read_csv(theta_path)["theta"].values
+    _, ctt_masked = get_theta_ctt(theta, y)
     
-    ctt_true_score = (y * non_missing_indicators).sum(1)/non_missing_indicators.sum(1)    
-    ctt_true_ranks = np.argsort(ctt_true_score)
+    ver_2_testtaker_num = min(ctt_masked.shape[0]//6, 2)
+    y_ver1, y_ver2 = y[: -ver_2_testtaker_num], y[-ver_2_testtaker_num:]
+    _, theta_ver2 = theta[: -ver_2_testtaker_num], theta[-ver_2_testtaker_num:]
     
-    subset_indices = np.random.choice(ctt_true_score.shape[0], size=15, replace=False)
-    ctt_true_score_sub = ctt_true_score[subset_indices]
-
-    # plot the ctt_true_score as vertical line 
-    plt.figure(figsize=(10, 5))
-    plt.scatter(ctt_true_score, np.ones_like(ctt_true_score), c='blue')
-    plt.scatter(ctt_true_score_sub, np.ones_like(ctt_true_score_sub), c='red')    
-    plt.show()
+    _, z_ver1 = nonamor_calibration(torch.tensor(y_ver1, dtype=torch.float32))
+    question_num = z_ver1.shape[0]
     
-    question_num = y.shape[1]
-    subset_size = min(y.shape[1], 500)
+    _, ctt_masked_ver2 = get_theta_ctt(theta_ver2, y_ver2)
+    ctt_true_ranks = np.argsort(ctt_masked_ver2)
+    
+    subset_size = min(z_ver1.shape[0], 500)
     print(f"subset size = {subset_size}")
     
     ctt_correctly_ranked = 0
@@ -69,9 +73,9 @@ def main(
     for _ in range(n_simulation):
         subset_indices = np.random.choice(question_num, size=subset_size, replace=False)
         y_sub = y[:, subset_indices]
-        non_missing_indicators_sub = non_missing_indicators[:, subset_indices]
+        mask_sub = mask[:, subset_indices]
         
-        ctt_sub = (y_sub * non_missing_indicators_sub).sum(1)/non_missing_indicators_sub.sum(1)
+        ctt_sub = (y_sub * mask_sub).sum(1)/mask_sub.sum(1)
         ctt_sub_ranks = np.argsort(ctt_sub)
         
         irt_sub = nonamor_calibration(torch.tensor(y_sub, dtype=torch.float32))
