@@ -1,20 +1,16 @@
 import argparse
 import os
-import numpy as np
 import pandas as pd
 import torch
-import numpyro
-import numpyro.distributions as dist
-from numpyro.infer import MCMC, NUTS
-import jax.numpy as jnp
-import jax.random as random
+import numpy as np
+import pymc as pm
 import wandb
 from nonamor_calibration import nonamor_calibration
 from utils import (
     set_seed,
     perform_t_test,
     sample_mean_std, 
-    item_response_fn_1PL_jnp,
+    item_response_fn_1PL_pymc,
     plot_nonid_test
 )
 
@@ -52,37 +48,22 @@ def sample_subsets(
     z_easy, z_hard = z[easy_indices], z[hard_indices]
     return z_easy, z_hard, easy_indices, hard_indices
 
-def model(z_asked, answers):
-    answers = answers.flatten()
-    mask = (answers != -1)
-    indices = jnp.nonzero(mask, size=None)[0] 
+def fit_theta_mcmc(
+    z_asked: np.ndarray, 
+    answers: np.ndarray,
+):
+    with pm.Model() as model:
+        mask = (answers != -1)
+        z_asked_masked = z_asked[mask]
+        answers_masked = answers[mask]
+        
+        theta_hat = pm.Normal("theta_hat", mu=0, sigma=1)
+        probs = item_response_fn_1PL_pymc(z_asked_masked, theta_hat)
+        obs = pm.Bernoulli("obs", p=probs, observed=answers_masked)
+        trace = pm.sample(2000, tune=1000, return_inferencedata=False)
+        
+    return trace['theta_hat']
     
-    theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0)) # prior
-    probs = item_response_fn_1PL_jnp(z_asked, theta_hat)
-    probs = probs.flatten()
-    
-    probs_masked = probs[indices]
-    answers_masked = answers[indices]
-    numpyro.sample("obs", dist.Bernoulli(probs_masked), obs=answers_masked)
-    
-def fit_theta_mcmc(z_asked, answers, num_samples=2000, num_warmup=1000):
-    rng_key = random.PRNGKey(0)
-    rng_key, rng_key_ = random.split(rng_key)
-    
-    nuts_kernel = NUTS(model)
-    mcmc = MCMC(nuts_kernel, num_samples=num_samples, num_warmup=num_warmup)
-    mcmc.run(
-        rng_key_,
-        z_asked=z_asked,
-        answers=answers,
-    )
-    mcmc.print_summary()
-    
-    theta_samples = mcmc.get_samples()["theta_hat"]
-    theta_mean = jnp.mean(theta_samples)
-    theta_std = jnp.std(theta_samples)
-    return theta_mean, theta_std, theta_samples
-
 def main(
     theta_path, 
     y_path,
@@ -129,21 +110,17 @@ def main(
     
     # IRT via HMC
     print("\nIRT via HMC")
-    z_easy = jnp.array(z_easy)
-    dumb_answers = jnp.array(dumb_answers)
-    theta_dumb_mean, theta_dumb_std, theta_dumb_samples = fit_theta_mcmc(
-        z_easy, dumb_answers
+    theta_dumb_samples = fit_theta_mcmc(
+        z_easy.detach().numpy(), dumb_answers.detach().numpy()
     )
-    print(f"dumb IRT mean = {theta_dumb_mean}")
-    print(f"dumb IRT std = {theta_dumb_std}")
+    print(f"dumb IRT mean = {np.mean(theta_dumb_samples)}")
+    print(f"dumb IRT std = {np.std(theta_dumb_samples)}")
     
-    z_hard = jnp.array(z_hard)
-    smart_answers = jnp.array(smart_answers)
-    theta_smart_mean, theta_smart_std, theta_smart_samples = fit_theta_mcmc(
-        z_hard, smart_answers
+    theta_smart_samples = fit_theta_mcmc(
+        z_hard.detach().numpy(), smart_answers.detach().numpy()
     )
-    print(f"smart IRT mean = {theta_smart_mean}")
-    print(f"smart IRT std = {theta_smart_std}")
+    print(f"smart IRT mean = {np.mean(theta_smart_samples)}")
+    print(f"smart IRT std = {np.std(theta_smart_samples)}")
     
     irt_tag, irt_t_stat, irt_p_value = perform_t_test(
         theta_dumb_samples, theta_smart_samples, label="IRT"
@@ -174,6 +151,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     set_seed(42)
+    
     plot_dir = f'../plot/nonid_test'
     output_dir = f'../data/nonid_test/{args.dataset}'
     os.makedirs(plot_dir, exist_ok=True)

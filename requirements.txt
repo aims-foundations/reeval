@@ -19,3 +19,4 @@ numpyro
 vllm
 peft
 flash-attn
+brokenaxes

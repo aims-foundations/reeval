@@ -6,12 +6,13 @@ from scipy.stats import ttest_ind
 import warnings
 from embed_text_package.embed_text import Embedder
 import torch.nn as nn
+import theano.tensor as tt
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
-import jax.numpy as jnp
+from brokenaxes import brokenaxes
 
 class MLP(nn.Module):
     def __init__(self, input_dim):
@@ -66,8 +67,8 @@ DATASETS = list(DESCRIPTION_MAP.keys())
 def item_response_fn_1PL(z3, theta):
     return 1 / (1 + torch.exp(-(theta + z3)))
 
-def item_response_fn_1PL_jnp(z3, theta):
-    return 1 / (1 + jnp.exp(-(theta + z3)))
+def item_response_fn_1PL_pymc(z3, theta):
+    return 1 / (1 + tt.exp(-(theta + z3)))
 
 def perform_t_test(sample_1, sample_2, label=""):
     print(f"{label} T-test:")
@@ -394,12 +395,11 @@ def plot_nonid_test(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     
-def plot_bar(
+def plot_bar_testtaker(
     datasets,
     nums,
     plot_path,
     ylabel,
-    exp_axis=False
 ):
     sorted_by_nums = sorted(zip(datasets, nums), key=lambda x: x[1])
     sorted_datasets, sorted_nums = zip(*sorted_by_nums)
@@ -416,11 +416,34 @@ def plot_bar(
         else:
             plt.text(bar.get_x() + bar.get_width() / 2, height, f'{height}', 
                      ha='center', va='bottom', fontsize=12)
-    if exp_axis:
-        plt.yscale('log')
     plt.savefig(plot_path, dpi = 300, bbox_inches='tight')
     plt.close()
-
+    
+def plot_bar_question(
+    datasets,
+    nums,
+    plot_path,
+    ylabel,
+):
+    sorted_by_nums = sorted(zip(datasets, nums), key=lambda x: x[1])
+    sorted_datasets, sorted_nums = zip(*sorted_by_nums)
+    plt.figure(figsize=(25, 18))
+    bax = brokenaxes(ylims=((0, 70000), (250000, 280000)), hspace=0.05)
+    bars = bax.bar(sorted_datasets, sorted_nums)
+    bax.set_xticklabels(sorted_datasets, rotation=30, ha='right', fontsize=35)
+    bax.set_ylabel(ylabel, fontsize=35)
+    for bar, num in zip(bars, sorted_nums):
+        height = bar.get_height()
+        if height >= 1000:
+            bax.text(bar.get_x() + bar.get_width() / 2, height, f'{height/1000:.1f}k', 
+                     ha='center', va='bottom', fontsize=12)
+        else:
+            bax.text(bar.get_x() + bar.get_width() / 2, height, f'{height}', 
+                     ha='center', va='bottom', fontsize=12)
+    plt.yscale('log')
+    plt.savefig(plot_path, dpi = 300, bbox_inches='tight')
+    plt.close()
+    
 def plot_hist(
     data,
     plot_path,
