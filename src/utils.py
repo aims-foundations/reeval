@@ -432,7 +432,7 @@ def plot_bar_question(
     bars = bax.bar(sorted_datasets, sorted_nums)
     bax.set_xticklabels(sorted_datasets, rotation=30, ha='right', fontsize=35)
     bax.set_ylabel(ylabel, fontsize=35)
-    for bar, num in zip(bars, sorted_nums):
+    for bar, num in zip(bars.patches, sorted_nums):  # Access individual bars via bars.patches
         height = bar.get_height()
         if height >= 1000:
             bax.text(bar.get_x() + bar.get_width() / 2, height, f'{height/1000:.1f}k', 
