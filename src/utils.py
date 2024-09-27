@@ -432,14 +432,14 @@ def plot_bar_question(
     bars = bax.bar(sorted_datasets, sorted_nums)
     bax.set_xticklabels(sorted_datasets, rotation=30, ha='right', fontsize=35)
     bax.set_ylabel(ylabel, fontsize=35)
-    for bar, num in zip(bars.patches, sorted_nums):  # Access individual bars via bars.patches
-        height = bar.get_height()
-        if height >= 1000:
-            bax.text(bar.get_x() + bar.get_width() / 2, height, f'{height/1000:.1f}k', 
-                     ha='center', va='bottom', fontsize=12)
-        else:
-            bax.text(bar.get_x() + bar.get_width() / 2, height, f'{height}', 
-                     ha='center', va='bottom', fontsize=12)
+    # for bar, num in zip(bars.patches, sorted_nums):  # Access individual bars via bars.patches
+    #     height = bar.get_height()
+    #     if height >= 1000:
+    #         bax.text(bar.get_x() + bar.get_width() / 2, height, f'{height/1000:.1f}k', 
+    #                  ha='center', va='bottom', fontsize=12)
+    #     else:
+    #         bax.text(bar.get_x() + bar.get_width() / 2, height, f'{height}', 
+    #                  ha='center', va='bottom', fontsize=12)
     plt.yscale('log')
     plt.savefig(plot_path, dpi = 300, bbox_inches='tight')
     plt.close()
