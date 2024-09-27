@@ -432,9 +432,8 @@ def plot_hist(
     plt.axvline(mean_value, color='r', linestyle='--', linewidth=2)
     plt.text(
         mean_value, 
-        plt.gca().get_ylim()[1] * 0.9, 
+        plt.gca().get_ylim()[1], 
         f'{mean_value:.2f}', 
-        color='r', 
         fontsize=16, 
         ha='center'
     )
