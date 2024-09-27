@@ -12,5 +12,5 @@ if __name__ == "__main__":
         testtaker_nums.append(y.shape[0])
         question_nums.append(y.shape[1])
     
-    plot_bar(DATASETS, question_nums, f"{plot_dir}/question_nums.png", r"Number of Questions")
+    plot_bar(DATASETS, question_nums, f"{plot_dir}/question_nums.png", r"Number of Questions", exp_axis=True)
     plot_bar(DATASETS, testtaker_nums, f"{plot_dir}/testtaker_nums.png", r"Number of Test Takers")

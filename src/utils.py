@@ -400,7 +400,7 @@ def plot_bar(
     datasets = [PLOT_NAME_MAP[dataset] for dataset in datasets]
     sorted_by_nums = sorted(zip(datasets, nums), key=lambda x: x[1])
     sorted_datasets, sorted_nums = zip(*sorted_by_nums)
-    plt.figure(figsize=(25, 18))
+    plt.figure(figsize=(25, 10))
     bars = plt.bar(sorted_datasets, sorted_nums)
     plt.xticks(rotation=30, ha='right', fontsize=35)
     plt.tick_params(axis='both', labelsize=35)
@@ -409,10 +409,10 @@ def plot_bar(
         height = bar.get_height()
         if height >= 1000:
             plt.text(bar.get_x() + bar.get_width() / 2, height, f'{height/1000:.1f}k', 
-                     ha='center', va='bottom', fontsize=12)
+                     ha='center', va='bottom', fontsize=20)
         else:
             plt.text(bar.get_x() + bar.get_width() / 2, height, f'{height}', 
-                     ha='center', va='bottom', fontsize=12)
+                     ha='center', va='bottom', fontsize=20)
     if exp_axis:
         plt.yscale('log')
     plt.savefig(plot_path, dpi = 300, bbox_inches='tight')
