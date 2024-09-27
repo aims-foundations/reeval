@@ -60,7 +60,7 @@ def fit_theta_mcmc(
         theta_hat = pm.Normal("theta_hat", mu=0, sigma=1)
         probs = item_response_fn_1PL_np(z_asked_masked, theta_hat)
         obs = pm.Bernoulli("obs", p=probs, observed=answers_masked)
-        trace = pm.sample(49000, tune=1000, return_inferencedata=False)
+        trace = pm.sample(9000, tune=1000, return_inferencedata=False)
         
     return trace['theta_hat']
     
