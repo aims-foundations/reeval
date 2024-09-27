@@ -429,11 +429,11 @@ def plot_hist(
     plt.figure(figsize=(6, 6))
     plt.hist(data, bins=30, density=True, alpha=0.4)
     mean_value = np.mean(data)
-    plt.axvline(mean_value, color='r', linestyle='--', linewidth=2)
+    plt.axvline(mean_value, linestyle='--', linewidth=2)
     plt.text(
         mean_value, 
         plt.gca().get_ylim()[1], 
-        f'{mean_value:.2f}', 
+        f'{mean_value:.2f}',
         fontsize=16, 
         ha='center'
     )
