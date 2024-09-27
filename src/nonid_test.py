@@ -113,13 +113,13 @@ def main(
     # IRT via HMC
     print("\nIRT via HMC")
     theta_dumb_samples = fit_theta_mcmc(
-        z_easy.detach().numpy(), dumb_answers.detach().numpy()
+        z_easy.detach().numpy(), dumb_answers
     )
     print(f"dumb IRT mean = {np.mean(theta_dumb_samples)}")
     print(f"dumb IRT std = {np.std(theta_dumb_samples)}")
     
     theta_smart_samples = fit_theta_mcmc(
-        z_hard.detach().numpy(), smart_answers.detach().numpy()
+        z_hard.detach().numpy(), smart_answers
     )
     print(f"smart IRT mean = {np.mean(theta_smart_samples)}")
     print(f"smart IRT std = {np.std(theta_smart_samples)}")
