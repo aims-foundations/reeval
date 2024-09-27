@@ -6,7 +6,7 @@ from scipy.stats import ttest_ind
 import warnings
 from embed_text_package.embed_text import Embedder
 import torch.nn as nn
-import theano.tensor as tt
+# import theano.tensor as tt
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from tueplots import bundles
