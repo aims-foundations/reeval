@@ -75,8 +75,8 @@ def main(
     subset_size = min(y.shape[1], 100)
     print(f"subset size = {subset_size}")
     
-    i = np.abs(theta - 0.5).argmin()
-    j = np.abs(theta - 1).argmin()
+    i = np.abs(theta - (-0.5)).argmin()
+    j = np.abs(theta - 0.5).argmin()
     print(f'dumb theta = {theta[i]}')
     print(f'smart theta = {theta[j]}')
 
