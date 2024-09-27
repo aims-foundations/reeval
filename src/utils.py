@@ -441,6 +441,17 @@ def plot_hist(
     plt.tick_params(axis='both', labelsize=16)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
+
+def plot_rewards(rewards, plot_path):
+    plt.figure(figsize=(6, 6))
+    steps = range(0, 100, 10) 
+    for i in range(len(rewards[0])):
+        prompt_rewards = [reward[i] for reward in rewards]
+        plt.plot(steps, prompt_rewards, marker='o')
+    plt.ylabel(r'Reward', fontsize=25)
+    plt.tick_params(axis='both', labelsize=16)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.show()
     
 def plot_loss(
     losses,

@@ -6,25 +6,26 @@ from vllm import LLM, SamplingParams
 from peft import AutoPeftModelForCausalLM
 from ppo_reward_model import extract_score
 from datasets import Dataset, load_dataset
-from utils import get_embed, plot_hist
+from utils import get_embed
 
 if __name__ == "__main__":
     model_dir = "../data/ppo/llama3-ppo"
     plot_dir = "../plot/ppo"
     os.makedirs(plot_dir, exist_ok=True)
     
-    test_dataset = load_dataset("stair-lab/airbench-ppo", split="test")
+    test_dataset = load_dataset("stair-lab/airbench-ppo", split="train")
     prompts = test_dataset['text'][:5]
     gt_zs = [extract_score(p) for p in prompts]
     
+    rewards = []
     for step in range(0, 100, 10):
-        model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-{step}')
+        model = AutoPeftModelForCausalLM.from_pretrained(
+            f'{model_dir}/checkpoint-{step}'
+        )
         model = model.merge_and_unload().to(torch.bfloat16)
         model.save_pretrained(model_dir)
         
-        
-        
-        sampling_params = SamplingParams(temperature=0.6, top_p=0.9)
+        sampling_params = SamplingParams(temperature=0.6, top_p=0.9, max_tokens=256)
         llm = LLM(model=model_dir)
         outputs = llm.generate(prompts, sampling_params)
         answers = [o.outputs[0].text for o in outputs]
@@ -40,6 +41,8 @@ if __name__ == "__main__":
             reward_model = pickle.load(f)
         pred_zs = reward_model.predict(answer_embs).tolist()
         
-        diffs = [abs(a - b) for a, b in zip(pred_zs, gt_zs)]
+        reward = [-abs(a - b) for a, b in zip(pred_zs, gt_zs)]
+        rewards.append(reward)
         
+    
         
