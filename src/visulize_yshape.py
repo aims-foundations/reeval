@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from utils import DATASETS, plot_bar_question, plot_bar_testtaker
+from utils import DATASETS, plot_bar
 
 if __name__ == "__main__":
     plot_dir = f'../plot/others'
@@ -12,5 +12,5 @@ if __name__ == "__main__":
         testtaker_nums.append(y.shape[0])
         question_nums.append(y.shape[1])
     
-    plot_bar_question(DATASETS, question_nums, f"{plot_dir}/question_nums.png", r"Number of Questions")
-    plot_bar_testtaker(DATASETS, testtaker_nums, f"{plot_dir}/testtaker_nums.png", r"Number of Test Takers")
+    plot_bar(DATASETS, question_nums, f"{plot_dir}/question_nums.png", r"Number of Questions")
+    plot_bar(DATASETS, testtaker_nums, f"{plot_dir}/testtaker_nums.png", r"Number of Test Takers")
