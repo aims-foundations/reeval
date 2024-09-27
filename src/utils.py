@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
-import theano.tensor as tt
 
 class MLP(nn.Module):
     def __init__(self, input_dim):
@@ -65,9 +64,6 @@ DATASETS = list(DESCRIPTION_MAP.keys())
 
 def item_response_fn_1PL(z3, theta):
     return 1 / (1 + torch.exp(-(theta + z3)))
-
-def item_response_fn_1PL_pymc(z3, theta):
-    return 1 / (1 + tt.exp(-(theta + z3)))
 
 def perform_t_test(sample_1, sample_2, label=""):
     print(f"{label} T-test:")

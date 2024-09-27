@@ -10,9 +10,11 @@ from utils import (
     set_seed,
     perform_t_test,
     sample_mean_std, 
-    item_response_fn_1PL_pymc,
     plot_nonid_test
 )
+
+def item_response_fn_1PL_np(z3, theta):
+    return 1 / (1 + np.exp(-(theta + z3)))
 
 def inverse_item_response_fn_1PL(y,theta):
     y = torch.tensor(y, dtype=torch.float32)
@@ -58,7 +60,7 @@ def fit_theta_mcmc(
         answers_masked = answers[mask]
         
         theta_hat = pm.Normal("theta_hat", mu=0, sigma=1)
-        probs = item_response_fn_1PL_pymc(z_asked_masked, theta_hat)
+        probs = item_response_fn_1PL_np(z_asked_masked, theta_hat)
         obs = pm.Bernoulli("obs", p=probs, observed=answers_masked)
         trace = pm.sample(2000, tune=1000, return_inferencedata=False)
         
