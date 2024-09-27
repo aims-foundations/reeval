@@ -124,8 +124,8 @@ def main(
     for i, dataset in enumerate(tqdm(datasets, desc='Saving')):
         output_dir = f'../data/agg_calibration/{dataset}'
         os.makedirs(output_dir, exist_ok=True)
-        df_z_train_path=f'{output_dir}/z_train_{iteration}.csv',
-        df_z_test_path=f'{output_dir}/z_test_{iteration}.csv',
+        df_z_train_path=f'{output_dir}/z_train_{iteration}.csv'
+        df_z_test_path=f'{output_dir}/z_test_{iteration}.csv'
         
         df_z_train = pd.DataFrame({
             'index': train_indices[i],
@@ -139,9 +139,9 @@ def main(
         })
         df_z_test.to_csv(df_z_test_path, index=False)
         
-    df_theta_path=f'../data/agg_calibration/theta_{iteration}.csv',
+    df_theta_path=f'../data/agg_calibration/theta_{iteration}.csv'
     df_theta = pd.DataFrame({
-        'theta': theta_train.cpu().detach().numpy(),
+        'theta': theta_train.cpu().detach().numpy()
     })
     df_theta.to_csv(df_theta_path, index=False)
 
