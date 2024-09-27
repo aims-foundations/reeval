@@ -86,7 +86,7 @@ def agg_amor_calibration(
                 z_trains.append(z_train)
     
     z_tests = []
-    for i, dataset in enumerate(tqdm(datasets), desc='Testing'):
+    for i, dataset in enumerate(tqdm(datasets, desc='Testing')):
         test_index = test_indices[i]
         
         y_df = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
@@ -121,7 +121,7 @@ def main(
         model_id_path=model_id_path,
     )
     
-    for i, dataset in enumerate(tqdm(datasets), desc='Saving'):
+    for i, dataset in enumerate(tqdm(datasets, desc='Saving')):
         output_dir = f'../data/agg_calibration/{dataset}'
         os.makedirs(output_dir, exist_ok=True)
         df_z_train_path=f'{output_dir}/z_train_{iteration}.csv',

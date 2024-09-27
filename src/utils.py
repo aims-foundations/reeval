@@ -2,8 +2,8 @@ import pandas as pd
 import torch
 import numpy as np
 import random
-import warnings
 from scipy.stats import ttest_ind
+import warnings
 from embed_text_package.embed_text import Embedder
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
+import jax.numpy as jnp
 
 class MLP(nn.Module):
     def __init__(self, input_dim):
@@ -64,7 +65,37 @@ DATASETS = list(DESCRIPTION_MAP.keys())
 
 def item_response_fn_1PL(z3, theta):
     return 1 / (1 + torch.exp(-(theta + z3)))
-    
+
+def item_response_fn_1PL_jnp(z3, theta):
+    return 1 / (1 + jnp.exp(-(theta + z3)))
+
+def perform_t_test(sample_1, sample_2, label=""):
+    print(f"{label} T-test:")
+    print(f"Null Hypothesis (H0): The means of the two samples are equal.")
+    print(f"Alternative Hypothesis (H1): The means of the two samples are not equal.")
+    t_stat, p_value = ttest_ind(sample_1, sample_2)
+    print(f"t_stat = {t_stat}, p_value = {p_value}")
+    if p_value < 0.05:
+        print(f"Reject the null hypothesis for {label}.")
+        tag = True
+    else:
+        print(f"Fail to reject the null hypothesis for {label}.")
+        tag = False
+    return tag, t_stat, p_value
+
+def sample_mean_std(data: np.array):
+    masked_data = data[data != -1]
+    mean = np.mean(masked_data)
+    sample_means = []
+    for _ in range(100):
+        indices = np.random.choice(
+            len(masked_data), int(0.8 * masked_data.shape[0]), replace=False
+        )
+        sample_mean = np.mean(masked_data[indices])
+        sample_means.append(sample_mean)
+    sample_std = np.std(sample_means)
+    return mean, sample_std
+
 def set_seed(seed):
     random.seed(seed)
     # torch.backends.cudnn.deterministic=True
@@ -94,34 +125,7 @@ def get_embed(
         dataloader, model_name, cols_to_be_embded
     )
     return emb['text']
-
-def sample_mean_std(data: np.array):
-    masked_data = data[data != -1]
-    mean = np.mean(masked_data)
-    sample_means = []
-    for _ in range(100):
-        indices = np.random.choice(
-            len(masked_data), int(0.8 * masked_data.shape[0]), replace=False
-        )
-        sample_mean = np.mean(masked_data[indices])
-        sample_means.append(sample_mean)
-    sample_std = np.std(sample_means)
-    return mean, sample_std
     
-def perform_t_test(sample_1, sample_2, label=""):
-    print(f"{label} T-test:")
-    print(f"Null Hypothesis (H0): The means of the two samples are equal.")
-    print(f"Alternative Hypothesis (H1): The means of the two samples are not equal.")
-    t_stat, p_value = ttest_ind(sample_1, sample_2)
-    print(f"t_stat = {t_stat}, p_value = {p_value}")
-    if p_value < 0.05:
-        print(f"Reject the null hypothesis for {label}.")
-        tag = True
-    else:
-        print(f"Fail to reject the null hypothesis for {label}.")
-        tag = False
-    return tag, t_stat, p_value
-
 def goodness_of_fit_1PL(
     z: torch.Tensor,
     theta: torch.Tensor,
@@ -193,9 +197,9 @@ def goodness_of_fit_1PL_plot(
     
     return mean_diff, std_diff
 
-def get_theta_ctt(
+def theta_corr_ctt(
     theta: np.array,
-    y: np.array
+    y: np.array,
 ):
     assert y.shape[0] == theta.shape[0], f'{y.shape[1]} != {theta.shape[0]}'
     ctt_scores = []
@@ -212,13 +216,6 @@ def get_theta_ctt(
     mask = ~np.isnan(ctt_scores)
     theta_masked, ctt_scores_masked = theta[mask], ctt_scores[mask]
     
-    return theta_masked, ctt_scores_masked
-
-def theta_corr_ctt(
-    theta: np.array,
-    y: np.array,
-):
-    theta_masked, ctt_scores_masked = get_theta_ctt(theta, y)
     if np.unique(ctt_scores_masked).size <= 3:
         warnings.warn(f"ctt_scores_masked has little value: {ctt_scores_masked}", UserWarning)
     corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
@@ -374,6 +371,29 @@ def amorz_corr_nonamorz(
     z_corr = np.corrcoef(z_amor, z_nonamor)[0, 1]
     return z_corr
 
+def plot_nonid_test(
+    theta_dumb_samples,
+    theta_smart_samples,
+    z_easy,
+    z_hard,
+    plot_path
+):
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.hist(theta_dumb_samples, bins=30, density=True, alpha=0.4)
+    plt.hist(theta_smart_samples, bins=30, density=True, alpha=0.4)
+    plt.xlabel(r'$\theta$', fontsize=25)
+    plt.tick_params(axis='both', labelsize=16)
+
+    plt.subplot(1, 2, 2)
+    plt.hist(z_easy, bins=30, density=True, alpha=0.4)
+    plt.hist(z_hard, bins=30, density=True, alpha=0.4)
+    plt.xlabel(r'$z$')
+    plt.xlabel(r'$z$', fontsize=25)
+    plt.tick_params(axis='both', labelsize=16)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
 def plot_bar(
     datasets,
     nums,
@@ -383,7 +403,7 @@ def plot_bar(
 ):
     sorted_by_nums = sorted(zip(datasets, nums), key=lambda x: x[1])
     sorted_datasets, sorted_nums = zip(*sorted_by_nums)
-    plt.figure(figsize=(18, 25))
+    plt.figure(figsize=(25, 18))
     bars = plt.bar(sorted_datasets, sorted_nums)
     plt.xticks(rotation=30, ha='right', fontsize=35)
     plt.tick_params(axis='both', labelsize=35)

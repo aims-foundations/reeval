@@ -31,6 +31,9 @@ def nonamor_calibration(
     
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
+        # normalize z to have mean 0 and std 1
+        z_hat.data = (z_hat - z_hat.mean()) / z_hat.std()
+        
         theta_hat_matrix = theta_hat.unsqueeze(1)
         z_hat_matrix = z_hat.unsqueeze(0)
         prob_matrix = item_response_fn_1PL(z_hat_matrix, theta_hat_matrix)
