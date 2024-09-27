@@ -430,8 +430,14 @@ def plot_hist(
     plt.hist(data, bins=30, density=True, alpha=0.4)
     mean_value = np.mean(data)
     plt.axvline(mean_value, color='r', linestyle='--', linewidth=2)
-    plt.text(mean_value, plt.gca().get_ylim()[1] * 0.9, f'{mean_value:.2f}', 
-             color='r', fontsize=16, ha='center')
+    plt.text(
+        mean_value, 
+        plt.gca().get_ylim()[1] * 0.9, 
+        f'{mean_value:.2f}', 
+        color='r', 
+        fontsize=16, 
+        ha='center'
+    )
     plt.ylabel(ylabel, fontsize=25)
     plt.tick_params(axis='both', labelsize=16)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
