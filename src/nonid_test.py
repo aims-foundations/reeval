@@ -23,7 +23,7 @@ def sample_subsets(
     dumb_theta: torch.Tensor, 
     smart_theta: torch.Tensor, 
     subset_size: int, 
-    y_mean: float=0.7
+    y_mean: float=0.5
 ):
     z_sorted, original_indices = torch.sort(z)
     std_all = z_sorted.std().item()
