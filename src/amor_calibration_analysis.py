@@ -69,7 +69,6 @@ if __name__ == "__main__":
                     dataset=dataset,
                 )
                 theta_corr_helm_means.append(theta_corr_helm_mean)
-            print(theta_corr_helm_means)
             # z_corr_train_mean = amorz_corr_nonamorz(
             #     z_amor=z_train,
             #     z_nonamor=nonamor_z[train_indices],

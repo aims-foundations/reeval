@@ -18,10 +18,11 @@ if __name__ == "__main__":
     selection_prob = 0.8
     subset_size = 100
     
-    y = pd.read_csv(f'data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values[0]
-    theta = pd.read_csv(f'data/nonamor_calibration/{args.dataset}/nonamor_theta.csv')["theta"].values[0]
-    z = pd.read_csv(f'data/nonamor_calibration/{args.dataset}/nonamor_z.csv')["z"].values
-    z_sort_index = torch.argsort(torch.tensor(z, dtype=torch.float32))
+    y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values[0]
+    theta = pd.read_csv(f'../data/nonamor_calibration/{args.dataset}/nonamor_theta.csv')["theta"].values[0]
+    z = pd.read_csv(f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv')["z"].values
+    z = torch.tensor(z, dtype=torch.float32)
+    z_sort_index = torch.argsort(z)
 
     y = torch.tensor(y, dtype=torch.float32)
 
