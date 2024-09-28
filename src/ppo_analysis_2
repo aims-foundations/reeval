@@ -15,10 +15,13 @@ if __name__ == "__main__":
     
     test_dataset = load_dataset("stair-lab/airbench-ppo", split="train")
     prompts = test_dataset['text'][:5]
+    print(f"Prompts: {prompts}")
     gt_zs = [extract_score(p) for p in prompts]
+    print(f"Ground truth z: {gt_zs}")
     
     rewards = []
     for step in range(0, 100, 10):
+        print(f"Step {step}")
         model = AutoPeftModelForCausalLM.from_pretrained(
             f'{model_dir}/checkpoint-{step}'
         )
@@ -29,6 +32,7 @@ if __name__ == "__main__":
         llm = LLM(model=model_dir)
         outputs = llm.generate(prompts, sampling_params)
         answers = [o.outputs[0].text for o in outputs]
+        print(f"Answers[0]: {answers[0]}")
         answer_df = pd.DataFrame(answers, columns=["text"])
         answer_dataset = Dataset.from_pandas(answer_df)
         
@@ -40,6 +44,7 @@ if __name__ == "__main__":
         with open('../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
             reward_model = pickle.load(f)
         pred_zs = reward_model.predict(answer_embs).tolist()
+        print(f"Predicted z: {pred_zs}")
         
         reward = [-abs(a - b) for a, b in zip(pred_zs, gt_zs)]
         rewards.append(reward)

@@ -21,7 +21,7 @@ if __name__ == "__main__":
     prompts = test_dataset['text']
     gt_zs = [extract_score(p) for p in prompts]
     
-    sampling_params = SamplingParams(temperature=0.6, top_p=0.9)
+    sampling_params = SamplingParams(temperature=0.6, top_p=0.9, max_tokens=256)
     llm = LLM(model=model_dir)
     outputs = llm.generate(prompts, sampling_params)
     answers = [o.outputs[0].text for o in outputs]
