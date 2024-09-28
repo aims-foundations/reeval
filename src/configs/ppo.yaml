@@ -2,7 +2,7 @@
 model_name_or_path: ../data/sft
 use_peft: true
 lora_alpha: 16
-lora_r: 8
+lora_r: 64
 lora_dropout: 0.1
 output_dir: ../data/ppo/llama3-ppo-test
 
@@ -12,7 +12,7 @@ discount_reward_factor: 0.99
 
 # Dataset
 query_dataset: stair-lab/airbench-ppo-test
-ppo_epochs: 100000
+ppo_epochs: 1
 mini_batch_size: 2
 batch_size: 2
 
