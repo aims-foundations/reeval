@@ -65,5 +65,4 @@ if __name__ == "__main__":
     plt.hlines(y.mean().item()*6-3, 0, 4000, color='blue', linestyle='dashed', linewidth=4)
 
     plt.ylim(-4, 4)
-    plt.legend()
     plt.savefig(f"{plot_dir}/hard_easy_test_{args.dataset}.png", dpi=300, bbox_inches='tight')
