@@ -84,14 +84,16 @@ if __name__ == "__main__":
         # dataset_gof_train_means.append(np.mean(gof_train_means))
         # dataset_gof_test_means.append(np.mean(gof_test_means))
         # dataset_theta_corr_ctt_means.append(np.mean(theta_corr_ctt_means))
-        dataset_theta_corr_helm_means.append(np.mean(theta_corr_helm_means))
+        if dataset != "airbench":
+            dataset_theta_corr_helm_means.append(np.mean(theta_corr_helm_means))
         # dataset_z_corr_train_means.append(np.mean(z_corr_train_means))
         # dataset_z_corr_test_means.append(np.mean(z_corr_test_means))
         
         # dataset_gof_train_stds.append(np.std(gof_train_means))
         # dataset_gof_test_stds.append(np.std(gof_test_means))
         # dataset_theta_corr_ctt_stds.append(np.std(theta_corr_ctt_means))
-        dataset_theta_corr_helm_stds.append(np.std(theta_corr_helm_means))
+        if dataset != "airbench":
+            dataset_theta_corr_helm_stds.append(np.std(theta_corr_helm_means))
         # dataset_z_corr_train_stds.append(np.std(z_corr_train_means))
         # dataset_z_corr_test_stds.append(np.std(z_corr_test_means))
     
