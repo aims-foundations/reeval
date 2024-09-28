@@ -99,17 +99,17 @@ if __name__ == "__main__":
     })
     plugin_gof_df_test.to_csv(f'{plot_dir}/nonamor4plugin_gof_test.csv', index=False)
     
-    # amor_gof_df_train = pd.DataFrame({
-    #     'datasets': DATASETS,
-    #     'gof_means': amor_gof_train_means,
-    # })
-    # amor_gof_df_train.to_csv(f'{plot_dir}/nonamor4amor_gof_train.csv', index=False)
+    amor_gof_df_train = pd.DataFrame({
+        'datasets': DATASETS,
+        'gof_means': amor_gof_train_means,
+    })
+    amor_gof_df_train.to_csv(f'{plot_dir}/nonamor4amor_gof_train.csv', index=False)
     
-    # amor_gof_df_test = pd.DataFrame({
-    #     'datasets': DATASETS,
-    #     'gof_means': amor_gof_test_means,
-    # })
-    # amor_gof_df_test.to_csv(f'{plot_dir}/nonamor4amor_gof_test.csv', index=False)
+    amor_gof_df_test = pd.DataFrame({
+        'datasets': DATASETS,
+        'gof_means': amor_gof_test_means,
+    })
+    amor_gof_df_test.to_csv(f'{plot_dir}/nonamor4amor_gof_test.csv', index=False)
     
     # gof_df = pd.DataFrame({
     #     'datasets': DATASETS,
