@@ -7,7 +7,7 @@ from utils import (
     theta_corr_ctt_plot, 
     theta_corr_helm_plot,
     error_bar_plot_single,
-    DATASETS
+    DATASETS,
 )
 
 if __name__ == "__main__":
@@ -49,7 +49,8 @@ if __name__ == "__main__":
             )
             corr_helm_means.append(corr_helm_mean)
             corr_helm_stds.append(corr_helm_std)
-    
+
+    # TODO: train and test gof
     gof_df = pd.DataFrame({
         'datasets': DATASETS,
         'gof_means': gof_means,
@@ -58,7 +59,7 @@ if __name__ == "__main__":
     gof_df.to_csv(f'{plot_dir}/nonamor_calibration_gof.csv', index=False)
     
     ctt_df = pd.DataFrame({
-        'datasets': DATASETS,
+        'datasets': [d for d in DATASETS if d != "airbench"],
         'corr_ctt_means': corr_ctt_means,
         'corr_ctt_stds': corr_ctt_stds
     })

@@ -370,6 +370,44 @@ def amorz_corr_nonamorz(
     z_corr = np.corrcoef(z_amor, z_nonamor)[0, 1]
     return z_corr
 
+def plot_corr(
+    data1,
+    data2,
+    plot_path,
+    xlabel,
+    ylabel,
+):
+    corr = np.corrcoef(data1, data2)[0, 1]
+    plt.figure(figsize=(6, 6))
+    plt.scatter(data1, data2)
+    plt.xlabel(xlabel, fontsize=25)
+    plt.ylabel(ylabel, fontsize=25)
+    plt.title(f'Correlation: {corr:.2f}', fontsize=25)
+    plt.tick_params(axis='both', labelsize=16)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
+def plot_corr_double(
+    data1_train,
+    data1_test,
+    data2_train,
+    data2_test,
+    plot_path,
+    xlabel,
+    ylabel,
+):
+    corr_train = np.corrcoef(data1_train, data2_train)[0, 1]
+    corr_test = np.corrcoef(data1_test, data2_test)[0, 1]
+    plt.figure(figsize=(6, 6))
+    plt.scatter(data1_train, data2_train)
+    plt.scatter(data1_test, data2_test)
+    plt.xlabel(xlabel, fontsize=25)
+    plt.ylabel(ylabel, fontsize=25)
+    plt.title(f'Train Correlation: {corr_train:.2f}, Test Correlation: {corr_test:.2f}', fontsize=25)
+    plt.tick_params(axis='both', labelsize=16)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
 def plot_nonid_test(
     theta_dumb_samples,
     theta_smart_samples,

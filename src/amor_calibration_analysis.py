@@ -118,7 +118,7 @@ if __name__ == "__main__":
     ctt_df.to_csv(f'{plot_dir}/amor_calibration_corr_ctt.csv', index=False)
     
     helm_df = pd.DataFrame({
-        'datasets': DATASETS,
+        'datasets': [d for d in DATASETS if d != "airbench"],
         'corr_helm_means': dataset_theta_corr_helm_means,
         'corr_helm_stds': dataset_theta_corr_helm_stds
     })
