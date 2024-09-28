@@ -33,7 +33,7 @@ if __name__ == "__main__":
         theta_corr_helm_means = []
         z_corr_train_means, z_corr_test_means = [], []
         
-        for i in range(1):
+        for i in range(10):
             y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
             theta_train = pd.read_csv(f'{input_dir}/{dataset}/theta_{i}.csv')['theta'].values
             df_z_train = pd.read_csv(f'{input_dir}/{dataset}/z_train_{i}.csv')

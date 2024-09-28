@@ -17,13 +17,14 @@ if __name__ == "__main__":
     dataset_test_mse_means, dataset_test_mse_stds = [], []
     dataset_baseline_train_mse_means, dataset_baseline_train_mse_stds = [], []
     dataset_baseline_test_mse_means, dataset_baseline_test_mse_stds = [], []
+    single_gof_train_means, single_gof_test_means = [], []
     
     for dataset in tqdm(DATASETS):
         gof_train_means, gof_test_means = [], []
         train_mses, test_mses = [], []
         baseline_train_mses, baseline_test_mses = [], []
         
-        for i in range(10):
+        for i in range(0):
             y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
             df_train = pd.read_csv(f'{input_dir}/{dataset}/train_{i}.csv')
             train_indices = df_train['index'].values
@@ -66,44 +67,60 @@ if __name__ == "__main__":
             # baseline_train_mses.append(baseline_train_mse)
             # baseline_test_mses.append(baseline_test_mse)
             
-        dataset_gof_train_means.append(np.mean(gof_train_means))
-        dataset_gof_test_means.append(np.mean(gof_test_means))
+            if i == 0:
+                single_gof_train_means.append(gof_train_mean)
+                single_gof_test_means.append(gof_test_mean)
+                
+        # dataset_gof_train_means.append(np.mean(gof_train_means))
+        # dataset_gof_test_means.append(np.mean(gof_test_means))
         # dataset_train_mse_means.append(np.mean(train_mses))
         # dataset_test_mse_means.append(np.mean(test_mses))
         # dataset_baseline_train_mse_means.append(np.mean(baseline_train_mses))
         # dataset_baseline_test_mse_means.append(np.mean(baseline_test_mses))
         
-        dataset_gof_train_stds.append(np.std(gof_train_means))
-        dataset_gof_test_stds.append(np.std(gof_test_means))
+        # dataset_gof_train_stds.append(np.std(gof_train_means))
+        # dataset_gof_test_stds.append(np.std(gof_test_means))
         # dataset_train_mse_stds.append(np.std(train_mses))
         # dataset_test_mse_stds.append(np.std(test_mses))
         # dataset_baseline_train_mse_stds.append(np.std(baseline_train_mses))
         # dataset_baseline_test_mse_stds.append(np.std(baseline_test_mses))
       
-    gof_df_train = pd.DataFrame({
+    single_df_gof_train = pd.DataFrame({
         'datasets': DATASETS,
-        'gof_means': dataset_gof_train_means,
-        'gof_stds': dataset_gof_train_stds
+        'gof_means': single_gof_train_means,
     })
-    gof_df_train.to_csv(f'{plot_dir}/plugin_regression_gof_train.csv', index=False)
+    single_df_gof_train.to_csv(f'{plot_dir}/plugin_single_gof_train.csv', index=False)
     
-    gof_df_test = pd.DataFrame({
+    single_df_gof_test = pd.DataFrame({
         'datasets': DATASETS,
-        'gof_means': dataset_gof_test_means,
-        'gof_stds': dataset_gof_test_stds
+        'gof_means': single_gof_test_means,
     })
-    gof_df_test.to_csv(f'{plot_dir}/plugin_regression_gof_test.csv', index=False)
+    single_df_gof_test.to_csv(f'{plot_dir}/plugin_single_gof_test.csv', index=False)
     
-    error_bar_plot_double(
-        datasets=DATASETS, 
-        means_train=dataset_gof_train_means,
-        stds_train=dataset_gof_train_stds,
-        means_test=dataset_gof_test_means,
-        stds_test=dataset_gof_test_stds,
-        plot_path=f"{plot_dir}/plugin_regression_summarize_gof",
-        xlabel=r"Goodness of Fit",
-        xlim_upper=0.5,
-    )   
+    # gof_df_train = pd.DataFrame({
+    #     'datasets': DATASETS,
+    #     'gof_means': dataset_gof_train_means,
+    #     'gof_stds': dataset_gof_train_stds
+    # })
+    # gof_df_train.to_csv(f'{plot_dir}/plugin_regression_gof_train.csv', index=False)
+    
+    # gof_df_test = pd.DataFrame({
+    #     'datasets': DATASETS,
+    #     'gof_means': dataset_gof_test_means,
+    #     'gof_stds': dataset_gof_test_stds
+    # })
+    # gof_df_test.to_csv(f'{plot_dir}/plugin_regression_gof_test.csv', index=False)
+    
+    # error_bar_plot_double(
+    #     datasets=DATASETS, 
+    #     means_train=dataset_gof_train_means,
+    #     stds_train=dataset_gof_train_stds,
+    #     means_test=dataset_gof_test_means,
+    #     stds_test=dataset_gof_test_stds,
+    #     plot_path=f"{plot_dir}/plugin_regression_summarize_gof",
+    #     xlabel=r"Goodness of Fit",
+    #     xlim_upper=0.5,
+    # )   
     
     # error_bar_plot_double(
     #     datasets=DATASETS, 
