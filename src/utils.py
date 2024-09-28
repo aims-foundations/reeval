@@ -380,7 +380,7 @@ def plot_corr(
 ):
     corr = np.corrcoef(data1, data2)[0, 1]
     plt.figure(figsize=(6, 6))
-    plt.scatter(data1, data2)
+    plt.scatter(data1, data2, color='blue')
     plt.xlabel(xlabel, fontsize=25)
     plt.ylabel(ylabel, fontsize=25)
     plt.title(
@@ -414,7 +414,7 @@ def plot_corr_double(
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.title(
-        r'Goodness of Fit Correlation. $\rho_\mathrm{{train}}$ = {:.2f}, $\rho_\mathrm{{test}}$ = {:.2f}'.format(corr_train, corr_test),
+        r'Goodness of Fit. $\rho_\mathrm{{train}}$ = {:.2f}, $\rho_\mathrm{{test}}$ = {:.2f}'.format(corr_train, corr_test),
         fontsize=25
     )
     plt.tick_params(axis='both', labelsize=16)
