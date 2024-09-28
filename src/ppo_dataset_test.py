@@ -65,5 +65,6 @@ if __name__ == "__main__":
     train_dataset = Dataset.from_pandas(push_df)
     dataset_dict = DatasetDict({
         "train": train_dataset,
+        "test": train_dataset
     })
     dataset_dict.push_to_hub(f'stair-lab/{args.dataset}-ppo-test')
