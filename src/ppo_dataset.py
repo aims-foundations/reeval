@@ -79,4 +79,4 @@ if __name__ == "__main__":
         "train": train_dataset,
         "test": test_dataset
     })
-    dataset_dict.push_to_hub(f'stair-lab/{args.dataset}-{args.task}')
+    dataset_dict.push_to_hub(f'stair-lab/{args.dataset}-ppo')
