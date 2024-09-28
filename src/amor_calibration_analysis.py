@@ -64,6 +64,7 @@ if __name__ == "__main__":
             # theta_corr_ctt_means.append(theta_corr_ctt_mean)
             
             if dataset != "airbench":
+                print("????")
                 theta_corr_helm_mean, _, _ = theta_corr_helm(
                     theta=theta_train,
                     dataset=dataset,
