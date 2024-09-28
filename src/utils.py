@@ -407,7 +407,10 @@ def plot_corr_double(
     plt.ylabel(ylabel, fontsize=25)
     plt.xlim(0, 1)
     plt.ylim(0, 1)
-    plt.title(f'Goodness of Fit Correlation. \rho_{train} = {corr_train:.2f}, \rho_{test} = {corr_test:.2f}', fontsize=25)
+    plt.title(
+        r'Goodness of Fit Correlation. $\rho_{train}$ = {:.2f}, $\rho_{test}$ = {:.2f}'.format(corr_train, corr_test),
+        fontsize=25
+    )
     plt.tick_params(axis='both', labelsize=16)
     plt.legend()
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
