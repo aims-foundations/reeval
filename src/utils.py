@@ -451,7 +451,7 @@ def plot_rewards(rewards, plot_path):
     plt.ylabel(r'Reward', fontsize=25)
     plt.tick_params(axis='both', labelsize=16)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    plt.show()
+    plt.close()
     
 def plot_loss(
     losses,
