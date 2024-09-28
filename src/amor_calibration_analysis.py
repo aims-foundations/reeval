@@ -70,31 +70,31 @@ if __name__ == "__main__":
                 )
                 theta_corr_helm_means.append(theta_corr_helm_mean)
             
-            z_corr_train_mean = amorz_corr_nonamorz(
-                z_amor=z_train,
-                z_nonamor=nonamor_z[train_indices],
-            )
-            z_corr_train_means.append(z_corr_train_mean)
+            # z_corr_train_mean = amorz_corr_nonamorz(
+            #     z_amor=z_train,
+            #     z_nonamor=nonamor_z[train_indices],
+            # )
+            # z_corr_train_means.append(z_corr_train_mean)
             
-            z_corr_test_mean = amorz_corr_nonamorz(
-                z_amor=z_test,
-                z_nonamor=nonamor_z[test_indices],
-            )
-            z_corr_test_means.append(z_corr_test_mean)
+            # z_corr_test_mean = amorz_corr_nonamorz(
+            #     z_amor=z_test,
+            #     z_nonamor=nonamor_z[test_indices],
+            # )
+            # z_corr_test_means.append(z_corr_test_mean)
 
         dataset_gof_train_means.append(np.mean(gof_train_means))
         dataset_gof_test_means.append(np.mean(gof_test_means))
         dataset_theta_corr_ctt_means.append(np.mean(theta_corr_ctt_means))
         dataset_theta_corr_helm_means.append(np.mean(theta_corr_helm_means))
-        dataset_z_corr_train_means.append(np.mean(z_corr_train_means))
-        dataset_z_corr_test_means.append(np.mean(z_corr_test_means))
+        # dataset_z_corr_train_means.append(np.mean(z_corr_train_means))
+        # dataset_z_corr_test_means.append(np.mean(z_corr_test_means))
         
         dataset_gof_train_stds.append(np.std(gof_train_means))
         dataset_gof_test_stds.append(np.std(gof_test_means))
         dataset_theta_corr_ctt_stds.append(np.std(theta_corr_ctt_means))
         dataset_theta_corr_helm_stds.append(np.std(theta_corr_helm_means))
-        dataset_z_corr_train_stds.append(np.std(z_corr_train_means))
-        dataset_z_corr_test_stds.append(np.std(z_corr_test_means))
+        # dataset_z_corr_train_stds.append(np.std(z_corr_train_means))
+        # dataset_z_corr_test_stds.append(np.std(z_corr_test_means))
     
     gof_df_train = pd.DataFrame({
         'datasets': DATASETS,
@@ -151,13 +151,13 @@ if __name__ == "__main__":
         xlabel=r"$\theta$ correlation with HELM",
     )
     
-    error_bar_plot_double(
-        datasets=DATASETS, 
-        means_train=dataset_z_corr_train_means,
-        stds_train=dataset_z_corr_train_stds,
-        means_test=dataset_z_corr_test_means,
-        stds_test=dataset_z_corr_test_stds,
-        plot_path=f"{plot_dir}/amor_calibration_summarize_z_corr",
-        xlabel=r"correlation of $z$",
-    )   
+    # error_bar_plot_double(
+    #     datasets=DATASETS, 
+    #     means_train=dataset_z_corr_train_means,
+    #     stds_train=dataset_z_corr_train_stds,
+    #     means_test=dataset_z_corr_test_means,
+    #     stds_test=dataset_z_corr_test_stds,
+    #     plot_path=f"{plot_dir}/amor_calibration_summarize_z_corr",
+    #     xlabel=r"correlation of $z$",
+    # )   
     
