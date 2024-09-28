@@ -25,7 +25,7 @@ if __name__ == "__main__":
     dataset_z_corr_train_means, dataset_z_corr_train_stds = [], []
     dataset_z_corr_test_means, dataset_z_corr_test_stds = [], []
     
-    for dataset in tqdm(DATASETS):
+    for dataset in tqdm(DATASETS[:3]):
         print(f"Processing {dataset}")
         gof_train_means, gof_test_means = [], []
         theta_corr_ctt_means = []
@@ -116,6 +116,9 @@ if __name__ == "__main__":
     # })
     # ctt_df.to_csv(f'{plot_dir}/amor_calibration_corr_ctt.csv', index=False)
     
+    print(len([d for d in DATASETS if d != "airbench"]))
+    print(len(dataset_theta_corr_helm_means))
+    print(len(dataset_theta_corr_helm_stds))
     helm_df = pd.DataFrame({
         'datasets': [d for d in DATASETS if d != "airbench"],
         'corr_helm_means': dataset_theta_corr_helm_means,
