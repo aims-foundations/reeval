@@ -60,15 +60,11 @@ if __name__ == "__main__":
             """Hence a model is more likely to fail the questions. """
             """Output only the question and nothing else. """
             """Difficulty: %s. Question: """
-        )
+            )
         },
         {"role": "assistant", "content": """%s"""},
     ]
-    
     template = tokenizer.apply_chat_template(sft_chat, tokenize=False, add_generation_prompt=False)
-    
-    mean_pred_z = np.mean(np.array(pred_zs))
-    std_pred_z = np.std(np.array(pred_zs))
     
     new_texts = []
     for i in range(len(dataset)):
