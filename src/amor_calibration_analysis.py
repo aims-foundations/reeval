@@ -24,8 +24,7 @@ if __name__ == "__main__":
     dataset_theta_corr_helm_means, dataset_theta_corr_helm_stds = [], []
     dataset_z_corr_train_means, dataset_z_corr_train_stds = [], []
     dataset_z_corr_test_means, dataset_z_corr_test_stds = [], []
-    single_gof_train_means = []
-    
+    single_gof_train_means, single_gof_test_means = []
     
     for dataset in tqdm(DATASETS):
         print(f"Processing {dataset}")
@@ -34,7 +33,7 @@ if __name__ == "__main__":
         theta_corr_helm_means = []
         z_corr_train_means, z_corr_test_means = [], []
         
-        for i in range(10):
+        for i in range(1):
             y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
             theta_train = pd.read_csv(f'{input_dir}/{dataset}/theta_{i}.csv')['theta'].values
             df_z_train = pd.read_csv(f'{input_dir}/{dataset}/z_train_{i}.csv')
@@ -84,6 +83,10 @@ if __name__ == "__main__":
             # )
             # z_corr_test_means.append(z_corr_test_mean)
 
+            if i == 0:
+                single_gof_train_means.append(gof_train_mean)
+                single_gof_test_means.append(gof_test_mean)
+                
         # dataset_gof_train_means.append(np.mean(gof_train_means))
         # dataset_gof_test_means.append(np.mean(gof_test_means))
         # dataset_theta_corr_ctt_means.append(np.mean(theta_corr_ctt_means))
@@ -99,6 +102,18 @@ if __name__ == "__main__":
         #     dataset_theta_corr_helm_stds.append(np.std(theta_corr_helm_means))
         # dataset_z_corr_train_stds.append(np.std(z_corr_train_means))
         # dataset_z_corr_test_stds.append(np.std(z_corr_test_means))
+    
+    single_df_gof_train = pd.DataFrame({
+        'datasets': DATASETS,
+        'gof_means': single_gof_train_means,
+    })
+    single_df_gof_train.to_csv(f'{plot_dir}/amor_single_gof_train.csv', index=False)
+    
+    single_df_gof_test = pd.DataFrame({
+        'datasets': DATASETS,
+        'gof_means': single_gof_test_means,
+    })
+    single_df_gof_test.to_csv(f'{plot_dir}/amor_single_gof_test.csv', index=False)
     
     # gof_df_train = pd.DataFrame({
     #     'datasets': DATASETS,
