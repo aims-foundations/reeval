@@ -50,6 +50,27 @@ if __name__ == "__main__":
             corr_helm_means.append(corr_helm_mean)
             corr_helm_stds.append(corr_helm_std)
     
+    gof_df = pd.DataFrame({
+        'datasets': DATASETS,
+        'gof_means': gof_means,
+        'gof_stds': gof_stds
+    })
+    gof_df.to_csv(f'{plot_dir}/nonamor_calibration_gof.csv', index=False)
+    
+    ctt_df = pd.DataFrame({
+        'datasets': DATASETS,
+        'corr_ctt_means': corr_ctt_means,
+        'corr_ctt_stds': corr_ctt_stds
+    })
+    ctt_df.to_csv(f'{plot_dir}/nonamor_calibration_corr.csv', index=False)
+    
+    helm_df = pd.DataFrame({
+        'datasets': DATASETS,
+        'corr_helm_means': corr_helm_means,
+        'corr_helm_stds': corr_helm_stds
+    })
+    helm_df.to_csv(f'{plot_dir}/nonamor_calibration_corr.csv', index=False)
+
     error_bar_plot_single(
         datasets=DATASETS,
         means=gof_means,

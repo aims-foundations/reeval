@@ -49,37 +49,51 @@ if __name__ == "__main__":
             )
             gof_test_means.append(gof_test_mean)
             
-            train_mse = mean_squared_error(z_train_true, z_train_pred)
-            test_mse = mean_squared_error(z_test_true, z_test_pred)
-            train_mses.append(train_mse)
-            test_mses.append(test_mse)
+            # train_mse = mean_squared_error(z_train_true, z_train_pred)
+            # test_mse = mean_squared_error(z_test_true, z_test_pred)
+            # train_mses.append(train_mse)
+            # test_mses.append(test_mse)
             
-            z_baseline_pred = np.mean(z_train_true)
-            baseline_train_mse = mean_squared_error(
-                z_train_true,
-                np.repeat(z_baseline_pred, len(z_train_true))
-            )
-            baseline_test_mse = mean_squared_error(
-                z_test_true,
-                np.repeat(z_baseline_pred, len(z_test_true))
-            )
-            baseline_train_mses.append(baseline_train_mse)
-            baseline_test_mses.append(baseline_test_mse)
+            # z_baseline_pred = np.mean(z_train_true)
+            # baseline_train_mse = mean_squared_error(
+            #     z_train_true,
+            #     np.repeat(z_baseline_pred, len(z_train_true))
+            # )
+            # baseline_test_mse = mean_squared_error(
+            #     z_test_true,
+            #     np.repeat(z_baseline_pred, len(z_test_true))
+            # )
+            # baseline_train_mses.append(baseline_train_mse)
+            # baseline_test_mses.append(baseline_test_mse)
             
         dataset_gof_train_means.append(np.mean(gof_train_means))
         dataset_gof_test_means.append(np.mean(gof_test_means))
-        dataset_train_mse_means.append(np.mean(train_mses))
-        dataset_test_mse_means.append(np.mean(test_mses))
-        dataset_baseline_train_mse_means.append(np.mean(baseline_train_mses))
-        dataset_baseline_test_mse_means.append(np.mean(baseline_test_mses))
+        # dataset_train_mse_means.append(np.mean(train_mses))
+        # dataset_test_mse_means.append(np.mean(test_mses))
+        # dataset_baseline_train_mse_means.append(np.mean(baseline_train_mses))
+        # dataset_baseline_test_mse_means.append(np.mean(baseline_test_mses))
         
         dataset_gof_train_stds.append(np.std(gof_train_means))
         dataset_gof_test_stds.append(np.std(gof_test_means))
-        dataset_train_mse_stds.append(np.std(train_mses))
-        dataset_test_mse_stds.append(np.std(test_mses))
-        dataset_baseline_train_mse_stds.append(np.std(baseline_train_mses))
-        dataset_baseline_test_mse_stds.append(np.std(baseline_test_mses))
-        
+        # dataset_train_mse_stds.append(np.std(train_mses))
+        # dataset_test_mse_stds.append(np.std(test_mses))
+        # dataset_baseline_train_mse_stds.append(np.std(baseline_train_mses))
+        # dataset_baseline_test_mse_stds.append(np.std(baseline_test_mses))
+      
+    gof_df_train = pd.DataFrame({
+        'datasets': DATASETS,
+        'gof_means': dataset_gof_train_means,
+        'gof_stds': dataset_gof_train_stds
+    })
+    gof_df_train.to_csv(f'{plot_dir}/plugin_regression_gof_train.csv', index=False)
+    
+    gof_df_test = pd.DataFrame({
+        'datasets': DATASETS,
+        'gof_means': dataset_gof_test_means,
+        'gof_stds': dataset_gof_test_stds
+    })
+    gof_df_test.to_csv(f'{plot_dir}/plugin_regression_gof_test.csv', index=False)
+    
     error_bar_plot_double(
         datasets=DATASETS, 
         means_train=dataset_gof_train_means,
@@ -91,25 +105,25 @@ if __name__ == "__main__":
         xlim_upper=0.5,
     )   
     
-    error_bar_plot_double(
-        datasets=DATASETS, 
-        means_train=dataset_train_mse_means,
-        stds_train=dataset_train_mse_stds,
-        means_test=dataset_test_mse_means,
-        stds_test=dataset_test_mse_stds,
-        plot_path=f"{plot_dir}/plugin_regression_summarize_mse",
-        xlabel=r"MSE",
-        xlim_upper=10,
-    )
+    # error_bar_plot_double(
+    #     datasets=DATASETS, 
+    #     means_train=dataset_train_mse_means,
+    #     stds_train=dataset_train_mse_stds,
+    #     means_test=dataset_test_mse_means,
+    #     stds_test=dataset_test_mse_stds,
+    #     plot_path=f"{plot_dir}/plugin_regression_summarize_mse",
+    #     xlabel=r"MSE",
+    #     xlim_upper=10,
+    # )
     
-    error_bar_plot_double(
-        datasets=DATASETS, 
-        means_train=dataset_baseline_train_mse_means,
-        stds_train=dataset_baseline_train_mse_stds,
-        means_test=dataset_baseline_test_mse_means,
-        stds_test=dataset_baseline_test_mse_stds,
-        plot_path=f"{plot_dir}/plugin_regression_summarize_baseline_mse",
-        xlabel=r"Baseline MSE",
-        xlim_upper=10,
-    )
+    # error_bar_plot_double(
+    #     datasets=DATASETS, 
+    #     means_train=dataset_baseline_train_mse_means,
+    #     stds_train=dataset_baseline_train_mse_stds,
+    #     means_test=dataset_baseline_test_mse_means,
+    #     stds_test=dataset_baseline_test_mse_stds,
+    #     plot_path=f"{plot_dir}/plugin_regression_summarize_baseline_mse",
+    #     xlabel=r"Baseline MSE",
+    #     xlim_upper=10,
+    # )
     

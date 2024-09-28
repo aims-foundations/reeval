@@ -151,7 +151,7 @@ def goodness_of_fit_1PL(
                 theta_mid = (bins[j] + bins[j + 1]) / 2
                 y_theoretical = item_response_fn_1PL(theta_mid, single_z).item()
 
-                diff = abs(y_empirical - y_theoretical)
+                diff = 1 - abs(y_empirical - y_theoretical)
                 diff_list.append(diff)
 
     diff_array = np.array(diff_list)
