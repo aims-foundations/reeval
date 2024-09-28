@@ -96,6 +96,34 @@ if __name__ == "__main__":
         dataset_z_corr_train_stds.append(np.std(z_corr_train_means))
         dataset_z_corr_test_stds.append(np.std(z_corr_test_means))
     
+    gof_df_train = pd.DataFrame({
+        'datasets': DATASETS,
+        'gof_means': dataset_gof_train_means,
+        'gof_stds': dataset_gof_train_stds
+    })
+    gof_df_train.to_csv(f'{plot_dir}/amor_calibration_gof_train.csv', index=False)
+    
+    gof_df_test = pd.DataFrame({
+        'datasets': DATASETS,
+        'gof_means': dataset_gof_test_means,
+        'gof_stds': dataset_gof_test_stds
+    })
+    gof_df_test.to_csv(f'{plot_dir}/amor_calibration_gof_test.csv', index=False)
+    
+    ctt_df = pd.DataFrame({
+        'datasets': DATASETS,
+        'corr_ctt_means': dataset_theta_corr_ctt_means,
+        'corr_ctt_stds': dataset_theta_corr_ctt_stds
+    })
+    ctt_df.to_csv(f'{plot_dir}/amor_calibration_corr_ctt.csv', index=False)
+    
+    helm_df = pd.DataFrame({
+        'datasets': DATASETS,
+        'corr_helm_means': dataset_theta_corr_helm_means,
+        'corr_helm_stds': dataset_theta_corr_helm_stds
+    })
+    helm_df.to_csv(f'{plot_dir}/amor_calibration_corr_helm.csv', index=False)
+    
     error_bar_plot_double(
         datasets=DATASETS, 
         means_train=dataset_gof_train_means,

@@ -62,14 +62,14 @@ if __name__ == "__main__":
         'corr_ctt_means': corr_ctt_means,
         'corr_ctt_stds': corr_ctt_stds
     })
-    ctt_df.to_csv(f'{plot_dir}/nonamor_calibration_corr.csv', index=False)
+    ctt_df.to_csv(f'{plot_dir}/nonamor_calibration_corr_ctt.csv', index=False)
     
     helm_df = pd.DataFrame({
         'datasets': DATASETS,
         'corr_helm_means': corr_helm_means,
         'corr_helm_stds': corr_helm_stds
     })
-    helm_df.to_csv(f'{plot_dir}/nonamor_calibration_corr.csv', index=False)
+    helm_df.to_csv(f'{plot_dir}/nonamor_calibration_corr_helm.csv', index=False)
 
     error_bar_plot_single(
         datasets=DATASETS,
