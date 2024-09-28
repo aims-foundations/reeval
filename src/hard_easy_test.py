@@ -27,7 +27,8 @@ if __name__ == "__main__":
     count_minus_one = np.sum(response_matrix == -1, axis=1)
     min_index = np.argmin(count_minus_one)
     y = torch.tensor(response_matrix[min_index], dtype=torch.float32).to(device)
-
+    mask = y != -1
+    
     theta = pd.read_csv(
         f'../data/nonamor_calibration/{args.dataset}/nonamor_theta.csv'
     )["theta"].values[min_index]
@@ -52,6 +53,8 @@ if __name__ == "__main__":
             
         z_sub = z[subset_index]
         y_sub = y[subset_index]
+        sub_mask = y_sub != -1
+
         theta_hat = torch.normal(
             0, 1, size=(1,), requires_grad=True, device=device
         )
@@ -60,11 +63,10 @@ if __name__ == "__main__":
         losses = []
         theta_hats = []
         for i in range(4000):
-            mask = y_sub != -1
             prob = item_response_fn_1PL(z_sub, theta_hat)
             loss = -torch.distributions.Bernoulli(
-                probs=prob[mask]
-            ).log_prob(y_sub[mask]).mean()
+                probs=prob[sub_mask]
+            ).log_prob(y_sub[sub_mask]).mean()
             optim.zero_grad()
             loss.backward()
             optim.step()
@@ -74,12 +76,12 @@ if __name__ == "__main__":
         #irt
         plt.plot(theta_hats, color='red', alpha=0.5)
         #ctt
-        plt.hlines(y_sub.mean().item()*6-3, 0, 4000, color='blue', linestyle='dashed', alpha=0.5)
+        plt.hlines(y_sub[sub_mask].mean().item()*6-3, 0, 4000, color='blue', linestyle='dashed', alpha=0.5)
 
     #irt
     plt.hlines(theta, 0, 4000, color='red', linewidth=4)
     #ctt
-    plt.hlines(y.mean().item()*6-3, 0, 4000, color='blue', linestyle='dashed', linewidth=4)
+    plt.hlines(y[mask].mean().item()*6-3, 0, 4000, color='blue', linestyle='dashed', linewidth=4)
 
     plt.ylim(-4, 4)
     plt.savefig(f"{plot_dir}/hard_easy_test_{args.dataset}.png", dpi=300, bbox_inches='tight')
