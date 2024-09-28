@@ -18,6 +18,7 @@ if __name__ == "__main__":
     gof_means, gof_stds = [], []
     corr_ctt_means, corr_ctt_stds = [], []
     corr_helm_means, corr_helm_stds = [], []
+    gof_train_means, gof_test_means = [], []
     for dataset in tqdm(DATASETS):
         print(f"Processing {dataset}")
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
@@ -51,6 +52,7 @@ if __name__ == "__main__":
             corr_helm_stds.append(corr_helm_std)
 
     # TODO: train and test gof
+    
     gof_df = pd.DataFrame({
         'datasets': DATASETS,
         'gof_means': gof_means,
@@ -59,14 +61,14 @@ if __name__ == "__main__":
     gof_df.to_csv(f'{plot_dir}/nonamor_calibration_gof.csv', index=False)
     
     ctt_df = pd.DataFrame({
-        'datasets': [d for d in DATASETS if d != "airbench"],
+        'datasets': DATASETS,
         'corr_ctt_means': corr_ctt_means,
         'corr_ctt_stds': corr_ctt_stds
     })
     ctt_df.to_csv(f'{plot_dir}/nonamor_calibration_corr_ctt.csv', index=False)
     
     helm_df = pd.DataFrame({
-        'datasets': DATASETS,
+        'datasets': [d for d in DATASETS if d != "airbench"],
         'corr_helm_means': corr_helm_means,
         'corr_helm_stds': corr_helm_stds
     })
