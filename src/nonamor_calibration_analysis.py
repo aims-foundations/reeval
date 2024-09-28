@@ -70,8 +70,8 @@ if __name__ == "__main__":
         )
         plugin_gof_test_means.append(plugin_gof_test_mean)
         
-        amor_train_indices = pd.read_csv(f'../data/amor_calibration/{dataset}/train_0.csv')['index'].values
-        amor_test_indices = pd.read_csv(f'../data/amor_calibration/{dataset}/test_0.csv')['index'].values
+        amor_train_indices = pd.read_csv(f'../data/amor_calibration/{dataset}/z_train_0.csv')['index'].values
+        amor_test_indices = pd.read_csv(f'../data/amor_calibration/{dataset}/z_test_0.csv')['index'].values
         
         amor_gof_train_mean, _ = goodness_of_fit_1PL(
             z=torch.tensor(z_hat[amor_train_indices], dtype=torch.float32),
