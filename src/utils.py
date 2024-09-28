@@ -400,22 +400,21 @@ def plot_corr_double(
     data2_train,
     data2_test,
     plot_path,
-    title,
     xlabel,
     ylabel,
 ):
     corr_train = np.corrcoef(data1_train, data2_train)[0, 1]
     corr_test = np.corrcoef(data1_test, data2_test)[0, 1]
     plt.figure(figsize=(6, 6))
-    plt.scatter(data1_train, data2_train, color='blue')
-    plt.scatter(data1_test, data2_test, color='red')
+    plt.scatter(data1_train, data2_train, color='blue', label='Train')
+    plt.scatter(data1_test, data2_test, color='red', label='Test')
     plt.plot([0, 1], [0, 1], linestyle='--', color='black')
     plt.xlabel(xlabel, fontsize=25)
     plt.ylabel(ylabel, fontsize=25)
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.title(
-        title.format(corr_train, corr_test),
+        r'Goodness of Fit Correlation. $\rho_\mathrm{{train}}$ = {:.2f}, $\rho_\mathrm{{test}}$ = {:.2f}'.format(corr_train, corr_test),
         fontsize=25
     )
     plt.tick_params(axis='both', labelsize=16)
@@ -440,7 +439,6 @@ def plot_nonid_test(
     plt.subplot(1, 2, 2)
     plt.hist(z_easy, bins=30, density=True, alpha=0.4)
     plt.hist(z_hard, bins=30, density=True, alpha=0.4)
-    plt.xlabel(r'$z$')
     plt.xlabel(r'$z$', fontsize=25)
     plt.tick_params(axis='both', labelsize=16)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')

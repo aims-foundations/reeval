@@ -1,5 +1,6 @@
 import argparse
 import os
+import numpy as np
 import torch
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -18,13 +19,19 @@ if __name__ == "__main__":
     selection_prob = 0.8
     subset_size = 100
     
-    y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values[0]
-    theta = pd.read_csv(f'../data/nonamor_calibration/{args.dataset}/nonamor_theta.csv')["theta"].values[0]
+    response_matrix = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
+    count_minus_one = np.sum(response_matrix == -1, axis=1)
+    min_index = np.argmin(count_minus_one)
+    y = response_matrix[min_index]
+    y = torch.tensor(y, dtype=torch.float32)
+
+    theta = pd.read_csv(
+        f'../data/nonamor_calibration/{args.dataset}/nonamor_theta.csv'
+    )["theta"].values[min_index]
+    
     z = pd.read_csv(f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv')["z"].values
     z = torch.tensor(z, dtype=torch.float32)
     z_sort_index = torch.argsort(z)
-
-    y = torch.tensor(y, dtype=torch.float32)
 
     for i in range(20):
         z_sort_index = torch.flip(z_sort_index, dims=[0])
@@ -46,8 +53,11 @@ if __name__ == "__main__":
         losses = []
         theta_hats = []
         for i in range(4000):
+            mask = y_sub != -1
             prob = item_response_fn_1PL(z_sub, theta_hat)
-            loss = -torch.distributions.Bernoulli(probs=prob).log_prob(y_sub).mean()
+            loss = -torch.distributions.Bernoulli(
+                probs=prob[mask]
+            ).log_prob(y_sub[mask]).mean()
             optim.zero_grad()
             loss.backward()
             optim.step()
