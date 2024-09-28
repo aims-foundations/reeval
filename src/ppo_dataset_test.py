@@ -56,8 +56,8 @@ if __name__ == "__main__":
         },
     ]
     template = tokenizer.apply_chat_template(ppo_chat, tokenize=False, add_generation_prompt=True)
-    text1 = template % (-2)
-    text2 = template % (2)
+    text1 = template % (-2.00)
+    text2 = template % (2.00)
     new_texts = [text1, text2]
     print(new_texts)
     
