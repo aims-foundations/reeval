@@ -399,12 +399,17 @@ def plot_corr_double(
     corr_train = np.corrcoef(data1_train, data2_train)[0, 1]
     corr_test = np.corrcoef(data1_test, data2_test)[0, 1]
     plt.figure(figsize=(6, 6))
-    plt.scatter(data1_train, data2_train)
-    plt.scatter(data1_test, data2_test)
+    plt.scatter(data1_train, data2_train, color='blue')
+    plt.scatter(data1_test, data2_test, color='red')
+    plt.plot([0, 1], [0, 1], linestyle='--', color='black')
+        
     plt.xlabel(xlabel, fontsize=25)
     plt.ylabel(ylabel, fontsize=25)
-    plt.title(f'Train Correlation: {corr_train:.2f}, Test Correlation: {corr_test:.2f}', fontsize=25)
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
+    plt.title(f'Goodness of Fit Correlation. \rho_{train} = {corr_train:.2f}, \rho_{test} = {corr_test:.2f}', fontsize=25)
     plt.tick_params(axis='both', labelsize=16)
+    plt.legend()
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 

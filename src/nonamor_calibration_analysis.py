@@ -67,6 +67,9 @@ if __name__ == "__main__":
     })
     ctt_df.to_csv(f'{plot_dir}/nonamor_calibration_corr_ctt.csv', index=False)
     
+    print(len([d for d in DATASETS if d != "airbench"]))
+    print(len(corr_helm_means))
+    print(len(corr_helm_stds))
     helm_df = pd.DataFrame({
         'datasets': [d for d in DATASETS if d != "airbench"],
         'corr_helm_means': corr_helm_means,
