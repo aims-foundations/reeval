@@ -7,7 +7,7 @@ lora_dropout: 0.1
 output_dir: ../data/ppo/llama3-ppo-test
 
 # Reward model
-reward_model: http://hyperturing:8000
+reward_model: http://hyperturing2:8000
 discount_reward_factor: 0.99
 
 # Dataset
