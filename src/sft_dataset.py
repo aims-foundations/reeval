@@ -23,16 +23,15 @@ def mlp_predict(model, emb_input):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--task', type=str, required=True, choices=['sft', 'ppo'])
     parser.add_argument('--dataset', type=str, required=True)
-    parser.add_argument('--model', type=str, default='mlp', choices=['bayridge', 'mlp'])
+    parser.add_argument('--model', type=str, default='bayridge', choices=['bayridge', 'mlp'])
     args = parser.parse_args()
     
     load_dotenv()
     hf_token = os.getenv('HF_TOKEN')
     login(token=hf_token)
-    
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
+    
     hf_repo = f"stair-lab/reeval_{args.dataset}-embed"
     dataset_train = load_dataset(hf_repo, split="train")
     dataset_test = load_dataset(hf_repo, split="test")
@@ -53,7 +52,7 @@ if __name__ == "__main__":
             model = pickle.load(f)
         pred_zs = mlp_predict(model, embs).tolist()
     
-    ppo_chat = [
+    sft_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": (
             """Generate a question with a given difficulty score, which range from -5 to 5. """
@@ -63,26 +62,19 @@ if __name__ == "__main__":
             """Difficulty: %s. Question: """
         )
         },
+        {"role": "assistant", "content": """%s"""},
     ]
-    sft_chat = ppo_chat + [{"role": "assistant", "content": """%s"""}]
     
-    if args.task == 'ppo':
-        template = tokenizer.apply_chat_template(ppo_chat, tokenize=False, add_generation_prompt=True)
-    elif args.task == 'sft':
-        template = tokenizer.apply_chat_template(sft_chat, tokenize=False, add_generation_prompt=False)
+    template = tokenizer.apply_chat_template(sft_chat, tokenize=False, add_generation_prompt=False)
     
     mean_pred_z = np.mean(np.array(pred_zs))
     std_pred_z = np.std(np.array(pred_zs))
     
     new_texts = []
     for i in range(len(dataset)):
-        if args.task == 'ppo':
-            z = np.random.normal(mean_pred_z, std_pred_z)
-            text = template % round(z, 2)
-        elif args.task == 'sft':
-            z = pred_zs[i]
-            question =  dataset[i]['text']
-            text = template % (round(z, 2), question)
+        z = pred_zs[i]
+        question =  dataset[i]['text']
+        text = template % (round(z, 2), question)
         new_texts.append(text)
     print(new_texts[0])
         

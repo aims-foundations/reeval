@@ -6,7 +6,7 @@ from vllm import LLM, SamplingParams
 from peft import AutoPeftModelForCausalLM
 from ppo_reward_model import extract_score
 from datasets import Dataset, load_dataset
-from utils import get_embed
+from utils import get_embed, plot_rewards
 
 if __name__ == "__main__":
     model_dir = "../data/ppo/llama3-ppo"
@@ -44,5 +44,5 @@ if __name__ == "__main__":
         reward = [-abs(a - b) for a, b in zip(pred_zs, gt_zs)]
         rewards.append(reward)
         
-    
+    plot_rewards(rewards, f"{plot_dir}/ppo_reward.png")
         
