@@ -24,7 +24,7 @@ if __name__ == "__main__":
         train_mses, test_mses = [], []
         baseline_train_mses, baseline_test_mses = [], []
         
-        for i in range(0):
+        for i in range(1):
             y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
             df_train = pd.read_csv(f'{input_dir}/{dataset}/train_{i}.csv')
             train_indices = df_train['index'].values
