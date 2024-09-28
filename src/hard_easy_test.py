@@ -66,4 +66,4 @@ if __name__ == "__main__":
 
     plt.ylim(-4, 4)
     plt.legend()
-    plt.show()
+    plt.savefig(f"{plot_dir}/hard_easy_test_{args.dataset}.png", dpi=300, bbox_inches='tight')
