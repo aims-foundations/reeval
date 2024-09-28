@@ -374,6 +374,7 @@ def plot_corr(
     data1,
     data2,
     plot_path,
+    title,
     xlabel,
     ylabel,
 ):
@@ -382,7 +383,13 @@ def plot_corr(
     plt.scatter(data1, data2)
     plt.xlabel(xlabel, fontsize=25)
     plt.ylabel(ylabel, fontsize=25)
-    plt.title(f'Correlation: {corr:.2f}', fontsize=25)
+    plt.title(
+        title.format(corr),
+        fontsize=25
+    )
+    plt.plot([0, 1], [0, 1], linestyle='--', color='black')
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
     plt.tick_params(axis='both', labelsize=16)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
@@ -393,6 +400,7 @@ def plot_corr_double(
     data2_train,
     data2_test,
     plot_path,
+    title,
     xlabel,
     ylabel,
 ):
@@ -402,17 +410,16 @@ def plot_corr_double(
     plt.scatter(data1_train, data2_train, color='blue')
     plt.scatter(data1_test, data2_test, color='red')
     plt.plot([0, 1], [0, 1], linestyle='--', color='black')
-        
     plt.xlabel(xlabel, fontsize=25)
     plt.ylabel(ylabel, fontsize=25)
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.title(
-        r'Goodness of Fit Correlation. $\rho_{train}$ = {:.2f}, $\rho_{test}$ = {:.2f}'.format(corr_train, corr_test),
+        title.format(corr_train, corr_test),
         fontsize=25
     )
     plt.tick_params(axis='both', labelsize=16)
-    plt.legend()
+    plt.legend(fontsize=16)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 

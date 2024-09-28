@@ -25,7 +25,7 @@ if __name__ == "__main__":
     dataset_z_corr_train_means, dataset_z_corr_train_stds = [], []
     dataset_z_corr_test_means, dataset_z_corr_test_stds = [], []
     
-    for dataset in tqdm(DATASETS[:3]):
+    for dataset in tqdm(DATASETS):
         print(f"Processing {dataset}")
         gof_train_means, gof_test_means = [], []
         theta_corr_ctt_means = []
