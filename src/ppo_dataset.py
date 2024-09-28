@@ -50,6 +50,7 @@ if __name__ == "__main__":
         pred_zs = mlp_predict(model, embs).tolist()
     mean_pred_z = np.mean(np.array(pred_zs))
     std_pred_z = np.std(np.array(pred_zs))
+    print(f"z mean: {mean_pred_z}, std: {std_pred_z}")
     
     ppo_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
