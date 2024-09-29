@@ -1,4 +1,3 @@
-import argparse
 import re
 from transformers import AutoTokenizer
 from datasets import Dataset, DatasetDict
@@ -20,16 +19,12 @@ def extract_after_prompt(text):
     return after_prompt_match.group(1).strip()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, required=True)
-    args = parser.parse_args()
-    
     load_dotenv()
     hf_token = os.getenv('HF_TOKEN')
     login(token=hf_token)
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
     
-    hf_repo = f"stair-lab/reeval_{args.dataset}-embed"
+    hf_repo = f"stair-lab/reeval_aggregate-embed"
     dataset_train = load_dataset(hf_repo, split="train")
     dataset_test = load_dataset(hf_repo, split="test")
     dataset = concatenate_datasets([dataset_train, dataset_test])
@@ -71,4 +66,4 @@ if __name__ == "__main__":
         "train": train_dataset,
         "test": test_dataset
     })
-    dataset_dict.push_to_hub(f'stair-lab/{args.dataset}-sft')
+    dataset_dict.push_to_hub(f'stair-lab/aggregate-sft')
