@@ -8,7 +8,7 @@ lora_target_modules: ["q_proj", "v_proj"]
 output_dir: ../data/ppo/llama3-ppo
 
 # Reward model
-reward_model: http://localhost:8000
+reward_model: http://localhost:4324
 discount_reward_factor: 0.99
 
 # Dataset
