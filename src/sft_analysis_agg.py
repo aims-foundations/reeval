@@ -25,7 +25,7 @@ if __name__ == "__main__":
     
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
     model_dir = "../data/sft/agg_llama_10epoch"
-    model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-12500')
+    model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-15500')
     train_dataset = load_dataset("stair-lab/aggregate-sft", split="train")
     test_dataset = load_dataset("stair-lab/aggregate-sft", split="test")
     train_prompts = train_dataset['text'][:1000]
