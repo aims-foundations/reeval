@@ -1,6 +1,6 @@
-model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
+model_name_or_path: Qwen/Qwen2.5-3B-Instruct
 dataset_name: stair-lab/airbench-sft
-output_dir: ../data/sft/full_10epoch
+output_dir: ../data/sft/qwen_full_10epoch
 overwrite_output_dir: true
 num_train_epochs: 10
 
