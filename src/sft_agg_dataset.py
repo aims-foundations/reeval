@@ -55,7 +55,7 @@ if __name__ == "__main__":
         text =  dataset[i]['text']
         topic = extract_before_prompt(text)
         question = extract_after_prompt(text)
-        text = template % (topic.replace("#", ""), round(zs[i], 2), question)
+        text = template % (topic.replace("### ", ""), round(zs[i], 2), question)
         new_texts.append(text)
     print(new_texts[0])
         
