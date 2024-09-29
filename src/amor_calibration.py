@@ -73,7 +73,7 @@ def amor_calibration(
 
     return theta_hat, z_hat, W
 
-def main(
+def main_byrandom(
     hf_repo,
     y_path,
     df_z_train_path,
@@ -83,9 +83,52 @@ def main(
     y = pd.read_csv(y_path, index_col=0).values
     y = torch.tensor(y, dtype=torch.float32)
     
-    dataset_train = load_dataset(hf_repo, split="train")
-    dataset_test = load_dataset(hf_repo, split="test")
-    dataset = concatenate_datasets([dataset_train, dataset_test])
+    dataset_info = load_dataset(hf_repo, split=None)
+    splits = dataset_info.keys()
+    datasets = [load_dataset(hf_repo, split=split) for split in splits]
+    dataset = concatenate_datasets(datasets)
+    emb = torch.tensor(dataset['embed'], dtype=torch.float32)
+    
+    assert y.shape[1] == emb.shape[0]
+    train_indices, test_indices = split_indices(emb.shape[0])    
+    emb_train, emb_test = emb[train_indices], emb[test_indices]
+    y_train = y[:, train_indices]
+    
+    theta_train, z_train, W_train = amor_calibration(y_train, emb_train)
+    z_test = torch.matmul(emb_test, W_train.cpu().detach())
+    
+    df_z_train = pd.DataFrame({
+        'index': train_indices,
+        'z': z_train.cpu().detach().numpy(),
+    })
+    df_z_train.to_csv(df_z_train_path, index=False)
+    
+    df_z_test = pd.DataFrame({
+        'index': test_indices,
+        'z': z_test.cpu().detach().numpy(),
+    })
+    df_z_test.to_csv(df_z_test_path, index=False)
+    
+    df_theta = pd.DataFrame({
+        'theta': theta_train.cpu().detach().numpy(),
+    })
+    df_theta.to_csv(df_theta_path, index=False)
+
+def main_bydataset(
+    hf_repo,
+    y_path,
+    df_z_train_path,
+    df_z_test_path,
+    df_theta_path,
+):
+    y = pd.read_csv(y_path, index_col=0).values
+    y = torch.tensor(y, dtype=torch.float32)
+    
+    dataset_info = load_dataset(hf_repo, split=None)
+    splits = dataset_info.keys()
+    test_splits = ['airbench', 'mmlu', ]
+    datasets = [load_dataset(hf_repo, split=split) for split in splits]
+    dataset = concatenate_datasets(datasets)
     emb = torch.tensor(dataset['embed'], dtype=torch.float32)
     
     assert y.shape[1] == emb.shape[0]
@@ -117,6 +160,7 @@ if __name__ == "__main__":
     wandb.init(project="amor_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
+    parser.add_argument('--task', type=str, default='byrandom', choices=['byrandom', 'bydataset'])
     args = parser.parse_args()
     
     input_dir = '../data/pre_calibration/'
@@ -125,11 +169,20 @@ if __name__ == "__main__":
     
     for i in tqdm(range(10)):
         set_seed(i)
-        main(
-            hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
-            y_path=f'{input_dir}/{args.dataset}/matrix.csv',
-            df_z_train_path=f'{output_dir}/z_train_{i}.csv',
-            df_z_test_path=f'{output_dir}/z_test_{i}.csv',
-            df_theta_path=f'{output_dir}/theta_{i}.csv',
-        )
-        
+        if args.task == 'byrandom':
+            main_byrandom(
+                hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
+                y_path=f'{input_dir}/{args.dataset}/matrix.csv',
+                df_z_train_path=f'{output_dir}/z_train_{i}.csv',
+                df_z_test_path=f'{output_dir}/z_test_{i}.csv',
+                df_theta_path=f'{output_dir}/theta_{i}.csv',
+            )
+        elif args.task == 'bydataset':
+            main_bydataset(
+                hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
+                y_path=f'{input_dir}/{args.dataset}/matrix.csv',
+                df_z_train_path=f'{output_dir}/z_train_{i}.csv',
+                df_z_test_path=f'{output_dir}/z_test_{i}.csv',
+                df_theta_path=f'{output_dir}/theta_{i}.csv',
+            )
+            

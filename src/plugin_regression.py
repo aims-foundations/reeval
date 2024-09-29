@@ -85,9 +85,8 @@ def train_model(
     
     return z_train_pred, z_test_pred, model.cpu(), train_losses, test_losses
 
-def main(
-    emb,
-    z,
+def main_byrandom(
+    hf_repo,
     model_name,
     df_train_path,
     df_test_path,
@@ -95,9 +94,28 @@ def main(
     train_loss_plot_path=None,
     test_loss_plot_path=None,
 ):
+    dataset_info = load_dataset(hf_repo, split=None)
+    splits = dataset_info.keys()
+    datasets = [load_dataset(hf_repo, split=split) for split in splits]
+    dataset = concatenate_datasets(datasets)
+    emb = np.array(dataset['embed'])
+    z = np.array(dataset['z'])
+    
     train_indices, test_indices = split_indices(z.shape[0])    
     emb_train, z_train = emb[train_indices], z[train_indices]
     emb_test, z_test = emb[test_indices], z[test_indices]
+    
+    test_splits = ['airbench', 'mmlu', 'raft']
+    train_spliets = [s for s in splits if s not in test_splits]
+    train_datasets = [load_dataset(hf_repo, split=split) for split in train_spliets]
+    train_dataset = concatenate_datasets(train_datasets)
+    emb_train = np.array(train_dataset['embed'])
+    z_train = np.array(train_dataset['z'])
+    
+    test_datasets = [load_dataset(hf_repo, split=split) for split in test_splits]
+    test_dataset = concatenate_datasets(test_datasets)
+    emb_test = np.array(test_dataset['embed'])
+    z_test = np.array(test_dataset['z'])
     
     z_train_pred, z_test_pred, model, train_losses, test_losses = train_model(
         model_name=model_name,
@@ -132,35 +150,40 @@ def main(
     if train_loss_plot_path is not None and test_loss_plot_path is not None:
         plot_loss(train_losses, train_loss_plot_path, r'Train Loss')
         plot_loss(test_losses, test_loss_plot_path, r'Test Loss')
+        
+def main_bydataset(
+    hf_repo,
+    y_path,
+    df_z_train_path,
+    df_z_test_path,
+    df_theta_path,
+):
+    dataset_info = load_dataset(hf_repo, split=None)
+    splits = dataset_info.keys()
     
 if __name__ == "__main__":
     wandb.init(project="plugin_regression")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     parser.add_argument('--model', type=str, default='mlp', choices=['mlp'])
+    parser.add_argument('--task', type=str, default='byrandom', choices=['byrandom', 'bydataset'])
     args = parser.parse_args()
     
     output_dir = f'../data/plugin_regression/{args.dataset}'
     plot_dir = f'../plot/plugin_regression/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
-    
-    hf_repo=f'stair-lab/reeval_{args.dataset}-embed'
-    dataset_train = load_dataset(hf_repo, split="train")
-    dataset_test = load_dataset(hf_repo, split="test")
-    dataset = concatenate_datasets([dataset_train, dataset_test])
-    emb = np.array(dataset['embed'])
-    z = np.array(dataset['z'])
 
     for i in tqdm(range(10)):
         set_seed(i)
-        main(
-            emb = emb,
-            z = z,
-            model_name=args.model,
-            df_train_path=f'{output_dir}/train_{i}.csv',
-            df_test_path=f'{output_dir}/test_{i}.csv',
-            save_model_path=f'{output_dir}/{args.model}.pkl' if i==0 else None,
-            train_loss_plot_path=f'{plot_dir}/train_loss.png' if i==0 else None,
-            test_loss_plot_path=f'{plot_dir}/test_loss.png' if i==0 else None,
-        )
+        if args.task == 'byrandom':
+            main_byrandom(
+                hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
+                model_name=args.model,
+                df_train_path=f'{output_dir}/train_{i}.csv',
+                df_test_path=f'{output_dir}/test_{i}.csv',
+                save_model_path=f'{output_dir}/{args.model}.pkl' if i==0 else None,
+                train_loss_plot_path=f'{plot_dir}/train_loss.png' if i==0 else None,
+                test_loss_plot_path=f'{plot_dir}/test_loss.png' if i==0 else None,
+                task=args.task,
+            )
