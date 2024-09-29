@@ -147,7 +147,10 @@ def main_bydataset(
         [pd.read_csv(f'{input_dir}/{dataset}/matrix.csv') for dataset in train_splits],
         ignore_index=True
     )
+    print(y_train_df)
+    print(y_train_df.values)
     y_train = torch.tensor(y_train_df.values, dtype=torch.float32)
+    
     
     y_test_df = pd.concat(
         [pd.read_csv(f'{input_dir}/{dataset}/matrix.csv') for dataset in test_splits],
