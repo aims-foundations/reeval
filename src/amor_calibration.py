@@ -187,7 +187,7 @@ def main_bydataset(
 if __name__ == "__main__":
     wandb.init(project="amor_calibration")
     parser = argparse.ArgumentParser()
-    parser.add_argument('t', type=str, required=True)
+    parser.add_argument('--dataset', type=str, required=True)
     parser.add_argument('--task', type=str, default='byrandom', choices=['byrandom', 'bydataset'])
     args = parser.parse_args()
     
