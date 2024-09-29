@@ -9,19 +9,18 @@ output_dir: ../data/ppo/qwen3b-ppo
 
 # Reward model
 reward_model: http://hyperturing2:4324
-discount_reward_factor: 0.99
 
 # Dataset
 query_dataset: stair-lab/airbench-ppo-qwen
 ppo_epochs: 4
-mini_batch_size: 2
-batch_size: 2
+mini_batch_size: 1
+batch_size: 1
 
 # Hyperparameters
 gradient_accumulation_steps: 1
 gradient_checkpointing: true
-learning_rate: 1.0e-5
+learning_rate: 1.0e-4
 save_steps: 50
 
-max_new_tokens: 256
+max_new_tokens: 1024
 log_with: wandb
