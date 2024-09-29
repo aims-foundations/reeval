@@ -30,9 +30,7 @@ class BatchDataset(Dataset):
         return emb, y
     
 def agg_amor_calibration(
-    datasets: list[str], 
-    train_indices: list[list[int]],
-    test_indices: list[list[int]],
+    train_datasets: list[str], 
     emb_hf_repo: str,
     model_id_path: str,
     lr_theta=0.01,
@@ -61,12 +59,10 @@ def agg_amor_calibration(
             
     z_trains = []
     for epoch in tqdm(range(max_epoch), desc='Training'):
-        pbar = tqdm(datasets, desc='Dataset')
+        pbar = tqdm(train_datasets, desc='Dataset')
         for i, dataset in enumerate(pbar):
-            train_index = train_indices[i]
-            
             y_df = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-            y = torch.tensor(y_df.values[:, train_index]).to(device)
+            y = torch.tensor(y_df.values).to(device)
             
             gt_z_train_df = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_z.csv', index_col=0)["z"]
             gt_z_train = torch.tensor(gt_z_train_df.values[train_index]).to(device)
@@ -150,17 +146,12 @@ def main(
     iteration,
     train_loss_plot_path=None,
 ):
-    train_indices, test_indices = [], []
-    for dataset in datasets:
-        y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-        train_index, test_index = split_indices(y.shape[1])
-        train_indices.append(train_index)
-        test_indices.append(test_index)
+    train_indices, test_indices = split_indices(len(datasets))
+    train_datasets = [datasets[i] for i in train_indices]
+    test_datasets = [datasets[i] for i in test_indices]
     
     theta_train, z_trains, z_tests, train_losses = agg_amor_calibration(
-        datasets=datasets, 
-        train_indices=train_indices,
-        test_indices=test_indices,
+        train_datasets=train_datasets, 
         emb_hf_repo=emb_hf_repo,
         model_id_path=model_id_path,
     )

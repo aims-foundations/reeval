@@ -19,15 +19,17 @@ from utils import (
 )
 
 class BatchDataset(Dataset):
-    def __init__(self, emb, y):
+    def __init__(self, emb, y, z):
         self.emb = emb
         self.y = y
+        self.z = z
     def __len__(self):
         return self.emb.shape[0]
     def __getitem__(self, idx):
         emb = self.emb[idx, :]
         y = self.y[:, idx]
-        return emb, y
+        z = self.z[idx]
+        return emb, y, z
     
 def agg_amor_calibration(
     datasets: list[str], 
@@ -81,15 +83,15 @@ def agg_amor_calibration(
             assert y.shape[0] == theta_train_subset.shape[0]
             assert y.shape[1] == emb.shape[0]
             
-            dataset_batch = BatchDataset(emb, y)
+            dataset_batch = BatchDataset(emb, y, gt_z_train)
             data_loader = DataLoader(dataset_batch, batch_size=bs, shuffle=True)
             
             losses = []
             z_batch = []
-            for emb_batch, y_batch in tqdm(data_loader, desc='Batch'):
+            for emb_batch, y_batch, gt_z_train_batch in tqdm(data_loader, desc='Batch'):
                 y_batch = y_batch.T
                 z_train = mlp_model(emb_batch).flatten()
-                mse_z_train = torch.nn.MSELoss()(z_train, gt_z_train)
+                mse_z_train = torch.nn.MSELoss()(z_train, gt_z_train_batch)
                 wandb.log({'mse_z_train': mse_z_train.item()})
                 
                 prob_matrix = item_response_fn_1PL(
