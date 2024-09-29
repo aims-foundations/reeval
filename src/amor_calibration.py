@@ -125,11 +125,19 @@ def main_bydataset(
     y = torch.tensor(y, dtype=torch.float32)
     
     dataset_info = load_dataset(hf_repo, split=None)
-    splits = dataset_info.keys()
-    test_splits = ['airbench', 'mmlu', ]
-    datasets = [load_dataset(hf_repo, split=split) for split in splits]
-    dataset = concatenate_datasets(datasets)
-    emb = torch.tensor(dataset['embed'], dtype=torch.float32)
+    splits = list(dataset_info.keys())
+    
+    train_indices, test_indices = split_indices(len(splits))
+    train_splits = [splits[i] for i in train_indices]
+    test_splits = [splits[i] for i in test_indices]
+    print(f'Test Splits: {test_splits}')
+    train_datasets = [load_dataset(hf_repo, split=split) for split in train_splits]
+    train_dataset = concatenate_datasets(train_datasets)
+    emb_train = torch.tensor(train_dataset['embed'], dtype=torch.float32)
+    
+    test_datasets = [load_dataset(hf_repo, split=split) for split in test_splits]
+    test_dataset = concatenate_datasets(test_datasets)
+    emb_test = torch.tensor(test_dataset['embed'], dtype=torch.float32)
     
     assert y.shape[1] == emb.shape[0]
     train_indices, test_indices = split_indices(emb.shape[0])    
@@ -178,11 +186,12 @@ if __name__ == "__main__":
                 df_theta_path=f'{output_dir}/theta_{i}.csv',
             )
         elif args.task == 'bydataset':
+            assert args.dataset == 'aggregate'
             main_bydataset(
                 hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
                 y_path=f'{input_dir}/{args.dataset}/matrix.csv',
-                df_z_train_path=f'{output_dir}/z_train_{i}.csv',
-                df_z_test_path=f'{output_dir}/z_test_{i}.csv',
-                df_theta_path=f'{output_dir}/theta_{i}.csv',
+                df_z_train_path=f'{output_dir}/z_train_bydataset_{i}.csv',
+                df_z_test_path=f'{output_dir}/z_test_bydataset_{i}.csv',
+                df_theta_path=f'{output_dir}/theta_bydataset_{i}.csv',
             )
             
