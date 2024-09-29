@@ -20,7 +20,7 @@ def train_model(
     z_train: torch.Tensor, 
     z_test: torch.Tensor,
     batch_size: int=4096, 
-    max_epoch: int=50, 
+    max_epoch: int=200, 
     lr: float=0.001,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,6 +65,7 @@ def train_model(
         test_loss = total_test_loss / len(test_loader)
         train_losses.append(trian_loss)
         test_losses.append(test_loss)
+        wandb.log({'train_loss': trian_loss, 'test_loss': test_loss})
         pbar.set_postfix({'train_loss': trian_loss, 'test_loss': test_loss})
 
     model.eval()
