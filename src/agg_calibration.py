@@ -87,7 +87,7 @@ def agg_amor_calibration(
                 assert prob_matrix.shape == y_batch.shape
                 
                 mask = y_batch!=-1
-                masked_y_batch = y_batch.flatten()[mask.flatten()].float()
+                masked_y_batch = y_batch.flatten()[mask.flatten()]
                 masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
                 
                 berns = torch.distributions.Bernoulli(masked_prob_matrix)
