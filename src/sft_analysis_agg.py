@@ -58,8 +58,8 @@ if __name__ == "__main__":
     train_pred_zs = mlp_predict(model, answer_train_embs).tolist()
     test_pred_zs = mlp_predict(model, answer_test_embs).tolist()
     
-    train_diffs = [abs(a - b) for a, b in zip(train_pred_zs, train_gt_zs)]
-    test_diffs = [abs(a - b) for a, b in zip(test_pred_zs, test_gt_zs)]
+    train_diffs = [(a - b)**2 for a, b in zip(train_pred_zs, train_gt_zs)]
+    test_diffs = [(a - b)**2 for a, b in zip(test_pred_zs, test_gt_zs)]
     
     plot_hist(
         data=train_diffs,
