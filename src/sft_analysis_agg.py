@@ -50,8 +50,8 @@ if __name__ == "__main__":
     del llm
     torch.cuda.empty_cache()
     
-    answer_train_embs = get_embed(train_answer_dataset)
-    answer_test_embs = get_embed(test_answer_dataset)
+    answer_train_embs = get_embed(train_answer_dataset, bs=256)
+    answer_test_embs = get_embed(test_answer_dataset, bs=256)
     
     with open(f'../data/plugin_regression/aggregate/mlp.pkl', 'rb') as f:
         model = pickle.load(f)
