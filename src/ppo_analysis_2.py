@@ -20,7 +20,7 @@ if __name__ == "__main__":
     print(f"Ground truth z: {gt_zs}")
     
     rewards = []
-    for step in range(0, 100, 10):
+    for step in range(0, 500, 50):
         print(f"Step {step}")
         model = AutoPeftModelForCausalLM.from_pretrained(
             f'{model_dir}/checkpoint-{step}'
