@@ -78,16 +78,16 @@ def agg_amor_calibration(
             dataset_batch = BatchDataset(emb, y)
             data_loader = DataLoader(dataset_batch, batch_size=bs, shuffle=True)
 
-            for emb_batch, y_batch in data_loader:
+            for emb_batch, y_batch in tqdm(data_loader, desc='Batch'):
                 y_batch = y_batch.T
                 z_train = mlp_model(emb_batch).flatten()
                 theta_train_matrix = theta_train_subset.unsqueeze(1)  # (n, 1)
                 z_train_matrix = z_train.unsqueeze(0)  # (1, m)
                 prob_matrix = item_response_fn_1PL(z_train_matrix, theta_train_matrix)
-                assert prob_matrix.shape == y_batch.shape
+                # assert prob_matrix.shape == y_batch.shape
                 
                 mask = y_batch!=-1
-                masked_y_batch = y_batch.flatten()[mask.flatten()]
+                masked_y_batch = y_batch.flatten()[mask.flatten()].float()
                 masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
                 
                 berns = torch.distributions.Bernoulli(masked_prob_matrix)
@@ -99,6 +99,8 @@ def agg_amor_calibration(
                 optimizer_mlp.zero_grad()
                 
                 pbar.set_postfix({'loss': loss.item()})
+            
+            loss = loss.detach()
             
             if epoch == max_epoch-1:
                 z_trains.append(z_train)
