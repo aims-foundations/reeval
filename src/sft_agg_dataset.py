@@ -25,9 +25,10 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
     
     hf_repo = f"stair-lab/reeval_aggregate-embed"
-    dataset_train = load_dataset(hf_repo, split="train")
-    dataset_test = load_dataset(hf_repo, split="test")
-    dataset = concatenate_datasets([dataset_train, dataset_test])
+    dataset_info = load_dataset(hf_repo, split=None)
+    splits = dataset_info.keys()
+    datasets = [load_dataset(hf_repo, split=split) for split in splits]
+    dataset = concatenate_datasets(datasets)
     
     if len(dataset) > 125000:
         dataset = dataset.select(range(125000))
