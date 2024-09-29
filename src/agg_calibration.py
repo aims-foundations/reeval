@@ -158,7 +158,7 @@ def main(
         
         df_z_train = pd.DataFrame({
             'index': train_indices[i],
-            'z': z_trains[i].cpu().detach().numpy(),
+            'z': z_trains[i],
         })
         df_z_train.to_csv(df_z_train_path, index=False)
         
