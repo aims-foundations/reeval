@@ -105,18 +105,6 @@ def main_byrandom(
     emb_train, z_train = emb[train_indices], z[train_indices]
     emb_test, z_test = emb[test_indices], z[test_indices]
     
-    test_splits = ['airbench', 'mmlu', 'raft']
-    train_spliets = [s for s in splits if s not in test_splits]
-    train_datasets = [load_dataset(hf_repo, split=split) for split in train_spliets]
-    train_dataset = concatenate_datasets(train_datasets)
-    emb_train = np.array(train_dataset['embed'])
-    z_train = np.array(train_dataset['z'])
-    
-    test_datasets = [load_dataset(hf_repo, split=split) for split in test_splits]
-    test_dataset = concatenate_datasets(test_datasets)
-    emb_test = np.array(test_dataset['embed'])
-    z_test = np.array(test_dataset['z'])
-    
     z_train_pred, z_test_pred, model, train_losses, test_losses = train_model(
         model_name=model_name,
         emb_train=torch.tensor(emb_train, dtype=torch.float32),
@@ -153,13 +141,58 @@ def main_byrandom(
         
 def main_bydataset(
     hf_repo,
-    y_path,
-    df_z_train_path,
-    df_z_test_path,
-    df_theta_path,
+    model_name,
+    df_train_path,
+    df_test_path,
+    save_model_path=None,
+    train_loss_plot_path=None,
+    test_loss_plot_path=None,
 ):
     dataset_info = load_dataset(hf_repo, split=None)
     splits = dataset_info.keys()
+    test_splits = ['airbench', 'mmlu', 'raft']
+    train_spliets = [s for s in splits if s not in test_splits]
+    train_datasets = [load_dataset(hf_repo, split=split) for split in train_spliets]
+    train_dataset = concatenate_datasets(train_datasets)
+    emb_train = np.array(train_dataset['embed'])
+    z_train = np.array(train_dataset['z'])
+    
+    test_datasets = [load_dataset(hf_repo, split=split) for split in test_splits]
+    test_dataset = concatenate_datasets(test_datasets)
+    emb_test = np.array(test_dataset['embed'])
+    z_test = np.array(test_dataset['z'])
+
+    z_train_pred, z_test_pred, model, train_losses, test_losses = train_model(
+        model_name=model_name,
+        emb_train=torch.tensor(emb_train, dtype=torch.float32),
+        emb_test=torch.tensor(emb_test, dtype=torch.float32),
+        z_train=torch.tensor(z_train, dtype=torch.float32).view(-1, 1),
+        z_test = torch.tensor(z_test, dtype=torch.float32).view(-1, 1),
+    )
+    
+    mse_train = mean_squared_error(z_train, z_train_pred)
+    mse_test = mean_squared_error(z_test, z_test_pred)
+    print(f'MSE Train: {mse_train:.2f}, MSE Test: {mse_test:.2f}')
+    
+    df_train = pd.DataFrame({
+        'z_true': z_train,
+        'z_pred': z_train_pred,
+    })
+    df_train.to_csv(df_train_path, index=False)
+    
+    df_test = pd.DataFrame({
+        'z_true': z_test,
+        'z_pred': z_test_pred,
+    })
+    df_test.to_csv(df_test_path, index=False)
+    
+    if save_model_path is not None:
+        with open(save_model_path, 'wb') as f:
+            pickle.dump(model, f)
+            
+    if train_loss_plot_path is not None and test_loss_plot_path is not None:
+        plot_loss(train_losses, train_loss_plot_path, r'Train Loss')
+        plot_loss(test_losses, test_loss_plot_path, r'Test Loss')
     
 if __name__ == "__main__":
     wandb.init(project="plugin_regression")
@@ -174,9 +207,9 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
 
-    for i in tqdm(range(10)):
-        set_seed(i)
-        if args.task == 'byrandom':
+    if args.task == 'byrandom':
+        for i in tqdm(range(10)):
+            set_seed(i)
             main_byrandom(
                 hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
                 model_name=args.model,
@@ -185,5 +218,17 @@ if __name__ == "__main__":
                 save_model_path=f'{output_dir}/{args.model}.pkl' if i==0 else None,
                 train_loss_plot_path=f'{plot_dir}/train_loss.png' if i==0 else None,
                 test_loss_plot_path=f'{plot_dir}/test_loss.png' if i==0 else None,
-                task=args.task,
             )
+            
+    elif args.task == 'bydataset':
+        assert args.dataset == 'aggregate'
+        main_bydataset(
+            hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
+            model_name=args.model,
+            df_train_path=f'{output_dir}/train_bydataset.csv',
+            df_test_path=f'{output_dir}/test_bydataset.csv',
+            save_model_path=f'{output_dir}/{args.model}_bydataset.pkl',
+            train_loss_plot_path=f'{plot_dir}/train_loss_bydataset.png',
+            test_loss_plot_path=f'{plot_dir}/test_loss_bydataset.png',
+        )
+        
