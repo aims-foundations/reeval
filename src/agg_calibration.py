@@ -84,7 +84,7 @@ def agg_amor_calibration(
                 theta_train_matrix = theta_train_subset.unsqueeze(1)  # (n, 1)
                 z_train_matrix = z_train.unsqueeze(0)  # (1, m)
                 prob_matrix = item_response_fn_1PL(z_train_matrix, theta_train_matrix)
-                assert prob_matrix.shape == y_batch.shape, f'{prob_matrix.shape} != {y_batch.shape}'
+                assert prob_matrix.shape == y_batch.shape
                 
                 mask = y_batch!=-1
                 masked_y_batch = y_batch.flatten()[mask.flatten()].float()
