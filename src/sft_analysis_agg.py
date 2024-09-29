@@ -19,10 +19,6 @@ def mlp_predict(model, emb_input):
     return output.cpu().numpy().flatten()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--llm', type=str, required=True)
-    args = parser.parse_args()
-    
     plot_dir = "../plot/sft"
     os.makedirs(plot_dir, exist_ok=True)
     
