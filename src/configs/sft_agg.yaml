@@ -1,5 +1,5 @@
 model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
-dataset_name: stair-lab/reeval_aggregate-embed
+dataset_name: stair-lab/aggregate-sft
 output_dir: ../data/sft/agg_llama_10epoch
 overwrite_output_dir: true
 num_train_epochs: 10
