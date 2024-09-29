@@ -154,6 +154,7 @@ def main_bydataset(
     train_indices, test_indices = split_indices(len(splits))
     train_spliets = splits(train_indices)
     test_splits = splits(test_indices)
+    print(f'Test Splits: {test_splits}')
     train_datasets = [load_dataset(hf_repo, split=split) for split in train_spliets]
     train_dataset = concatenate_datasets(train_datasets)
     emb_train = np.array(train_dataset['embed'])
