@@ -9,6 +9,15 @@ from utils import MLP, get_embed, plot_hist
 from ppo_reward_model import extract_score
 import pickle
 
+def mlp_predict(model, emb_input):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    model.eval()
+    emb_input = torch.tensor(emb_input, dtype=torch.float32).to(device)
+    with torch.no_grad():
+        output = model(emb_input)
+    return output.cpu().numpy().flatten()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--llm', type=str, required=True)
@@ -17,13 +26,12 @@ if __name__ == "__main__":
     plot_dir = "../plot/sft"
     os.makedirs(plot_dir, exist_ok=True)
     
-    if args.llm == "llama":
-        model_dir = "../data/sft/lora_10epoch"
-        model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-2400')
-        train_dataset = load_dataset("stair-lab/airbench-sft", split="train")
-        test_dataset = load_dataset("stair-lab/airbench-sft", split="test")
-        train_prompts = train_dataset['text']
-        test_prompts = test_dataset['text']
+    model_dir = "../data/sft/agg_llama_10epoch"
+    model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-12500')
+    train_dataset = load_dataset("stair-lab/aggregate-sft", split="train")
+    test_dataset = load_dataset("stair-lab/aggregate-sft", split="test")
+    train_prompts = train_dataset['text'][:3000]
+    test_prompts = test_dataset['text'][:3000]
     model = model.merge_and_unload().to(torch.bfloat16)
     model.save_pretrained(model_dir)
     
@@ -47,22 +55,22 @@ if __name__ == "__main__":
     answer_train_embs = get_embed(train_answer_dataset)
     answer_test_embs = get_embed(test_answer_dataset)
     
-    with open('../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
-        reward_model = pickle.load(f)
-    train_pred_zs = reward_model.predict(answer_train_embs).tolist()
-    test_pred_zs = reward_model.predict(answer_test_embs).tolist()
+    with open(f'../data/plugin_regression/aggregate/mlp.pkl', 'rb') as f:
+        model = pickle.load(f)
+    train_pred_zs = mlp_predict(model, answer_train_embs).tolist()
+    test_pred_zs = mlp_predict(model, answer_test_embs).tolist()
     
     train_diffs = [abs(a - b) for a, b in zip(train_pred_zs, train_gt_zs)]
     test_diffs = [abs(a - b) for a, b in zip(test_pred_zs, test_gt_zs)]
     
     plot_hist(
         data=train_diffs,
-        plot_path=f"{plot_dir}/sft_diff_hist_train.png",
+        plot_path=f"{plot_dir}/sft_diff_hist_train_agg.png",
         ylabel=r"train $z$ difference",
     )
     
     plot_hist(
         data=test_diffs,
-        plot_path=f"{plot_dir}/sft_diff_hist_test.png",
+        plot_path=f"{plot_dir}/sft_diff_hist_test_agg.png",
         ylabel=r"test $z$ difference",
     )
