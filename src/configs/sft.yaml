@@ -2,7 +2,7 @@ model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
 dataset_name: stair-lab/aggregate-sft
 output_dir: ../data/sft
 overwrite_output_dir: true
-num_train_epochs: 1
+num_train_epochs: 2
 
 dataset_train_split: train
 dataset_test_split: test
