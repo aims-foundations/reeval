@@ -52,7 +52,7 @@ def agg_amor_calibration(
         dtype=torch.float32,
         device=device
     )
-            
+    
     optimizer_theta = optim.Adam([theta_train], lr=lr_theta)
     optimizer_mlp = optim.Adam(mlp_model.parameters(), lr=lr_mlp)
             
@@ -81,17 +81,19 @@ def agg_amor_calibration(
             for emb_batch, y_batch in tqdm(data_loader, desc='Batch'):
                 y_batch = y_batch.T
                 z_train = mlp_model(emb_batch).flatten()
-                theta_train_matrix = theta_train_subset.unsqueeze(1)  # (n, 1)
-                z_train_matrix = z_train.unsqueeze(0)  # (1, m)
-                prob_matrix = item_response_fn_1PL(z_train_matrix, theta_train_matrix)
+                prob_matrix = item_response_fn_1PL(
+                    z_train.unsqueeze(0), 
+                    theta_train_subset.unsqueeze(1)
+                )
                 # assert prob_matrix.shape == y_batch.shape
                 
                 mask = y_batch!=-1
-                masked_y_batch = y_batch.flatten()[mask.flatten()].float()
-                masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
                 
-                berns = torch.distributions.Bernoulli(masked_prob_matrix)
-                loss = -berns.log_prob(masked_y_batch).mean()
+                loss = -torch.distributions.Bernoulli(
+                    prob_matrix.flatten()[mask.flatten()]
+                ).log_prob(
+                    y_batch.flatten()[mask.flatten()].float()
+                ).mean()
                 loss.backward()
                 optimizer_theta.step()
                 optimizer_mlp.step()

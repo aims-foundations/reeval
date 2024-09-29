@@ -513,6 +513,7 @@ def plot_loss(
     plt.plot(losses)
     plt.tick_params(axis='both', labelsize=16)
     plt.ylabel(ylabel, fontsize=25)
+    plt.ylim(0, 10)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
