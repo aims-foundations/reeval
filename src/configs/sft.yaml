@@ -16,7 +16,7 @@ learning_rate: 0.0001
 lr_scheduler_type: cosine
 logging_steps: 1
 per_device_train_batch_size: 4
-report_to: none
+report_to: wandb
 save_steps: 500
 warmup_ratio: 0.1
 
