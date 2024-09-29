@@ -88,11 +88,11 @@ def agg_amor_calibration(
             
             losses = []
             z_batch = []
+            z_mse = 0
             for emb_batch, y_batch, gt_z_train_batch in tqdm(data_loader, desc='Batch'):
                 y_batch = y_batch.T
                 z_train = mlp_model(emb_batch).flatten()
-                mse_z_train = torch.nn.MSELoss()(z_train, gt_z_train_batch)
-                wandb.log({'mse_z_train': mse_z_train.item()})
+                z_mse += torch.nn.MSELoss()(z_train, gt_z_train_batch)
                 
                 prob_matrix = item_response_fn_1PL(
                     z_train.unsqueeze(0), 
@@ -120,6 +120,8 @@ def agg_amor_calibration(
                 theta_train_subset = theta_train_subset.detach()
                 if epoch == max_epoch-1:
                     z_batch.extend(list(z_train.detach().cpu().numpy()))
+            
+            wandb.log({'mse_z_train': z_mse.item()})
             
             if epoch == max_epoch-1:
                 z_trains.append(z_batch)
