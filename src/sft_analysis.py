@@ -11,16 +11,16 @@ import pickle
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str, required=True)
+    parser.add_argument('--llm', type=str, required=True)
     args = parser.parse_args()
     
     plot_dir = "../plot/sft"
     os.makedirs(plot_dir, exist_ok=True)
     
-    if args.model == "llama":
+    if args.llm == "llama":
         model_dir = "../data/sft/lora_10epoch"
         model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-2400')
-    elif args.model == "qwen":
+    elif args.llm == "qwen":
         model_dir = "../data/sft/qwen_full_10epoch"
         model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-1000')
     model = model.merge_and_unload().to(torch.bfloat16)

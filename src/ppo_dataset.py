@@ -26,12 +26,16 @@ if __name__ == "__main__":
     parser.add_argument('--dataset', type=str, required=True)
     parser.add_argument('--ppo_size', type=int, default=125000)
     parser.add_argument('--model', type=str, default='bayridge', choices=['bayridge', 'mlp'])
+    parser.add_argument('--llm', type=str, required=True)
     args = parser.parse_args()
     
     load_dotenv()
     hf_token = os.getenv('HF_TOKEN')
     login(token=hf_token)
-    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
+    if args.llm == "llama":
+        tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
+    elif args.llm == "qwen":
+        tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-3B-Instruct")
     
     hf_repo = f"stair-lab/reeval_{args.dataset}-embed"
     dataset_train = load_dataset(hf_repo, split="train")
@@ -80,4 +84,4 @@ if __name__ == "__main__":
         "train": train_dataset,
         "test": test_dataset
     })
-    dataset_dict.push_to_hub(f'stair-lab/{args.dataset}-ppo')
+    dataset_dict.push_to_hub(f'stair-lab/{args.dataset}-ppo-{args.model}')

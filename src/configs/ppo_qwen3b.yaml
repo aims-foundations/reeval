@@ -1,14 +1,14 @@
 # Model for PPO finetuning
-model_name_or_path: ../data/sft/lora_10epoch
+model_name_or_path: ../data/sft/qwen_full_10epoch
 use_peft: false
-lora_alpha: 512
-lora_r: 256
-lora_dropout: 0.1
-lora_target_modules: ["q_proj", "v_proj"]
-output_dir: ../data/ppo/llama3-ppo
+# lora_alpha: 512
+# lora_r: 256
+# lora_dropout: 0.1
+# lora_target_modules: ["q_proj", "v_proj"]
+output_dir: ../data/ppo/qwen3b-ppo
 
 # Reward model
-reward_model: http://localhost:4324
+reward_model: http://hyperturing2:4324
 discount_reward_factor: 0.99
 
 # Dataset
