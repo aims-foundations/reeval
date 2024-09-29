@@ -38,11 +38,11 @@ if __name__ == "__main__":
     sft_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": (
-            """Generate a question with a given topic, and difficulty score which range from -5 to 5. """
+            """Generate a question with a given topic, and a difficulty score which range from -5 to 5. """
             """The lower the score is, the more difficult the question is. """
             """Hence a model is more likely to fail the questions. """
             """Output only the question and nothing else. """
-            """Topic: %s, """
+            """Topic: %s """
             """Difficulty: %s. Question: """
             )
         },
