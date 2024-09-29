@@ -36,7 +36,7 @@ def agg_amor_calibration(
     model_id_path: str,
     lr_theta=0.01,
     lr_mlp=1e-5,
-    max_epoch=1,
+    max_epoch=10,
     embed_dim=4096,
     bs=4096,
 ):
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     for i in tqdm(range(10), desc='Seed'):
         set_seed(i)
         main(
-            datasets=DATASETS[:2],
+            datasets=DATASETS,
             emb_hf_repo=f'stair-lab/reeval_aggregate-embed',
             model_id_path='configs/model_id.json',
             iteration=i,
