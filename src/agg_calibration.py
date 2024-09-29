@@ -101,8 +101,8 @@ def agg_amor_calibration(
                 optimizer_mlp.zero_grad()
                 
                 pbar.set_postfix({'loss': loss.item()})
-            
-            loss = loss.detach()
+                
+                theta_train_subset = theta_train_subset.detach()
             
             if epoch == max_epoch-1:
                 z_trains.append(z_train)
