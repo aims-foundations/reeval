@@ -149,8 +149,7 @@ def main_bydataset(
     test_loss_plot_path=None,
 ):
     dataset_info = load_dataset(hf_repo, split=None)
-    splits = dataset_info.keys()
-    print(splits)
+    splits = list(dataset_info.keys())
     
     train_indices, test_indices = split_indices(len(splits))
     train_spliets = splits(train_indices)
