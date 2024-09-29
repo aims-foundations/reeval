@@ -57,12 +57,12 @@ if __name__ == "__main__":
     
     plot_hist(
         data=train_diffs,
-        plot_path=f"{plot_dir}/sft_diff_hist_train.png",
+        plot_path=f"{plot_dir}/sft_diff_hist_train_20epoch.png",
         ylabel=r"train $z$ difference",
     )
     
     plot_hist(
         data=test_diffs,
-        plot_path=f"{plot_dir}/sft_diff_hist_test.png",
+        plot_path=f"{plot_dir}/sft_diff_hist_test_20epoch.png",
         ylabel=r"test $z$ difference",
     )
