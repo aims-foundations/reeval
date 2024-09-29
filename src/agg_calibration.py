@@ -6,6 +6,7 @@ import torch
 from tqdm import tqdm
 import torch.optim as optim
 from datasets import load_dataset
+from torch.utils.data import DataLoader, Dataset
 from utils import (
     set_seed, 
     item_response_fn_1PL, 
@@ -14,6 +15,17 @@ from utils import (
     MLP
 )
 
+class BatchDataset(Dataset):
+    def __init__(self, emb, y):
+        self.emb = emb
+        self.y = y
+    def __len__(self):
+        return self.emb[0]
+    def __getitem__(self, idx):
+        emb = self.emb[idx, :]
+        y = self.y[:, idx]
+        return emb, y
+    
 def agg_amor_calibration(
     datasets: list[str], 
     train_indices: list[list[int]],
@@ -21,9 +33,10 @@ def agg_amor_calibration(
     emb_hf_repo: str,
     model_id_path: str,
     lr_theta=0.01,
-    lr_mlp=1e-5,
+    lr_mlp=1e-3,
     max_epoch=10,
     embed_dim=4096,
+    bs=4096,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     with open(model_id_path, 'r') as f:
@@ -61,26 +74,29 @@ def agg_amor_calibration(
             assert y.shape[0] == theta_train_subset.shape[0]
             assert y.shape[1] == emb.shape[0]
             
-            z_train = mlp_model(emb).flatten()
-            theta_train_matrix = theta_train_subset.unsqueeze(1) # (n, 1)
-            z_train_matrix = z_train.unsqueeze(0) # (1, m)
-            prob_matrix = item_response_fn_1PL(z_train_matrix, theta_train_matrix)
-            print(prob_matrix[:5])
-            
-            mask = y!=-1
-            masked_y = y.flatten()[mask.flatten()].float()
-            masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
-            print(masked_prob_matrix[:5])
-            
-            berns = torch.distributions.Bernoulli(masked_prob_matrix)
-            loss = -berns.log_prob(masked_y).mean()
-            loss.backward()
-            optimizer_theta.step()
-            optimizer_mlp.step()
-            optimizer_theta.zero_grad()
-            optimizer_mlp.zero_grad()
-            
-            pbar.set_postfix({'loss': loss.item()})
+            dataset_batch = BatchDataset(emb, y)
+            data_loader = DataLoader(dataset_batch, batch_size=bs, shuffle=True)
+
+            for emb_batch, y_batch in data_loader:
+                z_train = mlp_model(emb_batch).flatten()
+                theta_train_matrix = theta_train_subset.unsqueeze(1)  # (n, 1)
+                z_train_matrix = z_train.unsqueeze(0)  # (1, m)
+                prob_matrix = item_response_fn_1PL(z_train_matrix, theta_train_matrix)
+                assert prob_matrix.shape == y_batch.shape
+                
+                mask = y_batch!=-1
+                masked_y_batch = y_batch.flatten()[mask.flatten()].float()
+                masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
+                
+                berns = torch.distributions.Bernoulli(masked_prob_matrix)
+                loss = -berns.log_prob(masked_y_batch).mean()
+                loss.backward()
+                optimizer_theta.step()
+                optimizer_mlp.step()
+                optimizer_theta.zero_grad()
+                optimizer_mlp.zero_grad()
+                
+                pbar.set_postfix({'loss': loss.item()})
             
             if epoch == max_epoch-1:
                 z_trains.append(z_train)
