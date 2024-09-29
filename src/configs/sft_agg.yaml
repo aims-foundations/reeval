@@ -25,5 +25,3 @@ lora_alpha: 16
 lora_r: 8
 lora_dropout: 0.1
 lora_target_modules: ["q_proj", "v_proj"]
-
-main_process_port: 29503
