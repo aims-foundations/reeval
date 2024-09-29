@@ -150,8 +150,10 @@ def main_bydataset(
 ):
     dataset_info = load_dataset(hf_repo, split=None)
     splits = dataset_info.keys()
-    test_splits = ['airbench', 'mmlu', 'raft']
-    train_spliets = [s for s in splits if s not in test_splits]
+    
+    train_indices, test_indices = split_indices(len(splits))
+    train_spliets = splits(train_indices)
+    test_splits = splits(test_indices)
     train_datasets = [load_dataset(hf_repo, split=split) for split in train_spliets]
     train_dataset = concatenate_datasets(train_datasets)
     emb_train = np.array(train_dataset['embed'])
@@ -207,9 +209,9 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
 
-    if args.task == 'byrandom':
-        for i in tqdm(range(10)):
-            set_seed(i)
+    for i in tqdm(range(10)):
+        set_seed(i)
+        if args.task == 'byrandom':
             main_byrandom(
                 hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
                 model_name=args.model,
@@ -219,16 +221,15 @@ if __name__ == "__main__":
                 train_loss_plot_path=f'{plot_dir}/train_loss.png' if i==0 else None,
                 test_loss_plot_path=f'{plot_dir}/test_loss.png' if i==0 else None,
             )
+        elif args.task == 'bydataset':
+            assert args.dataset == 'aggregate'
+            main_bydataset(
+                hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
+                model_name=args.model,
+                df_train_path=f'{output_dir}/train_bydataset.csv',
+                df_test_path=f'{output_dir}/test_bydataset.csv',
+                save_model_path=f'{output_dir}/{args.model}_bydataset.pkl',
+                train_loss_plot_path=f'{plot_dir}/train_loss_bydataset.png',
+                test_loss_plot_path=f'{plot_dir}/test_loss_bydataset.png',
+            )
             
-    elif args.task == 'bydataset':
-        assert args.dataset == 'aggregate'
-        main_bydataset(
-            hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
-            model_name=args.model,
-            df_train_path=f'{output_dir}/train_bydataset.csv',
-            df_test_path=f'{output_dir}/test_bydataset.csv',
-            save_model_path=f'{output_dir}/{args.model}_bydataset.pkl',
-            train_loss_plot_path=f'{plot_dir}/train_loss_bydataset.png',
-            test_loss_plot_path=f'{plot_dir}/test_loss_bydataset.png',
-        )
-        
