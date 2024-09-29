@@ -18,8 +18,8 @@ if __name__ == "__main__":
     os.makedirs(plot_dir, exist_ok=True)
     
     if args.llm == "llama":
-        model_dir = "../data/sft/lora_10epoch"
-        model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-2400')
+        model_dir = "../data/sft/lora_20epoch"
+        model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-4800')
         train_dataset = load_dataset("stair-lab/airbench-sft", split="train")
         test_dataset = load_dataset("stair-lab/airbench-sft", split="test")
         train_prompts = train_dataset['text']
