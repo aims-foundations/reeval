@@ -152,8 +152,8 @@ def main_bydataset(
     splits = list(dataset_info.keys())
     
     train_indices, test_indices = split_indices(len(splits))
-    train_splits = splits[train_indices]
-    test_splits = splits[test_indices]
+    train_splits = [splits[i] for i in train_indices]
+    test_splits = [splits[i] for i in test_indices]
     print(f'Test Splits: {test_splits}')
     train_datasets = [load_dataset(hf_repo, split=split) for split in train_splits]
     train_dataset = concatenate_datasets(train_datasets)
