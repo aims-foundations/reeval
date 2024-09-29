@@ -79,6 +79,7 @@ def agg_amor_calibration(
             data_loader = DataLoader(dataset_batch, batch_size=bs, shuffle=True)
 
             for emb_batch, y_batch in data_loader:
+                y_batch = y_batch.T
                 z_train = mlp_model(emb_batch).flatten()
                 theta_train_matrix = theta_train_subset.unsqueeze(1)  # (n, 1)
                 z_train_matrix = z_train.unsqueeze(0)  # (1, m)
