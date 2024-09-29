@@ -1,18 +1,19 @@
 # Model for PPO finetuning
-model_name_or_path: ../data/sft
+model_name_or_path: ../data/sft/lora_10epoch
 use_peft: true
-lora_alpha: 16
-lora_r: 64
+lora_alpha: 512
+lora_r: 256
 lora_dropout: 0.1
-output_dir: ../data/ppo/llama3-ppo-test
+lora_target_modules: ["q_proj", "v_proj"]
+output_dir: ../data/ppo/llama3-ppo
 
 # Reward model
-reward_model: http://hyperturing2:8000
+reward_model: http://localhost:8000
 discount_reward_factor: 0.99
 
 # Dataset
-query_dataset: stair-lab/airbench-ppo-test
-ppo_epochs: 1
+query_dataset: stair-lab/airbench-ppo
+ppo_epochs: 4
 mini_batch_size: 2
 batch_size: 2
 
