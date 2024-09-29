@@ -144,7 +144,7 @@ def main_bydataset(
     emb_test = torch.tensor(test_dataset['embed'], dtype=torch.float32)
     
     y_train_df = pd.concat(
-        [pd.read_csv(f'{input_dir}/{dataset}/matrix.csv') for dataset in train_splits],
+        [pd.read_csv(f'{input_dir}/{dataset}/matrix.csv', index_col=0) for dataset in train_splits],
         ignore_index=True
     )
     print(y_train_df)
@@ -153,7 +153,7 @@ def main_bydataset(
     
     
     y_test_df = pd.concat(
-        [pd.read_csv(f'{input_dir}/{dataset}/matrix.csv') for dataset in test_splits],
+        [pd.read_csv(f'{input_dir}/{dataset}/matrix.csv', index_col=0) for dataset in test_splits],
         ignore_index=True
     )
     y_test = torch.tensor(y_test_df.values, dtype=torch.float32)
