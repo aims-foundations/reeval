@@ -30,7 +30,7 @@ if __name__ == "__main__":
     load_dotenv()
     hf_token = os.getenv('HF_TOKEN')
     login(token=hf_token)
-    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
+    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-3B-Instruct")
     
     hf_repo = f"stair-lab/reeval_{args.dataset}-embed"
     dataset_train = load_dataset(hf_repo, split="train")
