@@ -28,8 +28,8 @@ if __name__ == "__main__":
     model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-12500')
     train_dataset = load_dataset("stair-lab/aggregate-sft", split="train")
     test_dataset = load_dataset("stair-lab/aggregate-sft", split="test")
-    train_prompts = train_dataset['text'][:3000]
-    test_prompts = test_dataset['text'][:3000]
+    train_prompts = train_dataset['text'][:1000]
+    test_prompts = test_dataset['text'][:1000]
     model = model.merge_and_unload().to(torch.bfloat16)
     model.save_pretrained(model_dir)
     

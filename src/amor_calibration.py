@@ -75,7 +75,7 @@ def amor_calibration(
 
     return theta_hat, z_hat, W, losses
 
-def main_byrandom(
+def main(
     hf_repo,
     y_path,
     df_z_train_path,
@@ -120,75 +120,10 @@ def main_byrandom(
     if train_loss_plot_path is not None:
         plot_loss(train_losses, train_loss_plot_path, r'Train Loss')
 
-def main_bydataset(
-    hf_repo,
-    df_z_train_path,
-    df_z_test_path,
-    df_theta_path,
-    train_loss_plot_path,
-):
-    dataset_info = load_dataset(hf_repo, split=None)
-    splits = list(dataset_info.keys())
-    
-    train_indices, test_indices = split_indices(len(splits))
-    train_splits = [splits[i] for i in train_indices]
-    test_splits = [splits[i] for i in test_indices]
-    print(f'Test Splits: {test_splits}')
-    
-    train_datasets = [load_dataset(hf_repo, split=split) for split in train_splits]
-    train_dataset = concatenate_datasets(train_datasets)
-    emb_train = torch.tensor(train_dataset['embed'], dtype=torch.float32)
-    
-    test_datasets = [load_dataset(hf_repo, split=split) for split in test_splits]
-    test_dataset = concatenate_datasets(test_datasets)
-    emb_test = torch.tensor(test_dataset['embed'], dtype=torch.float32)
-    
-    y_train_df = pd.concat(
-        [pd.read_csv(f'{input_dir}/{dataset}/matrix.csv', index_col=0) for dataset in train_splits],
-        ignore_index=True
-    )
-    print(y_train_df)
-    print(y_train_df.values)
-    y_train = torch.tensor(y_train_df.values, dtype=torch.float32)
-    
-    
-    y_test_df = pd.concat(
-        [pd.read_csv(f'{input_dir}/{dataset}/matrix.csv', index_col=0) for dataset in test_splits],
-        ignore_index=True
-    )
-    y_test = torch.tensor(y_test_df.values, dtype=torch.float32)
-    
-    assert y_train.shape[1] == emb_train.shape[0]
-    assert y_test.shape[1] == emb_test.shape[0]
-    
-    theta_train, z_train, W_train, train_losses = amor_calibration(y_train, emb_train)
-    z_test = torch.matmul(emb_test, W_train.cpu().detach())
-    
-    df_z_train = pd.DataFrame({
-        'index': train_indices,
-        'z': z_train.cpu().detach().numpy(),
-    })
-    df_z_train.to_csv(df_z_train_path, index=False)
-    
-    df_z_test = pd.DataFrame({
-        'index': test_indices,
-        'z': z_test.cpu().detach().numpy(),
-    })
-    df_z_test.to_csv(df_z_test_path, index=False)
-    
-    df_theta = pd.DataFrame({
-        'theta': theta_train.cpu().detach().numpy(),
-    })
-    df_theta.to_csv(df_theta_path, index=False)
-    
-    if train_loss_plot_path is not None:
-        plot_loss(train_losses, train_loss_plot_path, r'Train Loss')
-
 if __name__ == "__main__":
     wandb.init(project="amor_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
-    parser.add_argument('--task', type=str, default='byrandom', choices=['byrandom', 'bydataset'])
     args = parser.parse_args()
     
     input_dir = '../data/pre_calibration/'
@@ -197,22 +132,12 @@ if __name__ == "__main__":
     
     for i in tqdm(range(10)):
         set_seed(i)
-        if args.task == 'byrandom':
-            main_byrandom(
-                hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
-                y_path=f'{input_dir}/{args.dataset}/matrix.csv',
-                df_z_train_path=f'{output_dir}/z_train_{i}.csv',
-                df_z_test_path=f'{output_dir}/z_test_{i}.csv',
-                df_theta_path=f'{output_dir}/theta_{i}.csv',
-                train_loss_plot_path=f'../plot/amor_calibration/train_loss_{i}_{args.dataset}.png',
-            )
-        elif args.task == 'bydataset':
-            assert args.dataset == 'aggregate'
-            main_bydataset(
-                hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
-                df_z_train_path=f'{output_dir}/z_train_bydataset_{i}.csv',
-                df_z_test_path=f'{output_dir}/z_test_bydataset_{i}.csv',
-                df_theta_path=f'{output_dir}/theta_bydataset_{i}.csv',
-                train_loss_plot_path=f'../plot/amor_calibration/train_loss_bydataset_{i}.png',
-            )
-            
+        main(
+            hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
+            y_path=f'{input_dir}/{args.dataset}/matrix.csv',
+            df_z_train_path=f'{output_dir}/z_train_{i}.csv',
+            df_z_test_path=f'{output_dir}/z_test_{i}.csv',
+            df_theta_path=f'{output_dir}/theta_{i}.csv',
+            train_loss_plot_path=f'../plot/amor_calibration/train_loss_{i}_{args.dataset}.png',
+        )
+       

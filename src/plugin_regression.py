@@ -51,7 +51,6 @@ def train_model(
             optimizer.step()
             total_train_loss += loss.item()
         
-
         total_test_loss = 0
         model.eval()
         with torch.no_grad():
@@ -61,12 +60,12 @@ def train_model(
                 loss = criterion(outputs, z_batch)
                 total_test_loss += loss.item()
         
-        trian_loss = total_train_loss / len(train_loader)
+        train_loss = total_train_loss / len(train_loader)
         test_loss = total_test_loss / len(test_loader)
-        train_losses.append(trian_loss)
+        train_losses.append(train_loss)
         test_losses.append(test_loss)
-        wandb.log({'train_loss': trian_loss, 'test_loss': test_loss})
-        pbar.set_postfix({'train_loss': trian_loss, 'test_loss': test_loss})
+        wandb.log({'train_loss': train_loss, 'test_loss': test_loss})
+        pbar.set_postfix({'train_loss': train_loss, 'test_loss': test_loss})
 
     model.eval()
     with torch.no_grad():
