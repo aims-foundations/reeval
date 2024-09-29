@@ -150,6 +150,7 @@ def main_bydataset(
 ):
     dataset_info = load_dataset(hf_repo, split=None)
     splits = dataset_info.keys()
+    print(splits)
     
     train_indices, test_indices = split_indices(len(splits))
     train_spliets = splits(train_indices)
