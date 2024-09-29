@@ -8,6 +8,7 @@ from datasets import load_dataset, Dataset
 from utils import MLP, get_embed, plot_hist
 from ppo_reward_model import extract_score
 import pickle
+from transformers import AutoTokenizer
 
 def mlp_predict(model, emb_input):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -22,6 +23,7 @@ if __name__ == "__main__":
     plot_dir = "../plot/sft"
     os.makedirs(plot_dir, exist_ok=True)
     
+    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
     model_dir = "../data/sft/agg_llama_10epoch"
     model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-12500')
     train_dataset = load_dataset("stair-lab/aggregate-sft", split="train")
