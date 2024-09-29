@@ -20,7 +20,7 @@ batch_size: 2
 # Hyperparameters
 gradient_accumulation_steps: 1
 gradient_checkpointing: true
-learning_rate: 2.94e-5
+learning_rate: 1.0e-6
 save_steps: 50
 
 max_new_tokens: 256
