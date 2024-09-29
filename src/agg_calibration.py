@@ -1,3 +1,4 @@
+import argparse
 import json
 import warnings
 import os
@@ -20,7 +21,7 @@ class BatchDataset(Dataset):
         self.emb = emb
         self.y = y
     def __len__(self):
-        return self.emb[0]
+        return self.emb.shape[0]
     def __getitem__(self, idx):
         emb = self.emb[idx, :]
         y = self.y[:, idx]
@@ -162,6 +163,11 @@ def main(
     df_theta.to_csv(df_theta_path, index=False)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model', type=str, default='mlp', choices=['mlp'])
+    parser.add_argument('--task', type=str, default='byrandom', choices=['byrandom', 'bydataset'])
+    args = parser.parse_args()
+    
     for i in tqdm(range(10), desc='Seed'):
         set_seed(i)
         main(
