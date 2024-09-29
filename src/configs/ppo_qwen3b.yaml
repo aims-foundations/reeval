@@ -1,5 +1,5 @@
 # Model for PPO finetuning
-model_name_or_path: ../data/sft/qwen_full_10epoch
+model_name_or_path: ../data/sft/qwen_full_10epoch/checkpoint-1000
 use_peft: false
 # lora_alpha: 512
 # lora_r: 256
@@ -12,7 +12,7 @@ reward_model: http://hyperturing2:4324
 discount_reward_factor: 0.99
 
 # Dataset
-query_dataset: stair-lab/airbench-ppo
+query_dataset: stair-lab/airbench-ppo-qwen
 ppo_epochs: 4
 mini_batch_size: 2
 batch_size: 2

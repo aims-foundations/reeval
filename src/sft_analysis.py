@@ -20,9 +20,6 @@ if __name__ == "__main__":
     if args.llm == "llama":
         model_dir = "../data/sft/lora_10epoch"
         model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-2400')
-    elif args.llm == "qwen":
-        model_dir = "../data/sft/qwen_full_10epoch"
-        model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-1000')
     model = model.merge_and_unload().to(torch.bfloat16)
     model.save_pretrained(model_dir)
     
