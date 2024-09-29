@@ -121,7 +121,7 @@ def agg_amor_calibration(
                 if epoch == max_epoch-1:
                     z_batch.extend(list(z_train.detach().cpu().numpy()))
             
-            wandb.log({'mse_z_train': z_mse.item()})
+            wandb.log({'mse_z_train': z_mse.item()/len(data_loader)})
             
             if epoch == max_epoch-1:
                 z_trains.append(z_batch)
