@@ -68,7 +68,7 @@ def agg_amor_calibration(
             y_df = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
             y = torch.tensor(y_df.values[:, train_index]).to(device)
             
-            gt_z_train_df = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_z.csv', index_col=0)["z"]
+            gt_z_train_df = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_z.csv')["z"]
             gt_z_train = torch.tensor(gt_z_train_df.values[train_index]).to(device)
             
             model_names = y_df.index.tolist()
@@ -129,7 +129,7 @@ def agg_amor_calibration(
         y_df = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
         y = torch.tensor(y_df.values[:, test_index]).to(device)
         
-        gt_z_test_df = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_z.csv', index_col=0)["z"]
+        gt_z_test_df = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_z.csv')["z"]
         gt_z_test = torch.tensor(gt_z_test_df.values[test_index]).to(device)
             
         hf_repo = load_dataset(emb_hf_repo, split=dataset)

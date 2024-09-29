@@ -8,6 +8,7 @@ from tqdm import tqdm
 import torch.optim as optim
 from datasets import load_dataset
 from torch.utils.data import DataLoader, Dataset
+import wandb
 from utils import (
     set_seed, 
     item_response_fn_1PL, 
@@ -47,7 +48,8 @@ def agg_amor_calibration(
     mlp_model = MLP(embed_dim).to(device)
     mlp_model.train()
     theta_train = torch.normal(
-        mean=0.0, std=1.0,
+        mean=0.0,
+        std=1.0,
         size=(len(model_id_dict),),
         requires_grad=True,
         dtype=torch.float32,
@@ -65,6 +67,9 @@ def agg_amor_calibration(
             
             y_df = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
             y = torch.tensor(y_df.values[:, train_index]).to(device)
+            
+            gt_z_train_df = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_z.csv', index_col=0)["z"]
+            gt_z_train = torch.tensor(gt_z_train_df.values[train_index]).to(device)
             
             model_names = y_df.index.tolist()
             model_ids = [model_id_dict[name] for name in model_names]
@@ -84,6 +89,9 @@ def agg_amor_calibration(
             for emb_batch, y_batch in tqdm(data_loader, desc='Batch'):
                 y_batch = y_batch.T
                 z_train = mlp_model(emb_batch).flatten()
+                mse_z_train = torch.nn.MSELoss()(z_train, gt_z_train)
+                wandb.log({'mse_z_train': mse_z_train.item()})
+                
                 prob_matrix = item_response_fn_1PL(
                     z_train.unsqueeze(0), 
                     theta_train_subset.unsqueeze(1)
@@ -104,6 +112,7 @@ def agg_amor_calibration(
                 optimizer_theta.zero_grad()
                 optimizer_mlp.zero_grad()
                 
+                wandb.log({'train_loss': loss.item()})
                 pbar.set_postfix({'loss': loss.item()})
                 
                 theta_train_subset = theta_train_subset.detach()
@@ -120,25 +129,28 @@ def agg_amor_calibration(
         y_df = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
         y = torch.tensor(y_df.values[:, test_index]).to(device)
         
+        gt_z_test_df = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_z.csv', index_col=0)["z"]
+        gt_z_test = torch.tensor(gt_z_test_df.values[test_index]).to(device)
+            
         hf_repo = load_dataset(emb_hf_repo, split=dataset)
         emb = torch.tensor(hf_repo['embed'])[test_index].to(device)
         
         z_test = mlp_model(emb).flatten()
         z_tests.append(z_test)
+        
+        mse_z_test = torch.nn.MSELoss()(z_test, gt_z_test)
+        wandb.log({'mse_z_test': mse_z_test.item()})
     
     return theta_train, z_trains, z_tests, losses
 
-def main_byrandom(
+def main(
     datasets,
     emb_hf_repo,
     model_id_path,
     iteration,
     train_loss_plot_path=None,
 ):
-    splits = list(datasets)
-    
-    train_indices, test_indices = split_indices(len(splits))
-    
+    train_indices, test_indices = [], []
     for dataset in datasets:
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
         train_index, test_index = split_indices(y.shape[1])
@@ -180,52 +192,10 @@ def main_byrandom(
     if train_loss_plot_path is not None:
         plot_loss(train_losses, train_loss_plot_path, r'Train Loss')
 
-def main_bydataset(
-    datasets,
-    emb_hf_repo,
-    model_id_path,
-    iteration,
-    train_loss_plot_path=None,
-):
-    theta_train, z_trains, z_tests, train_losses = agg_amor_calibration(
-        datasets=datasets, 
-        train_indices=train_indices,
-        test_indices=test_indices,
-        emb_hf_repo=emb_hf_repo,
-        model_id_path=model_id_path,
-    )
-    
-    for i, dataset in enumerate(tqdm(datasets, desc='Saving')):
-        output_dir = f'../data/agg_calibration/{dataset}'
-        os.makedirs(output_dir, exist_ok=True)
-        df_z_train_path=f'{output_dir}/z_train_{iteration}.csv'
-        df_z_test_path=f'{output_dir}/z_test_{iteration}.csv'
-        
-        df_z_train = pd.DataFrame({
-            'index': train_indices[i],
-            'z': z_trains[i],
-        })
-        df_z_train.to_csv(df_z_train_path, index=False)
-        
-        df_z_test = pd.DataFrame({
-            'index': test_indices[i],
-            'z': z_tests[i].cpu().detach().numpy(),
-        })
-        df_z_test.to_csv(df_z_test_path, index=False)
-        
-    df_theta_path=f'../data/agg_calibration/theta_{iteration}.csv'
-    df_theta = pd.DataFrame({
-        'theta': theta_train.cpu().detach().numpy()
-    })
-    df_theta.to_csv(df_theta_path, index=False)
-    
-    if train_loss_plot_path is not None:
-        plot_loss(train_losses, train_loss_plot_path, r'Train Loss')
-
 if __name__ == "__main__":
+    wandb.init(project="agg_amor_calibration_byrandom")
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, default='mlp', choices=['mlp'])
-    parser.add_argument('--task', type=str, default='byrandom', choices=['byrandom', 'bydataset'])
     args = parser.parse_args()
     
     plot_dir = '../plot/agg_calibration'
@@ -233,13 +203,11 @@ if __name__ == "__main__":
     
     for i in tqdm(range(10), desc='Seed'):
         set_seed(i)
-        if args.task == 'byrandom':
-            main_byrandom(
-                datasets=DATASETS,
-                emb_hf_repo=f'stair-lab/reeval_aggregate-embed',
-                model_id_path='configs/model_id.json',
-                iteration=i,
-                train_loss_plot_path=f'{plot_dir}/train_loss_{i}.png',
-            )
-        elif args.task == 'bydataset':
+        main(
+            datasets=DATASETS,
+            emb_hf_repo=f'stair-lab/reeval_aggregate-embed',
+            model_id_path='configs/model_id.json',
+            iteration=i,
+            train_loss_plot_path=f'{plot_dir}/train_loss_{i}.png',
+        )
             
