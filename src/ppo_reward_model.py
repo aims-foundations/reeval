@@ -43,6 +43,7 @@ class MyRewardModel(RewardModelTemplate):
         print(f"gt scores: {gt_scores}")
         print(f"pred scores: {pred_scores}")
         print(f"reward scores: {rewards}")
+        
         return rewards
     
     def load(self,):

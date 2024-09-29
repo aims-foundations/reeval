@@ -24,3 +24,4 @@ learning_rate: 1.0e-4
 save_steps: 50
 
 max_new_tokens: 256
+report_to: wandb
