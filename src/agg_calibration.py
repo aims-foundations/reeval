@@ -13,7 +13,8 @@ from utils import (
     item_response_fn_1PL, 
     split_indices, 
     DATASETS, 
-    MLP
+    MLP,
+    plot_loss,
 )
 
 class BatchDataset(Dataset):
@@ -35,7 +36,7 @@ def agg_amor_calibration(
     model_id_path: str,
     lr_theta=0.01,
     lr_mlp=1e-5,
-    max_epoch=10,
+    max_epoch=1,
     embed_dim=4096,
     bs=4096,
 ):
@@ -77,7 +78,9 @@ def agg_amor_calibration(
             
             dataset_batch = BatchDataset(emb, y)
             data_loader = DataLoader(dataset_batch, batch_size=bs, shuffle=True)
-
+            
+            losses = []
+            z_batch = []
             for emb_batch, y_batch in tqdm(data_loader, desc='Batch'):
                 y_batch = y_batch.T
                 z_train = mlp_model(emb_batch).flatten()
@@ -94,6 +97,7 @@ def agg_amor_calibration(
                 ).log_prob(
                     y_batch.flatten()[mask.flatten()].float()
                 ).mean()
+                losses.append(loss.item())
                 loss.backward()
                 optimizer_theta.step()
                 optimizer_mlp.step()
@@ -103,9 +107,11 @@ def agg_amor_calibration(
                 pbar.set_postfix({'loss': loss.item()})
                 
                 theta_train_subset = theta_train_subset.detach()
+                if epoch == max_epoch-1:
+                    z_batch.extend(list(z_train.detach().cpu().numpy()))
             
             if epoch == max_epoch-1:
-                z_trains.append(z_train)
+                z_trains.append(z_batch)
     
     z_tests = []
     for i, dataset in enumerate(tqdm(datasets, desc='Testing')):
@@ -120,13 +126,14 @@ def agg_amor_calibration(
         z_test = mlp_model(emb).flatten()
         z_tests.append(z_test)
     
-    return theta_train, z_trains, z_tests
+    return theta_train, z_trains, z_tests, losses
 
 def main(
     datasets,
     emb_hf_repo,
     model_id_path,
     iteration,
+    train_loss_plot_path=None,
 ):
     train_indices, test_indices = [], []
     for dataset in datasets:
@@ -135,7 +142,7 @@ def main(
         train_indices.append(train_index)
         test_indices.append(test_index)
     
-    theta_train, z_trains, z_tests = agg_amor_calibration(
+    theta_train, z_trains, z_tests, train_losses = agg_amor_calibration(
         datasets=datasets, 
         train_indices=train_indices,
         test_indices=test_indices,
@@ -166,6 +173,9 @@ def main(
         'theta': theta_train.cpu().detach().numpy()
     })
     df_theta.to_csv(df_theta_path, index=False)
+    
+    if train_loss_plot_path is not None:
+        plot_loss(train_losses, train_loss_plot_path, r'Train Loss')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -173,12 +183,16 @@ if __name__ == "__main__":
     parser.add_argument('--task', type=str, default='byrandom', choices=['byrandom', 'bydataset'])
     args = parser.parse_args()
     
+    plot_dir = '../plot/agg_calibration'
+    os.makedirs(plot_dir, exist_ok=True)
+    
     for i in tqdm(range(10), desc='Seed'):
         set_seed(i)
         main(
-            datasets=DATASETS,
+            datasets=DATASETS[:2],
             emb_hf_repo=f'stair-lab/reeval_aggregate-embed',
             model_id_path='configs/model_id.json',
             iteration=i,
+            train_loss_plot_path=f'{plot_dir}/train_loss_{i}.png',
         )
         
