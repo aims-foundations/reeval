@@ -62,6 +62,7 @@ def agg_amor_calibration(
     optimizer_mlp = optim.Adam(mlp_model.parameters(), lr=lr_mlp)
             
     z_trains = []
+    gt_z_trains = []
     for epoch in tqdm(range(max_epoch), desc='Training'):
         pbar = tqdm(datasets, desc='Dataset')
         for i, dataset in enumerate(pbar):
@@ -84,7 +85,7 @@ def agg_amor_calibration(
             assert y.shape[1] == emb.shape[0]
             
             dataset_batch = BatchDataset(emb, y, gt_z_train)
-            data_loader = DataLoader(dataset_batch, batch_size=bs, shuffle=True)
+            data_loader = DataLoader(dataset_batch, batch_size=bs, shuffle=False)
             
             train_losses = []
             z_batch_train = []
@@ -122,14 +123,17 @@ def agg_amor_calibration(
                 theta_train_subset = theta_train_subset.detach()
                 if epoch == max_epoch-1:
                     z_batch_train.extend(list(z_train.detach().cpu().numpy()))
+                    gt_batch_train = gt_z_train_batch.detach().cpu().numpy()
             
             wandb.log({'train_loss': total_loss_train/len(data_loader)})
             wandb.log({'mse_z_train': total_z_mse_train.item()/gt_z_train.shape[0]})
             
             if epoch == max_epoch-1:
                 z_trains.append(z_batch_train)
+                gt_z_trains.append(gt_batch_train)
     
     z_tests = []
+    gt_z_tests = []
     for i, dataset in enumerate(tqdm(datasets, desc='Testing')):
         test_index = test_indices[i]
         
@@ -144,11 +148,12 @@ def agg_amor_calibration(
         
         z_test = mlp_model(emb).flatten()
         z_tests.append(z_test)
+        gt_z_tests.append(gt_z_test)
         
         mse_z_test = torch.nn.MSELoss()(z_test, gt_z_test)
         wandb.log({'mse_z_test': mse_z_test.item()})
     
-    return theta_train, z_trains, z_tests, train_losses
+    return theta_train, z_trains, z_tests, train_losses, gt_z_trains, gt_z_tests
 
 def main(
     datasets,
@@ -164,7 +169,7 @@ def main(
         train_indices.append(train_index)
         test_indices.append(test_index)
     
-    theta_train, z_trains, z_tests, train_losses = agg_amor_calibration(
+    theta_train, z_trains, z_tests, train_losses, gt_z_trains, gt_z_tests = agg_amor_calibration(
         datasets=datasets, 
         train_indices=train_indices,
         test_indices=test_indices,
@@ -180,13 +185,15 @@ def main(
         
         df_z_train = pd.DataFrame({
             'index': train_indices[i],
-            'z': z_trains[i],
+            'z_pred': z_trains[i],
+            'z_true': gt_z_trains[i],
         })
         df_z_train.to_csv(df_z_train_path, index=False)
         
         df_z_test = pd.DataFrame({
             'index': test_indices[i],
-            'z': z_tests[i].cpu().detach().numpy(),
+            'z_pred': z_tests[i].cpu().detach().numpy(),
+            'z_true': gt_z_tests[i].cpu().detach().numpy(),
         })
         df_z_test.to_csv(df_z_test_path, index=False)
         

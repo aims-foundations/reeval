@@ -33,7 +33,7 @@ def train_model(
     optimizer = optim.Adam(model.parameters(), lr=lr)
     
     train_dataset = TensorDataset(emb_train, z_train)
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
     test_dataset = TensorDataset(emb_test, z_test)
     test_loader = DataLoader(test_dataset, batch_size=batch_size)
     
