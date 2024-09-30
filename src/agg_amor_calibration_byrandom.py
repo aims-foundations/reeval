@@ -39,7 +39,7 @@ def agg_amor_calibration(
     model_id_path: str,
     lr_theta=0.01,
     lr_mlp=1e-6,
-    max_epoch=3,
+    max_epoch=1,
     embed_dim=4096,
     bs=8192,
 ):
