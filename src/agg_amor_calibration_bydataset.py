@@ -38,7 +38,7 @@ def agg_amor_calibration(
     model_id_path: str,
     lr_theta=0.01,
     lr_mlp=1e-5,
-    max_epoch=1,
+    max_epoch=3,
     embed_dim=4096,
     bs=8192,
 ):
@@ -123,8 +123,10 @@ def agg_amor_calibration(
                     z_batch_train.extend(list(z_train.detach().cpu().numpy()))
                     gt_batch_train.extend(list(gt_z_train_batch.detach().cpu().numpy()))
             
-            wandb.log({'train_loss': total_loss_train/len(data_loader)})
-            wandb.log({'mse_z_train': total_z_mse_train.item()/gt_z_train.shape[0]})
+            wandb.log({
+                'train_loss': total_loss_train/len(data_loader),
+                'mse_z_train': total_z_mse_train.item()/gt_z_train.shape[0],
+            })
             
             if epoch == max_epoch-1:
                 z_trains.append(z_batch_train)
