@@ -212,15 +212,13 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
 
-    if args.task == 'bydataset':
-        assert args.dataset == 'aggregate'
-        main_bydataset(
-            hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
-            model_name=args.model,
-            df_train_path=f'{output_dir}/train_bydataset_{i}.csv',
-            df_test_path=f'{output_dir}/test_bydataset_{i}.csv',
-            save_model_path=f'{output_dir}/{args.model}_bydataset_{i}.pkl',
-            train_loss_plot_path=f'{plot_dir}/train_loss_bydataset_{i}.png',
-            test_loss_plot_path=f'{plot_dir}/test_loss_bydataset_{i}.png',
-        )
+    main_byrandom(
+        hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
+        model_name=args.model,
+        df_train_path=f'{output_dir}/train_{i}.csv',
+        df_test_path=f'{output_dir}/test_{i}.csv',
+        save_model_path=f'{output_dir}/{args.model}.pkl' if i==0 else None,
+        train_loss_plot_path=f'{plot_dir}/train_loss.png' if i==0 else None,
+        test_loss_plot_path=f'{plot_dir}/test_loss.png' if i==0 else None,
+    )
         
