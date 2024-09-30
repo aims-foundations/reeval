@@ -200,18 +200,19 @@ if __name__ == "__main__":
     wandb.init(project="agg_amor_calibration_byrandom")
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, default='mlp', choices=['mlp'])
+    parser.add_argument('--seed', type=int, required=True)
     args = parser.parse_args()
+    i = args.seed
     
     plot_dir = '../plot/agg_calibration'
     os.makedirs(plot_dir, exist_ok=True)
-    
-    for i in tqdm(range(10), desc='Seed'):
-        set_seed(i)
-        main(
-            datasets=DATASETS,
-            emb_hf_repo=f'stair-lab/reeval_aggregate-embed',
-            model_id_path='configs/model_id.json',
-            iteration=i,
-            train_loss_plot_path=f'{plot_dir}/train_loss_{i}.png',
-        )
-            
+
+    set_seed(i)
+    main(
+        datasets=DATASETS,
+        emb_hf_repo=f'stair-lab/reeval_aggregate-embed',
+        model_id_path='configs/model_id.json',
+        iteration=i,
+        train_loss_plot_path=f'{plot_dir}/train_loss_{i}.png',
+    )
+        
