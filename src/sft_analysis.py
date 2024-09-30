@@ -30,7 +30,7 @@ if __name__ == "__main__":
     train_gt_zs = [extract_score(p) for p in train_prompts]
     test_gt_zs = [extract_score(p) for p in test_prompts]
     
-    sampling_params = SamplingParams(temperature=0.6, n=64, best_of_n=128, top_p=0.9, max_tokens=256)
+    sampling_params = SamplingParams(temperature=0.6, n=64, best_of=128, top_p=0.9, max_tokens=256)
     llm = LLM(model=model_dir)
     train_outputs = llm.generate(train_prompts, sampling_params)
     test_outputs = llm.generate(test_prompts, sampling_params)
