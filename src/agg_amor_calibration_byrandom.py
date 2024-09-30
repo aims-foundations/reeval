@@ -86,14 +86,14 @@ def agg_amor_calibration(
             dataset_batch = BatchDataset(emb, y, gt_z_train)
             data_loader = DataLoader(dataset_batch, batch_size=bs, shuffle=True)
             
-            losses = []
-            z_batch = []
-            total_z_mse = 0
-            total_loss = 0
+            train_losses = []
+            z_batch_train = []
+            total_z_mse_train = 0
+            total_loss_train = 0
             for emb_batch, y_batch, gt_z_train_batch in tqdm(data_loader, desc='Batch'):
                 y_batch = y_batch.T
                 z_train = mlp_model(emb_batch).flatten()
-                total_z_mse += torch.sum((z_train - gt_z_train_batch)**2)
+                total_z_mse_train += torch.sum((z_train - gt_z_train_batch)**2)
                 
                 prob_matrix = item_response_fn_1PL(
                     z_train.unsqueeze(0), 
@@ -109,8 +109,8 @@ def agg_amor_calibration(
                     y_batch.flatten()[mask.flatten()].float()
                 ).mean()
                 
-                total_loss += loss.item()
-                losses.append(loss.item())
+                total_loss_train += loss.item()
+                train_losses.append(loss.item())
                 loss.backward()
                 optimizer_theta.step()
                 optimizer_mlp.step()
@@ -121,13 +121,13 @@ def agg_amor_calibration(
                 
                 theta_train_subset = theta_train_subset.detach()
                 if epoch == max_epoch-1:
-                    z_batch.extend(list(z_train.detach().cpu().numpy()))
+                    z_batch_train.extend(list(z_train.detach().cpu().numpy()))
             
-            wandb.log({'train_loss': total_loss/len(data_loader)})
-            wandb.log({'mse_z_train': total_z_mse.item()/gt_z_train.shape[0]})
+            wandb.log({'train_loss': total_loss_train/len(data_loader)})
+            wandb.log({'mse_z_train': total_z_mse_train.item()/gt_z_train.shape[0]})
             
             if epoch == max_epoch-1:
-                z_trains.append(z_batch)
+                z_trains.append(z_batch_train)
     
     z_tests = []
     for i, dataset in enumerate(tqdm(datasets, desc='Testing')):
@@ -138,7 +138,7 @@ def agg_amor_calibration(
         
         gt_z_test_df = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_z.csv')["z"]
         gt_z_test = torch.tensor(gt_z_test_df.values[test_index]).to(device)
-            
+
         hf_repo = load_dataset(emb_hf_repo, split=dataset)
         emb = torch.tensor(hf_repo['embed'])[test_index].to(device)
         
@@ -148,7 +148,7 @@ def agg_amor_calibration(
         mse_z_test = torch.nn.MSELoss()(z_test, gt_z_test)
         wandb.log({'mse_z_test': mse_z_test.item()})
     
-    return theta_train, z_trains, z_tests, losses
+    return theta_train, z_trains, z_tests, train_losses
 
 def main(
     datasets,
@@ -173,7 +173,7 @@ def main(
     )
     
     for i, dataset in enumerate(tqdm(datasets, desc='Saving')):
-        output_dir = f'../data/agg_calibration/{dataset}'
+        output_dir = f'../data/agg_amor_calibration_byrandom/{dataset}'
         os.makedirs(output_dir, exist_ok=True)
         df_z_train_path=f'{output_dir}/z_train_{iteration}.csv'
         df_z_test_path=f'{output_dir}/z_test_{iteration}.csv'
@@ -190,7 +190,7 @@ def main(
         })
         df_z_test.to_csv(df_z_test_path, index=False)
         
-    df_theta_path=f'../data/agg_calibration/theta_{iteration}.csv'
+    df_theta_path=f'../data/agg_amor_calibration_byrandom/theta_{iteration}.csv'
     df_theta = pd.DataFrame({
         'theta': theta_train.cpu().detach().numpy()
     })
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     i = args.seed
     
-    plot_dir = '../plot/agg_calibration'
+    plot_dir = '../plot/agg_amor_calibration_byrandom'
     os.makedirs(plot_dir, exist_ok=True)
 
     set_seed(i)
