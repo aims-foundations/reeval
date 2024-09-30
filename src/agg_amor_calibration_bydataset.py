@@ -38,9 +38,9 @@ def agg_amor_calibration(
     model_id_path: str,
     lr_theta=0.01,
     lr_mlp=1e-5,
-    max_epoch=10,
+    max_epoch=3,
     embed_dim=4096,
-    bs=4096,
+    bs=8192,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     with open(model_id_path, 'r') as f:
@@ -211,7 +211,7 @@ if __name__ == "__main__":
 
     set_seed(i)
     main(
-        datasets=DATASETS,
+        datasets=DATASETS[:2],
         emb_hf_repo=f'stair-lab/reeval_aggregate-embed',
         model_id_path='configs/model_id.json',
         iteration=i,
