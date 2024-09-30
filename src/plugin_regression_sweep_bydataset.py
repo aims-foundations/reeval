@@ -85,60 +85,6 @@ def train_model(
     
     return z_train_pred, z_test_pred, model.cpu(), train_losses, test_losses
 
-def main_byrandom(
-    hf_repo,
-    model_name,
-    df_train_path,
-    df_test_path,
-    save_model_path=None,
-    train_loss_plot_path=None,
-    test_loss_plot_path=None,
-):
-    dataset_info = load_dataset(hf_repo, split=None)
-    splits = dataset_info.keys()
-    datasets = [load_dataset(hf_repo, split=split) for split in splits]
-    dataset = concatenate_datasets(datasets)
-    emb = np.array(dataset['embed'])
-    z = np.array(dataset['z'])
-    
-    train_indices, test_indices = split_indices(z.shape[0])    
-    emb_train, z_train = emb[train_indices], z[train_indices]
-    emb_test, z_test = emb[test_indices], z[test_indices]
-    
-    z_train_pred, z_test_pred, model, train_losses, test_losses = train_model(
-        model_name=model_name,
-        emb_train=torch.tensor(emb_train, dtype=torch.float32),
-        emb_test=torch.tensor(emb_test, dtype=torch.float32),
-        z_train=torch.tensor(z_train, dtype=torch.float32).view(-1, 1),
-        z_test = torch.tensor(z_test, dtype=torch.float32).view(-1, 1),
-    )
-    
-    mse_train = mean_squared_error(z_train, z_train_pred)
-    mse_test = mean_squared_error(z_test, z_test_pred)
-    print(f'MSE Train: {mse_train:.2f}, MSE Test: {mse_test:.2f}')
-    
-    df_train = pd.DataFrame({
-        'index': train_indices,
-        'z_true': z_train,
-        'z_pred': z_train_pred,
-    })
-    df_train.to_csv(df_train_path, index=False)
-    
-    df_test = pd.DataFrame({
-        'index': test_indices,
-        'z_true': z_test,
-        'z_pred': z_test_pred,
-    })
-    df_test.to_csv(df_test_path, index=False)
-    
-    if save_model_path is not None:
-        with open(save_model_path, 'wb') as f:
-            pickle.dump(model, f)
-            
-    if train_loss_plot_path is not None and test_loss_plot_path is not None:
-        plot_loss(train_losses, train_loss_plot_path, r'Train Loss')
-        plot_loss(test_losses, test_loss_plot_path, r'Test Loss')
-        
 def main_bydataset(
     hf_repo,
     model_name,
@@ -198,22 +144,21 @@ def main_bydataset(
         plot_loss(test_losses, test_loss_plot_path, r'Test Loss')
     
 if __name__ == "__main__":
-    wandb.init(project="plugin_regression")
+    wandb.init(project="plugin_regression_sweep_bydataset")
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, required=True)
     parser.add_argument('--model', type=str, default='mlp', choices=['mlp'])
-    parser.add_argument('--task', type=str, default='byrandom', choices=['byrandom', 'bydataset'])
     parser.add_argument('--seed', type=int)
     args = parser.parse_args()
     i = args.seed
+    set_seed(i)
     
-    output_dir = f'../data/plugin_regression/{args.dataset}'
-    plot_dir = f'../plot/plugin_regression/{args.dataset}'
+    output_dir = f'../data/plugin_regression/aggregate_bydataset'
+    plot_dir = f'../plot/plugin_regression/aggregate_bydataset'
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
 
-    main_byrandom(
-        hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
+    main_bydataset(
+        hf_repo=f'stair-lab/reeval_aggregate-embed',
         model_name=args.model,
         df_train_path=f'{output_dir}/train_{i}.csv',
         df_test_path=f'{output_dir}/test_{i}.csv',

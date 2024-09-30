@@ -88,17 +88,18 @@ def agg_amor_calibration(
             
             losses = []
             z_batch = []
-            z_mse = 0
+            total_z_mse = 0
+            total_loss = 0
             for emb_batch, y_batch, gt_z_train_batch in tqdm(data_loader, desc='Batch'):
                 y_batch = y_batch.T
                 z_train = mlp_model(emb_batch).flatten()
-                z_mse += torch.nn.MSELoss()(z_train, gt_z_train_batch)
+                total_z_mse += torch.sum((z_train - gt_z_train_batch)**2)
                 
                 prob_matrix = item_response_fn_1PL(
                     z_train.unsqueeze(0), 
                     theta_train_subset.unsqueeze(1)
                 )
-                # assert prob_matrix.shape == y_batch.shape
+                assert prob_matrix.shape == y_batch.shape
                 
                 mask = y_batch!=-1
                 
@@ -107,6 +108,8 @@ def agg_amor_calibration(
                 ).log_prob(
                     y_batch.flatten()[mask.flatten()].float()
                 ).mean()
+                
+                total_loss += loss.item()
                 losses.append(loss.item())
                 loss.backward()
                 optimizer_theta.step()
@@ -114,14 +117,14 @@ def agg_amor_calibration(
                 optimizer_theta.zero_grad()
                 optimizer_mlp.zero_grad()
                 
-                wandb.log({'train_loss': loss.item()})
-                pbar.set_postfix({'loss': loss.item()})
+                # pbar.set_postfix({'loss': loss.item()})
                 
                 theta_train_subset = theta_train_subset.detach()
                 if epoch == max_epoch-1:
                     z_batch.extend(list(z_train.detach().cpu().numpy()))
             
-            wandb.log({'mse_z_train': z_mse.item()/len(data_loader)})
+            wandb.log({'train_loss': total_loss/len(data_loader)})
+            wandb.log({'mse_z_train': total_z_mse.item()/gt_z_train.shape[0]})
             
             if epoch == max_epoch-1:
                 z_trains.append(z_batch)
