@@ -38,9 +38,9 @@ def agg_amor_calibration(
     model_id_path: str,
     lr_theta=0.01,
     lr_mlp=1e-5,
-    max_epoch=3,
+    max_epoch=10,
     embed_dim=4096,
-    bs=8192,
+    bs=4096,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     with open(model_id_path, 'r') as f:
