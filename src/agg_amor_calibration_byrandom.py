@@ -219,7 +219,7 @@ if __name__ == "__main__":
 
     set_seed(i)
     main(
-        datasets=DATASETS,
+        datasets=DATASETS[:2],
         emb_hf_repo=f'stair-lab/reeval_aggregate-embed',
         model_id_path='configs/model_id.json',
         iteration=i,

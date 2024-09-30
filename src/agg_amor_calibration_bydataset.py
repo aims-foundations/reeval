@@ -68,7 +68,7 @@ def agg_amor_calibration(
             y_df = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
             y = torch.tensor(y_df.values).to(device)
             
-            gt_z_train_df = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_z.csv', index_col=0)["z"]
+            gt_z_train_df = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_z.csv')["z"]
             gt_z_train = torch.tensor(gt_z_train_df.values).to(device)
             
             model_names = y_df.index.tolist()
@@ -185,7 +185,8 @@ def main(
         df_z_test_path=f'{output_dir}/z_test_{iteration}.csv'
         
         df_z_test = pd.DataFrame({
-            'z': z_tests[i].cpu().detach().numpy(),
+            'z_pred': z_tests[i].cpu().detach().numpy(),
+            'z_true': gt_z_tests[i].cpu().detach().numpy(),
         })
         df_z_test.to_csv(df_z_test_path, index=False)
         
@@ -210,7 +211,7 @@ if __name__ == "__main__":
 
     set_seed(i)
     main(
-        datasets=DATASETS,
+        datasets=DATASETS[:2],
         emb_hf_repo=f'stair-lab/reeval_aggregate-embed',
         model_id_path='configs/model_id.json',
         iteration=i,
