@@ -190,7 +190,7 @@ def main(
         })
         df_z_test.to_csv(df_z_test_path, index=False)
         
-    df_theta_path=f'../data/agg_amor_calibration_bydataset/theta_{iteration}.csv'
+    df_theta_path=f'../data/agg_amor_calibration_bydataset_train/theta_{iteration}.csv'
     df_theta = pd.DataFrame({
         'theta': theta_train.cpu().detach().numpy()
     })
