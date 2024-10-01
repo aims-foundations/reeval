@@ -384,7 +384,8 @@ def plot_corr(
     plt.xlabel(xlabel, fontsize=25)
     plt.ylabel(ylabel, fontsize=25)
     plt.title(
-        title.format(corr),
+        # title.format(corr),
+        title,
         fontsize=25
     )
     plt.plot([0, 1], [0, 1], linestyle='--', color='black')
@@ -414,7 +415,8 @@ def plot_corr_double(
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.title(
-        r'Goodness of Fit. $\rho_\mathrm{{train}}$ = {:.2f}, $\rho_\mathrm{{test}}$ = {:.2f}'.format(corr_train, corr_test),
+        r'Goodness of Fit',
+        # r'Goodness of Fit. $\rho_\mathrm{{train}}$ = {:.2f}, $\rho_\mathrm{{test}}$ = {:.2f}'.format(corr_train, corr_test),
         fontsize=25
     )
     plt.tick_params(axis='both', labelsize=16)
@@ -524,8 +526,8 @@ def plot_cat(
     ylabel,
 ):
     plt.figure(figsize=(6, 6))
-    plt.plot(randoms, label='random', color='red')
-    plt.plot(cats, label='cat', color='blue')
+    plt.plot(randoms, label='Random', color='red', linewidth=3)
+    plt.plot(cats, label='Fisher', color='blue', linewidth=3)
     plt.tick_params(axis='both', labelsize=25)
     plt.ylabel(ylabel, fontsize=25)
     plt.legend(fontsize=25)
