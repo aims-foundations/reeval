@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import wandb
 from utils import item_response_fn_1PL
-from scipy.stats import gaussian_kde
+from matplotlib import gridspec
 
 if __name__ == "__main__":
     wandb.init(project="hard_easy_test")
@@ -21,6 +21,8 @@ if __name__ == "__main__":
     
     selection_prob = 0.8
     subset_size = 100
+    step_size = 10000
+    test_size = 100
     
     response_matrix = pd.read_csv(
         f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0
@@ -40,14 +42,14 @@ if __name__ == "__main__":
     z = torch.tensor(z, dtype=torch.float32).to(device)
     z_sort_index = torch.argsort(z)
 
-    # Figure and axis setup for density plot on the right
-    fig, ax1 = plt.subplots(figsize=(8, 6))
-    ax2 = ax1.twinx()  # Create a secondary y-axis on the right side for density plot
-
     theta_hats_all = []
-    y_means = []
+    y_means_all = []
     
-    for i in range(20):
+    fig = plt.figure(figsize=(8, 6))
+    gs = gridspec.GridSpec(1, 2, width_ratios=[4, 1]) 
+    ax_main = plt.subplot(gs[0])
+    
+    for i in range(test_size):
         z_sort_index = torch.flip(z_sort_index, dims=[0])
         
         count = 0
@@ -70,7 +72,7 @@ if __name__ == "__main__":
         
         losses = []
         theta_hats = []
-        for i in range(4000):
+        for i in range(step_size):
             prob = item_response_fn_1PL(z_sub, theta_hat)
             loss = -torch.distributions.Bernoulli(
                 probs=prob[sub_mask]
@@ -80,32 +82,23 @@ if __name__ == "__main__":
             optim.step()
             losses.append(loss.item())
             theta_hats.append(theta_hat.item())
-
-        theta_hats_all.extend(theta_hats)
-        y_means.append(y_sub[sub_mask].mean().item() * 6 - 3)
-
-        # IRT line
-        ax1.plot(theta_hats, color='red', alpha=0.5)
-        # CTT dashed line
-        ax1.hlines(y_sub[sub_mask].mean().item()*6-3, 0, 4000, color='blue', linestyle='dashed', alpha=0.5)
-
-    # Final IRT and CTT lines
-    ax1.hlines(theta, 0, 4000, color='red', linewidth=4)
-    ax1.hlines(y[mask].mean().item()*6-3, 0, 4000, color='blue', linestyle='dashed', linewidth=4)
-
-    ax1.set_ylim(-4, 4)
-
-    # KDE for theta_hats
-    kde_theta_hats = gaussian_kde(theta_hats_all)
-    theta_grid = np.linspace(-4, 4, 100)
-    ax2.plot(kde_theta_hats(theta_grid), theta_grid, color='red', alpha=0.8)
-
-    # KDE for y_means
-    kde_y_means = gaussian_kde(y_means)
-    ax2.plot(kde_y_means(theta_grid), theta_grid, color='blue', linestyle='dashed', alpha=0.8)
-
-    ax2.set_ylim(-4, 4)
-    ax2.set_ylabel('Density')
-
+        
+        ax_main.plot(theta_hats, color='red', alpha=0.3)
+        ax_main.hlines(y_sub[sub_mask].mean().item()*6-3, 0, step_size, color='blue', linestyle='dashed', alpha=0.3)
+        theta_hats_all.append(theta_hat.item())
+        y_means_all.append(y_sub[sub_mask].mean().item()*6-3)
+   
+    ax_main.hlines(theta, 0, step_size, color='red', linewidth=4)
+    ax_main.hlines(y[mask].mean().item()*6-3, 0, step_size, color='blue', linestyle='dashed', linewidth=4)
+    ax_main.set_ylim(-4, 4)
+    ax_main.set_xlim(0, step_size)
+    ax_main.set_xlabel('Step', fontsize=25)
+    ax_main.set_ylabel('Ability', fontsize=25)
+    ax_main.tick_params(axis='both', labelsize=25)
+    
+    ax_hist_theta = plt.subplot(gs[1], sharey=ax_main)
+    ax_hist_theta.hist(theta_hats_all, bins=30, color='red', alpha=0.3, orientation='horizontal')
+    ax_hist_theta.axis('off')
+    
+    ax_hist_theta.hist(y_means_all, bins=30, color='blue', alpha=0.3, orientation='horizontal')
     plt.savefig(f"{plot_dir}/hard_easy_test_{args.dataset}.png", dpi=300, bbox_inches='tight')
-    plt.show()
