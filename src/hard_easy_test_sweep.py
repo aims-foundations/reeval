@@ -6,21 +6,23 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import wandb
-from utils import item_response_fn_1PL
+from utils import item_response_fn_1PL, set_seed
 
 if __name__ == "__main__":
     wandb.init(project="hard_easy_test")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
+    parser.add_argument('--seed', type=int, required=True)
     args = parser.parse_args()
     
+    set_seed(args.seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     plot_dir = f'../plot/hard_easy_test'
     os.makedirs(plot_dir, exist_ok=True)
     
     selection_prob = 0.8
-    subset_size = 1000
+    subset_size = 100
     step_size = 10000
     test_size = 100
     
@@ -82,16 +84,12 @@ if __name__ == "__main__":
         theta_hats_all.append(theta_hat.item())
         y_means_all.append(y_sub[sub_mask].mean().item() * 6 - 3)
     
-    plt.figure(figsize=(8, 6))
-    plt.hist(theta_hats_all, bins=30, color='red', alpha=0.5, label='Theta Distribution', density=True)
-    plt.hist(y_means_all, bins=30, color='blue', alpha=0.5, label='CTT Distribution', density=True)
-    sns.kdeplot(theta_hats_all, color='red', label='Theta KDE', linewidth=2)
-    sns.kdeplot(y_means_all, color='blue', label='CTT KDE', linewidth=2)
-    plt.axvline(x=theta, color='red', linestyle='-', linewidth=2, label='True Theta')
-    plt.axvline(x=y[mask].mean().item() * 6 - 3, color='blue', linestyle='--', linewidth=2, label='True CTT Score')
-    plt.xlabel('Ability / CTT Score', fontsize=15)
-    plt.ylabel('Density', fontsize=15)
-    plt.title('Theta and CTT Score Distributions with KDE', fontsize=18)
-    plt.legend(fontsize=12)
-    plt.savefig(f"{plot_dir}/hard_easy_test_{args.dataset}.png", dpi=300, bbox_inches='tight')
-    plt.show()
+    # save theta_hats_all and y_means_all in csv
+    save_dir = f'../data/hard_easy_test/{args.dataset}'
+    os.makedirs(save_dir, exist_ok=True)
+    
+    df = pd.DataFrame({
+        "theta_hat": theta_hats_all,
+        "y_mean": y_means_all
+    })
+    df.to_csv(f'{save_dir}/seed_{args.seed}.csv', index=False)
