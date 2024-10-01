@@ -33,4 +33,5 @@ if __name__ == "__main__":
     test_outputs = llm.generate(test_prompts, sampling_params)
     
     test_answers = [sample.text for o in test_outputs for sample in o.outputs]
-    print(test_answers)
+    for a in test_answers:
+        print(a)
