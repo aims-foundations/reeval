@@ -342,11 +342,11 @@ def error_bar_plot_double(
         key=lambda x: x[3]
     )
     datasets, means_train, stds_train, means_test, stds_test = zip(*sorted_data)
-    stds_train_mul3 = [s*3 for s in stds_train]
-    stds_test_mul3 = [s*3 for s in stds_test]
+    fig, ax = plt.subplots(figsize=(8, 18))
 
     if plot_std:
-        fig, ax = plt.subplots(figsize=(8, 18))
+        stds_train_mul3 = [s*3 for s in stds_train]
+        stds_test_mul3 = [s*3 for s in stds_test]
         ax.barh(
             datasets, means_train, xerr=[np.zeros(len(datasets)), stds_train_mul3],
             capsize=5, color='blue', alpha=0.4,
