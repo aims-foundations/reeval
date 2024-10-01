@@ -92,4 +92,4 @@ if __name__ == "__main__":
         "theta_hat": theta_hats_all,
         "y_mean": y_means_all
     })
-    df.to_csv(f'{save_dir}/seed_{args.seed}.csv', index=False)
+    df.to_csv(f'{save_dir}/{args.dataset}_{args.seed}.csv', index=False)
