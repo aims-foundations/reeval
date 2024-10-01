@@ -333,7 +333,7 @@ def error_bar_plot_double(
     means_test, stds_test,
     plot_path,
     xlabel,
-    xlim_upper=1.1
+    xlim_upper=1.1,
     plot_std=True
 ):  
     datasets = [PLOT_NAME_MAP[dataset] for dataset in datasets]
