@@ -334,6 +334,7 @@ def error_bar_plot_double(
     plot_path,
     xlabel,
     xlim_upper=1.1
+    plot_std=True
 ):  
     datasets = [PLOT_NAME_MAP[dataset] for dataset in datasets]
     sorted_data = sorted(
@@ -344,7 +345,7 @@ def error_bar_plot_double(
     stds_train_mul3 = [s*3 for s in stds_train]
     stds_test_mul3 = [s*3 for s in stds_test]
 
-    if stds_train != [0] * len(datasets) and stds_test != [0] * len(datasets):
+    if plot_std:
         fig, ax = plt.subplots(figsize=(8, 18))
         ax.barh(
             datasets, means_train, xerr=[np.zeros(len(datasets)), stds_train_mul3],

@@ -53,6 +53,7 @@ if __name__ == "__main__":
         plot_path=f"{plot_dir}/cat_summarize_reliability_95",
         xlabel=r"Realiablity Reach 0.95",
         xlim_upper=400,
+        plot_std=False,
     )
     
     error_bar_plot_double(
@@ -67,4 +68,3 @@ if __name__ == "__main__":
     )
     
         
-    
