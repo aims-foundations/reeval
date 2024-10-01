@@ -24,7 +24,7 @@ if __name__ == "__main__":
         model_dir = "../data/sft/lora_10epoch"
         # model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-2400')
         test_dataset = load_dataset("stair-lab/airbench-sft", split="test")
-        test_prompts = test_dataset['text'][:5]
+        test_prompts = test_dataset['text'][:50]
     # model = model.merge_and_unload().to(torch.bfloat16)
     # model.save_pretrained(model_dir)
     
