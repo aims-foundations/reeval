@@ -389,7 +389,6 @@ def error_bar_plot_double(
         ax.text(avg_train-0.5, max_y, f'{avg_train:.2f}', color='blue', fontsize=25, ha='center')
         ax.text(avg_test+0.5, max_y, f'{avg_test:.2f}', color='orange', fontsize=25, ha='center')
 
-
     ax.set_xlabel(xlabel, fontsize=35)
     ax.tick_params(axis='both', labelsize=25)
     ax.set_xlim(0, xlim_upper)
