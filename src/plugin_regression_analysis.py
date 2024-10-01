@@ -144,6 +144,7 @@ if __name__ == "__main__":
         plot_path=f"{plot_dir}/plugin_regression_summarize_mse",
         xlabel=r"MSE",
         xlim_upper=10,
+        average_line=True,
     )
     
     # error_bar_plot_double(
