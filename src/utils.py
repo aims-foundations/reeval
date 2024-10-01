@@ -524,11 +524,11 @@ def plot_cat(
     ylabel,
 ):
     plt.figure(figsize=(6, 6))
-    plt.plot(randoms, label='random')
-    plt.plot(cats, label='cat')
-    plt.tick_params(axis='both', labelsize=16)
+    plt.plot(randoms, label='random', color='red')
+    plt.plot(cats, label='cat', color='blue')
+    plt.tick_params(axis='both', labelsize=25)
     plt.ylabel(ylabel, fontsize=25)
-    plt.legend(fontsize=16)
+    plt.legend(fontsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
