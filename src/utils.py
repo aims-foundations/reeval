@@ -385,6 +385,10 @@ def error_bar_plot_double(
         avg_test = np.mean(means_test)
         ax.axvline(avg_train, color='blue', linestyle='--', linewidth=2)
         ax.axvline(avg_test, color='orange', linestyle='--', linewidth=2)
+        max_y = len(datasets) + 0.5 
+        ax.text(avg_train, max_y, f'{avg_train:.2f}', color='blue', fontsize=25, ha='center')
+        ax.text(avg_test, max_y, f'{avg_test:.2f}', color='orange', fontsize=25, ha='center')
+
 
     ax.set_xlabel(xlabel, fontsize=35)
     ax.tick_params(axis='both', labelsize=25)
