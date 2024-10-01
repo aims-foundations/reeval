@@ -366,9 +366,17 @@ def error_bar_plot_double(
             datasets, means_test,
             color='orange', alpha=0.4
         )
+        print("")
         print(xlabel)
+        improvements = []
         for dataset, mse_train, mse_test in zip(datasets, means_train, means_test):
             improvement = (mse_train - mse_test) / mse_train
+            improvements.append((dataset, improvement))
+        
+        improvements.sort(key=lambda x: x[1], reverse=True)
+        # print mean improvement
+        print(f'Mean improvement: {np.mean([improvement for _, improvement in improvements])}')
+        for dataset, improvement in improvements:
             print(f'{dataset}: {improvement}')
 
     ax.set_xlabel(xlabel, fontsize=35)
