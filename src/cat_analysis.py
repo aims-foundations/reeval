@@ -65,6 +65,7 @@ if __name__ == "__main__":
         plot_path=f"{plot_dir}/cat_summarize_mse_95",
         xlabel=r"MSE Reach 0.2",
         xlim_upper=400,
+        plot_std=False,
     )
     
         
