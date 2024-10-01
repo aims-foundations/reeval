@@ -23,8 +23,8 @@ if __name__ == "__main__":
     
     selection_prob = 0.8
     subset_size = 100
-    step_size = 10000
-    test_size = 100
+    step_size = 4000
+    iterations = 100
     
     response_matrix = pd.read_csv(
         f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     theta_hats_all = []
     y_means_all = []
     
-    for i in range(test_size):
+    for iteration in range(iterations):
         z_sort_index = torch.flip(z_sort_index, dims=[0])
         
         count = 0
@@ -70,7 +70,7 @@ if __name__ == "__main__":
         
         losses = []
         theta_hats = []
-        for i in range(step_size):
+        for step in range(step_size):
             prob = item_response_fn_1PL(z_sub, theta_hat)
             loss = -torch.distributions.Bernoulli(
                 probs=prob[sub_mask]
@@ -83,6 +83,11 @@ if __name__ == "__main__":
         
         theta_hats_all.append(theta_hat.item())
         y_means_all.append(y_sub[sub_mask].mean().item() * 6 - 3)
+        wandb.log({
+            'iteration': iteration,
+            'step': step,
+            'loss': loss.item(),
+        })
     
     # save theta_hats_all and y_means_all in csv
     save_dir = f'../data/hard_easy_test/{args.dataset}'

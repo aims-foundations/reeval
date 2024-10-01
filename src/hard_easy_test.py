@@ -20,9 +20,9 @@ if __name__ == "__main__":
     os.makedirs(plot_dir, exist_ok=True)
     
     selection_prob = 0.8
-    subset_size = 1000
-    step_size = 10000
-    test_size = 100
+    subset_size = 100
+    step_size = 1000
+    test_size = 5
     
     response_matrix = pd.read_csv(
         f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0
@@ -81,6 +81,10 @@ if __name__ == "__main__":
         
         theta_hats_all.append(theta_hat.item())
         y_means_all.append(y_sub[sub_mask].mean().item() * 6 - 3)
+    
+    # save theta_hats_all and y_means_all in csv
+    df = pd.DataFrame({'theta_hat': theta_hats_all, 'y_mean': y_means_all})
+    df.to_csv(f'../data/hard_easy_test/{args.dataset}.csv', index=False)
     
     plt.figure(figsize=(8, 6))
     plt.hist(theta_hats_all, bins=30, color='red', alpha=0.5, label='Theta Distribution', density=True)

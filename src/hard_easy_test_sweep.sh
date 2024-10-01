@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NUM_AGENTS=29
+NUM_AGENTS=9
 HOSTNAME=$(hostname)
 
 for agent_num in $(seq 2 $((NUM_AGENTS))); do
