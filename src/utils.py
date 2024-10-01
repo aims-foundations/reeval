@@ -344,17 +344,31 @@ def error_bar_plot_double(
     stds_train_mul3 = [s*3 for s in stds_train]
     stds_test_mul3 = [s*3 for s in stds_test]
 
-    fig, ax = plt.subplots(figsize=(8, 18))
-    ax.barh(
-        datasets, means_train, xerr=[np.zeros(len(datasets)), stds_train_mul3],
-        capsize=5, color='blue', alpha=0.4,
-        error_kw={'elinewidth': 1, 'capthick': 1, 'ecolor': 'blue'}
-    )
-    ax.barh(
-        datasets, means_test, xerr=[np.zeros(len(datasets)), stds_test_mul3],
-        capsize=5, color='orange', alpha=0.4,
-        error_kw={'elinewidth': 2, 'capthick': 2, 'ecolor': 'orange'}
-    )
+    if stds_train != [0] * len(datasets) and stds_test != [0] * len(datasets):
+        fig, ax = plt.subplots(figsize=(8, 18))
+        ax.barh(
+            datasets, means_train, xerr=[np.zeros(len(datasets)), stds_train_mul3],
+            capsize=5, color='blue', alpha=0.4,
+            error_kw={'elinewidth': 1, 'capthick': 1, 'ecolor': 'blue'}
+        )
+        ax.barh(
+            datasets, means_test, xerr=[np.zeros(len(datasets)), stds_test_mul3],
+            capsize=5, color='orange', alpha=0.4,
+            error_kw={'elinewidth': 2, 'capthick': 2, 'ecolor': 'orange'}
+        )
+    else:
+        ax.barh(
+            datasets, means_train,
+            color='blue', alpha=0.4
+        )
+        ax.barh(
+            datasets, means_test,
+            color='orange', alpha=0.4
+        )
+        print(xlabel)
+        for dataset, mse_train, mse_test in zip(datasets, means_train, means_test):
+            improvement = (mse_train - mse_test) / mse_train
+            print(f'{dataset}: {improvement}')
 
     ax.set_xlabel(xlabel, fontsize=35)
     ax.tick_params(axis='both', labelsize=25)
