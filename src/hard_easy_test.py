@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import wandb
 from utils import item_response_fn_1PL
+from scipy.stats import gaussian_kde
 
 if __name__ == "__main__":
     wandb.init(project="hard_easy_test")
@@ -39,6 +40,13 @@ if __name__ == "__main__":
     z = torch.tensor(z, dtype=torch.float32).to(device)
     z_sort_index = torch.argsort(z)
 
+    # Figure and axis setup for density plot on the right
+    fig, ax1 = plt.subplots(figsize=(8, 6))
+    ax2 = ax1.twinx()  # Create a secondary y-axis on the right side for density plot
+
+    theta_hats_all = []
+    y_means = []
+    
     for i in range(20):
         z_sort_index = torch.flip(z_sort_index, dims=[0])
         
@@ -73,15 +81,31 @@ if __name__ == "__main__":
             losses.append(loss.item())
             theta_hats.append(theta_hat.item())
 
-        #irt
-        plt.plot(theta_hats, color='red', alpha=0.5)
-        #ctt
-        plt.hlines(y_sub[sub_mask].mean().item()*6-3, 0, 4000, color='blue', linestyle='dashed', alpha=0.5)
+        theta_hats_all.extend(theta_hats)
+        y_means.append(y_sub[sub_mask].mean().item() * 6 - 3)
 
-    #irt
-    plt.hlines(theta, 0, 4000, color='red', linewidth=4)
-    #ctt
-    plt.hlines(y[mask].mean().item()*6-3, 0, 4000, color='blue', linestyle='dashed', linewidth=4)
+        # IRT line
+        ax1.plot(theta_hats, color='red', alpha=0.5)
+        # CTT dashed line
+        ax1.hlines(y_sub[sub_mask].mean().item()*6-3, 0, 4000, color='blue', linestyle='dashed', alpha=0.5)
 
-    plt.ylim(-4, 4)
+    # Final IRT and CTT lines
+    ax1.hlines(theta, 0, 4000, color='red', linewidth=4)
+    ax1.hlines(y[mask].mean().item()*6-3, 0, 4000, color='blue', linestyle='dashed', linewidth=4)
+
+    ax1.set_ylim(-4, 4)
+
+    # KDE for theta_hats
+    kde_theta_hats = gaussian_kde(theta_hats_all)
+    theta_grid = np.linspace(-4, 4, 100)
+    ax2.plot(kde_theta_hats(theta_grid), theta_grid, color='red', alpha=0.8)
+
+    # KDE for y_means
+    kde_y_means = gaussian_kde(y_means)
+    ax2.plot(kde_y_means(theta_grid), theta_grid, color='blue', linestyle='dashed', alpha=0.8)
+
+    ax2.set_ylim(-4, 4)
+    ax2.set_ylabel('Density')
+
     plt.savefig(f"{plot_dir}/hard_easy_test_{args.dataset}.png", dpi=300, bbox_inches='tight')
+    plt.show()
