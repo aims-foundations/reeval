@@ -74,7 +74,6 @@ if __name__ == "__main__":
         best_diffs = np.abs(pred_zs-gt_zs).min(axis=-1)
         return best_diffs
 
-    
     with open('../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
         reward_model = pickle.load(f)
         

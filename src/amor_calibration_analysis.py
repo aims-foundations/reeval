@@ -58,50 +58,50 @@ if __name__ == "__main__":
             )
             gof_test_means.append(gof_test_mean)
             
-            # theta_corr_ctt_mean, _, _ = theta_corr_ctt(
-            #     theta=theta_train,
-            #     y=y,
-            # )
-            # theta_corr_ctt_means.append(theta_corr_ctt_mean)
+            theta_corr_ctt_mean, _, _ = theta_corr_ctt(
+                theta=theta_train,
+                y=y,
+            )
+            theta_corr_ctt_means.append(theta_corr_ctt_mean)
             
-            # if dataset != "airbench":
-            #     theta_corr_helm_mean, _, _ = theta_corr_helm(
-            #         theta=theta_train,
-            #         dataset=dataset,
-            #     )
-            #     theta_corr_helm_means.append(theta_corr_helm_mean)
+            if dataset != "airbench":
+                theta_corr_helm_mean, _, _ = theta_corr_helm(
+                    theta=theta_train,
+                    dataset=dataset,
+                )
+                theta_corr_helm_means.append(theta_corr_helm_mean)
             
-            # z_corr_train_mean = amorz_corr_nonamorz(
-            #     z_amor=z_train,
-            #     z_nonamor=nonamor_z[train_indices],
-            # )
-            # z_corr_train_means.append(z_corr_train_mean)
+            z_corr_train_mean = amorz_corr_nonamorz(
+                z_amor=z_train,
+                z_nonamor=nonamor_z[train_indices],
+            )
+            z_corr_train_means.append(z_corr_train_mean)
             
-            # z_corr_test_mean = amorz_corr_nonamorz(
-            #     z_amor=z_test,
-            #     z_nonamor=nonamor_z[test_indices],
-            # )
-            # z_corr_test_means.append(z_corr_test_mean)
+            z_corr_test_mean = amorz_corr_nonamorz(
+                z_amor=z_test,
+                z_nonamor=nonamor_z[test_indices],
+            )
+            z_corr_test_means.append(z_corr_test_mean)
 
             if i == 0:
                 single_gof_train_means.append(gof_train_mean)
                 single_gof_test_means.append(gof_test_mean)
                 
-        # dataset_gof_train_means.append(np.mean(gof_train_means))
-        # dataset_gof_test_means.append(np.mean(gof_test_means))
-        # dataset_theta_corr_ctt_means.append(np.mean(theta_corr_ctt_means))
-        # if dataset != "airbench":
-        #     dataset_theta_corr_helm_means.append(np.mean(theta_corr_helm_means))
-        # dataset_z_corr_train_means.append(np.mean(z_corr_train_means))
-        # dataset_z_corr_test_means.append(np.mean(z_corr_test_means))
+        dataset_gof_train_means.append(np.mean(gof_train_means))
+        dataset_gof_test_means.append(np.mean(gof_test_means))
+        dataset_theta_corr_ctt_means.append(np.mean(theta_corr_ctt_means))
+        if dataset != "airbench":
+            dataset_theta_corr_helm_means.append(np.mean(theta_corr_helm_means))
+        dataset_z_corr_train_means.append(np.mean(z_corr_train_means))
+        dataset_z_corr_test_means.append(np.mean(z_corr_test_means))
         
-        # dataset_gof_train_stds.append(np.std(gof_train_means))
-        # dataset_gof_test_stds.append(np.std(gof_test_means))
-        # dataset_theta_corr_ctt_stds.append(np.std(theta_corr_ctt_means))
-        # if dataset != "airbench":
-        #     dataset_theta_corr_helm_stds.append(np.std(theta_corr_helm_means))
-        # dataset_z_corr_train_stds.append(np.std(z_corr_train_means))
-        # dataset_z_corr_test_stds.append(np.std(z_corr_test_means))
+        dataset_gof_train_stds.append(np.std(gof_train_means))
+        dataset_gof_test_stds.append(np.std(gof_test_means))
+        dataset_theta_corr_ctt_stds.append(np.std(theta_corr_ctt_means))
+        if dataset != "airbench":
+            dataset_theta_corr_helm_stds.append(np.std(theta_corr_helm_means))
+        dataset_z_corr_train_stds.append(np.std(z_corr_train_means))
+        dataset_z_corr_test_stds.append(np.std(z_corr_test_means))
     
     single_df_gof_train = pd.DataFrame({
         'datasets': DATASETS,
@@ -115,67 +115,67 @@ if __name__ == "__main__":
     })
     single_df_gof_test.to_csv(f'{plot_dir}/amor_single_gof_test.csv', index=False)
     
-    # gof_df_train = pd.DataFrame({
-    #     'datasets': DATASETS,
-    #     'gof_means': dataset_gof_train_means,
-    #     'gof_stds': dataset_gof_train_stds
-    # })
-    # gof_df_train.to_csv(f'{plot_dir}/amor_calibration_gof_train.csv', index=False)
+    gof_df_train = pd.DataFrame({
+        'datasets': DATASETS,
+        'gof_means': dataset_gof_train_means,
+        'gof_stds': dataset_gof_train_stds
+    })
+    gof_df_train.to_csv(f'{plot_dir}/amor_calibration_gof_train.csv', index=False)
     
-    # gof_df_test = pd.DataFrame({
-    #     'datasets': DATASETS,
-    #     'gof_means': dataset_gof_test_means,
-    #     'gof_stds': dataset_gof_test_stds
-    # })
-    # gof_df_test.to_csv(f'{plot_dir}/amor_calibration_gof_test.csv', index=False)
+    gof_df_test = pd.DataFrame({
+        'datasets': DATASETS,
+        'gof_means': dataset_gof_test_means,
+        'gof_stds': dataset_gof_test_stds
+    })
+    gof_df_test.to_csv(f'{plot_dir}/amor_calibration_gof_test.csv', index=False)
     
-    # ctt_df = pd.DataFrame({
-    #     'datasets': DATASETS,
-    #     'corr_ctt_means': dataset_theta_corr_ctt_means,
-    #     'corr_ctt_stds': dataset_theta_corr_ctt_stds
-    # })
-    # ctt_df.to_csv(f'{plot_dir}/amor_calibration_corr_ctt.csv', index=False)
+    ctt_df = pd.DataFrame({
+        'datasets': DATASETS,
+        'corr_ctt_means': dataset_theta_corr_ctt_means,
+        'corr_ctt_stds': dataset_theta_corr_ctt_stds
+    })
+    ctt_df.to_csv(f'{plot_dir}/amor_calibration_corr_ctt.csv', index=False)
     
-    # helm_df = pd.DataFrame({
-    #     'datasets': [d for d in DATASETS if d != "airbench"],
-    #     'corr_helm_means': dataset_theta_corr_helm_means,
-    #     'corr_helm_stds': dataset_theta_corr_helm_stds
-    # })
-    # helm_df.to_csv(f'{plot_dir}/amor_calibration_corr_helm.csv', index=False)
+    helm_df = pd.DataFrame({
+        'datasets': [d for d in DATASETS if d != "airbench"],
+        'corr_helm_means': dataset_theta_corr_helm_means,
+        'corr_helm_stds': dataset_theta_corr_helm_stds
+    })
+    helm_df.to_csv(f'{plot_dir}/amor_calibration_corr_helm.csv', index=False)
     
-    # error_bar_plot_double(
-    #     datasets=DATASETS, 
-    #     means_train=dataset_gof_train_means,
-    #     stds_train=dataset_gof_train_stds,
-    #     means_test=dataset_gof_test_means,
-    #     stds_test=dataset_gof_test_stds,
-    #     plot_path=f"{plot_dir}/amor_calibration_summarize_gof",
-    #     xlabel=r"Goodness of Fit",
-    # )   
+    error_bar_plot_double(
+        datasets=DATASETS, 
+        means_train=dataset_gof_train_means,
+        stds_train=dataset_gof_train_stds,
+        means_test=dataset_gof_test_means,
+        stds_test=dataset_gof_test_stds,
+        plot_path=f"{plot_dir}/amor_calibration_summarize_gof",
+        xlabel=r"Goodness of Fit",
+    )   
     
-    # error_bar_plot_single(
-    #     datasets=DATASETS,
-    #     means=dataset_theta_corr_ctt_means,
-    #     stds=dataset_theta_corr_ctt_stds,
-    #     plot_path=f"{plot_dir}/amor_calibration_summarize_theta_corr_ctt",
-    #     xlabel=r"$\theta$ correlation with CTT",
-    # )
+    error_bar_plot_single(
+        datasets=DATASETS,
+        means=dataset_theta_corr_ctt_means,
+        stds=dataset_theta_corr_ctt_stds,
+        plot_path=f"{plot_dir}/amor_calibration_summarize_theta_corr_ctt",
+        xlabel=r"$\theta$ correlation with CTT",
+    )
     
-    # error_bar_plot_single(
-    #     datasets=[d for d in DATASETS if d != "airbench"],
-    #     means=dataset_theta_corr_helm_means,
-    #     stds=dataset_theta_corr_helm_stds,
-    #     plot_path=f"{plot_dir}/amor_calibration_summarize_theta_corr_helm",
-    #     xlabel=r"$\theta$ correlation with HELM",
-    # )
+    error_bar_plot_single(
+        datasets=[d for d in DATASETS if d != "airbench"],
+        means=dataset_theta_corr_helm_means,
+        stds=dataset_theta_corr_helm_stds,
+        plot_path=f"{plot_dir}/amor_calibration_summarize_theta_corr_helm",
+        xlabel=r"$\theta$ correlation with HELM",
+    )
     
-    # error_bar_plot_double(
-    #     datasets=DATASETS, 
-    #     means_train=dataset_z_corr_train_means,
-    #     stds_train=dataset_z_corr_train_stds,
-    #     means_test=dataset_z_corr_test_means,
-    #     stds_test=dataset_z_corr_test_stds,
-    #     plot_path=f"{plot_dir}/amor_calibration_summarize_z_corr",
-    #     xlabel=r"correlation of $z$",
-    # )   
+    error_bar_plot_double(
+        datasets=DATASETS, 
+        means_train=dataset_z_corr_train_means,
+        stds_train=dataset_z_corr_train_stds,
+        means_test=dataset_z_corr_test_means,
+        stds_test=dataset_z_corr_test_stds,
+        plot_path=f"{plot_dir}/amor_calibration_summarize_z_corr",
+        xlabel=r"correlation of $z$",
+    )   
     
