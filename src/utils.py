@@ -334,7 +334,8 @@ def error_bar_plot_double(
     plot_path,
     xlabel,
     xlim_upper=1.1,
-    plot_std=True
+    plot_std=True,
+    average_line=False,
 ):  
     datasets = [PLOT_NAME_MAP[dataset] for dataset in datasets]
     sorted_data = sorted(
@@ -378,6 +379,12 @@ def error_bar_plot_double(
         print(f'Mean improvement: {np.mean([improvement for _, improvement in improvements])}')
         for dataset, improvement in improvements:
             print(f'{dataset}: {improvement}')
+
+    if average_line:
+        avg_train = np.mean(means_train)
+        avg_test = np.mean(means_test)
+        ax.axvline(avg_train, color='blue', linestyle='--', linewidth=2)
+        ax.axvline(avg_test, color='orange', linestyle='--', linewidth=2)
 
     ax.set_xlabel(xlabel, fontsize=35)
     ax.tick_params(axis='both', labelsize=25)
