@@ -2,7 +2,6 @@ import pandas as pd
 import torch
 import numpy as np
 import random
-from scipy.stats import ttest_ind
 import warnings
 from embed_text_package.embed_text import Embedder
 import torch.nn as nn
@@ -11,6 +10,7 @@ import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
+import seaborn as sns
 
 class MLP(nn.Module):
     def __init__(self, input_dim):
@@ -67,20 +67,6 @@ def item_response_fn_1PL(z3, theta):
 
 def item_response_fn_1PL_np(z3, theta):
     return 1 / (1 + np.exp(-(theta + z3)))
-
-def perform_t_test(sample_1, sample_2, label=""):
-    print(f"{label} T-test:")
-    print(f"Null Hypothesis (H0): The means of the two samples are equal.")
-    print(f"Alternative Hypothesis (H1): The means of the two samples are not equal.")
-    t_stat, p_value = ttest_ind(sample_1, sample_2)
-    print(f"t_stat = {t_stat}, p_value = {p_value}")
-    if p_value < 0.05:
-        print(f"Reject the null hypothesis for {label}.")
-        tag = True
-    else:
-        print(f"Fail to reject the null hypothesis for {label}.")
-        tag = False
-    return tag, t_stat, p_value
 
 def sample_mean_std(data: np.array):
     masked_data = data[data != -1]
@@ -457,28 +443,6 @@ def plot_corr_double(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
-def plot_nonid_test(
-    theta_dumb_samples,
-    theta_smart_samples,
-    z_easy,
-    z_hard,
-    plot_path
-):
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    plt.hist(theta_dumb_samples, bins=30, density=True, alpha=0.4)
-    plt.hist(theta_smart_samples, bins=30, density=True, alpha=0.4)
-    plt.xlabel(r'$\theta$', fontsize=25)
-    plt.tick_params(axis='both', labelsize=16)
-
-    plt.subplot(1, 2, 2)
-    plt.hist(z_easy, bins=30, density=True, alpha=0.4)
-    plt.hist(z_hard, bins=30, density=True, alpha=0.4)
-    plt.xlabel(r'$z$', fontsize=25)
-    plt.tick_params(axis='both', labelsize=16)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    
 def plot_bar(
     datasets,
     nums,
@@ -567,6 +531,19 @@ def plot_cat(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
+def plot_hard_easy(theta_hats_all, y_means_all, theta, y, plot_path):
+    plt.figure(figsize=(8, 6))
+    plt.hist(theta_hats_all, bins=40, color='red', alpha=0.2, label='IRT Estimation', density=True)
+    plt.hist(y_means_all, bins=40, color='blue', alpha=0.2, label='CTT Estimation', density=True)
+    plt.axvline(x=theta, color='red', linestyle='-', linewidth=2)
+    plt.axvline(x=y.mean().item() * 6 - 3, color='blue', linewidth=2)
+    sns.kdeplot(theta_hats_all, color='red', linewidth=2, bw_adjust=2)
+    plt.xlabel(r'Ability', fontsize=25)
+    plt.ylabel(r'Density', fontsize=25)
+    plt.legend(fontsize=20)
+    plt.tick_params(axis='both', labelsize=20)
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    
 PLOT_NAME_MAP = {
     'wikifact': 'wikifact',
     'entity_data_imputation': 'ent_data_imp',

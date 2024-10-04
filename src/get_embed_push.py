@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
     input_dir = '../data/get_embed/'
     dataset_dict = {}
-    for dataset in tqdm(['airbench', 'math']):
+    for dataset in tqdm(DATASETS):
         with open(f'{input_dir}/{dataset}/embed.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
             df = pd.DataFrame(data)

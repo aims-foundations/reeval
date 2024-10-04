@@ -1,8 +1,0 @@
-method: grid
-parameters:
-  dataset:
-    values: ["airbench", "commonsense", "raft"]
-  seed:
-    values: [0]
-program: hard_easy_test_sweep.py
-project: hard_easy_test_sweep

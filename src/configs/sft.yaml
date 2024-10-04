@@ -1,8 +1,8 @@
 model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
 dataset_name: stair-lab/airbench-sft
-output_dir: ../data/sft/lora_20epoch
+output_dir: ../data/sft/lora_10epoch
 overwrite_output_dir: true
-num_train_epochs: 20
+num_train_epochs: 10
 
 dataset_train_split: train
 dataset_test_split: test

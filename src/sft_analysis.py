@@ -5,29 +5,39 @@ import torch
 from vllm import LLM, SamplingParams
 from peft import AutoPeftModelForCausalLM
 from datasets import load_dataset, Dataset
-from utils import MLP, get_embed, plot_hist
+from utils import MLP, plot_hist
 from ppo_reward_model import extract_score
 import pickle
 from embed_text_package.embed_text import Embedder
 import numpy as np
 
+def call_diff(ds, gt_zs, reward_model, restart):
+    dataloader = torch.utils.data.DataLoader(ds, batch_size=4, shuffle=False)
+    emb = embdr.get_embeddings(
+        dataloader, "meta-llama/Meta-Llama-3-8B", ['text']
+    )
+    embs = emb['text']
+
+    pred_zs = reward_model.predict(embs).tolist()
+    pred_zs = np.array(pred_zs).reshape(-1, restart)
+    # >>> batch_size * restart
+
+    gt_zs = np.array([gt_zs for _ in range(restart)]).T
+
+    best_diffs = np.abs(pred_zs-gt_zs).min(axis=-1)
+    return best_diffs
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--llm', type=str, required=True)
-    args = parser.parse_args()
-    
     plot_dir = "../plot/sft"
     os.makedirs(plot_dir, exist_ok=True)
     restart = 64
 
-    if args.llm == "llama":
-        model_dir = "../data/sft/lora_10epoch"
-        model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-2400')
-        train_dataset = load_dataset("stair-lab/airbench-sft", split="train")
-        test_dataset = load_dataset("stair-lab/airbench-sft", split="test")
-        train_prompts = train_dataset['text']#[:100]
-        test_prompts = test_dataset['text']#[:100]
+    model_dir = "../data/sft/lora_10epoch"
+    model = AutoPeftModelForCausalLM.from_pretrained(f'{model_dir}/checkpoint-2400')
+    train_dataset = load_dataset("stair-lab/airbench-sft", split="train")
+    test_dataset = load_dataset("stair-lab/airbench-sft", split="test")
+    train_prompts = train_dataset['text']
+    test_prompts = test_dataset['text']
     model = model.merge_and_unload().to(torch.bfloat16)
     model.save_pretrained(model_dir)
     
@@ -38,7 +48,6 @@ if __name__ == "__main__":
     llm = LLM(model=model_dir)
     train_outputs = llm.generate(train_prompts, sampling_params)
     test_outputs = llm.generate(test_prompts, sampling_params)
-    # batch x n_samples
     
     train_answers = [sample.text for o in train_outputs for sample in o.outputs]
     test_answers = [sample.text for o in test_outputs for sample in o.outputs]
@@ -52,27 +61,6 @@ if __name__ == "__main__":
     
     embdr = Embedder()
     embdr.load("meta-llama/Meta-Llama-3-8B")
-
-    # Perfrom batch inference
-    def call_diff(ds, gt_zs, reward_model, restart):
-        dataloader = torch.utils.data.DataLoader(ds, batch_size=4, shuffle=False)
-        #for batch in ds_loader:
-        #    batch_ds = Dataset.from_dict({"text": batch["text"]})
-        #   dataloader = DataLoader(batch_dsdataloaderdataloader, batch_size=bs)
-        emb = embdr.get_embeddings(
-            dataloader, "meta-llama/Meta-Llama-3-8B", ['text']
-        )
-        embs = emb['text']
-
-        # embs = get_embed(batch_ds)
-        pred_zs = reward_model.predict(embs).tolist()
-        pred_zs = np.array(pred_zs).reshape(-1, restart)
-        # >>> batch_size * restart
-
-        gt_zs = np.array([gt_zs for _ in range(restart)]).T
-
-        best_diffs = np.abs(pred_zs-gt_zs).min(axis=-1)
-        return best_diffs
 
     with open('../data/plugin_regression/airbench/bayridge.pkl', 'rb') as f:
         reward_model = pickle.load(f)
