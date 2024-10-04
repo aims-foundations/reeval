@@ -1,23 +1,25 @@
-    
+from tqdm import tqdm
+from datasets import Dataset, DatasetDict
+import pandas as pd
+import os
+import json
+from huggingface_hub import login
+from dotenv import load_dotenv
+from utils import DATASETS
+
 if __name__ == "__main__":
+    load_dotenv()
+    hf_token = os.getenv('HF_TOKEN')
+    login(token=hf_token)
 
-    with open(save_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+    input_dir = '../data/get_embed/'
+    dataset_dict = {}
+    for dataset in tqdm(['airbench', 'math']):
+        with open(f'{input_dir}/{dataset}/embed.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            df = pd.DataFrame(data)
+            dataset_split = Dataset.from_pandas(df)
+            dataset_dict[dataset] = dataset_split
 
-    # Convert back to DataFrame to create datasets
-    push_df = pd.DataFrame(data)
-
-    # Split the data into train and test
-    split_index = int(0.8 * len(push_df))
-    push_train_df, push_test_df = push_df[:split_index], push_df[split_index:]
-
-    # Convert to Hugging Face dataset format
-    push_train_dataset = Dataset.from_pandas(push_train_df.reset_index(drop=True))
-    push_test_dataset = Dataset.from_pandas(push_test_df.reset_index(drop=True))
-
-    # Create a dataset dictionary and push to Hugging Face
-    push_dataset_dict = DatasetDict({
-        'train': push_train_dataset,
-        'test': push_test_dataset
-    })
-    push_dataset_dict.push_to_hub(hf_repo)
+    hf_dataset_dict = DatasetDict(dataset_dict)
+    hf_dataset_dict.push_to_hub("stair-lab/reeval_individual-embed")

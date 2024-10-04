@@ -3,8 +3,6 @@ import json
 from datasets import Dataset
 import pandas as pd
 import os
-from huggingface_hub import login
-from dotenv import load_dotenv
 import wandb
 from utils import get_embed
 
@@ -40,10 +38,6 @@ if __name__ == "__main__":
     parser.add_argument('--dataset', type=str, required=True)
     parser.add_argument('--bs', type=int, default=1024)
     args = parser.parse_args()
-    
-    load_dotenv()
-    hf_token = os.getenv('HF_TOKEN')
-    login(token=hf_token)
     
     output_dir = f'../data/get_embed/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
