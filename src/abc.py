@@ -1,11 +1,10 @@
 from datasets import load_dataset, DatasetDict, concatenate_datasets
-from huggingface_hub import HfApi
 from utils import DATASETS
 
 dataset_dict = {}
 for dataset_name in DATASETS:
     # Load the train and test parts of each dataset
-    dataset = load_dataset(f"stair-lab/{dataset_name}-embed")
+    dataset = load_dataset(f"stair-lab/reeval_{dataset_name}-embed")
     
     # Merge train and test splits
     merged_dataset = concatenate_datasets([dataset['train'], dataset['test']])
