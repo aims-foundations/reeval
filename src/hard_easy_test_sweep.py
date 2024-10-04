@@ -24,24 +24,46 @@ if __name__ == "__main__":
     selection_prob = 0.8
     subset_size = 100
     step_size = 4000
-    iterations = 100
+    iterations = 10
     
     response_matrix = pd.read_csv(
         f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0
     ).values
-    count_minus_one = np.sum(response_matrix == -1, axis=1)
-    min_index = np.argmin(count_minus_one)
-    y = torch.tensor(response_matrix[min_index], dtype=torch.float32).to(device)
-    mask = y != -1
-    
+
+    # Load theta values
     theta = pd.read_csv(
         f'../data/nonamor_calibration/{args.dataset}/nonamor_theta.csv'
-    )["theta"].values[min_index]
-    
+    )["theta"].values
+
+    # Load z values
     z = pd.read_csv(
         f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv'
     )["z"].values
+
+    # Create a mask for rows in y with more than 500 non -1 values
+    valid_rows_mask = (response_matrix != -1).sum(axis=1) > 500
+
+    # Filter theta and response matrix using the valid rows mask
+    filtered_theta = theta[valid_rows_mask]
+    filtered_response_matrix = response_matrix[valid_rows_mask]
+
+    # Find the index of the theta value closest to zero among the filtered rows
+    min_index = np.argmin(np.abs(filtered_theta))
+
+    # Select the row from the response matrix
+    y = torch.tensor(filtered_response_matrix[min_index], dtype=torch.float32).to(device)
+
+    # Create a mask for valid entries (non -1) in the selected row
+    valid_cols_mask = y != -1
+
+    # Apply the valid columns mask to both y and z
+    y = y[valid_cols_mask]
     z = torch.tensor(z, dtype=torch.float32).to(device)
+    z = z[valid_cols_mask]
+
+    # theta value corresponding to the selected row
+    theta = torch.tensor(filtered_theta[min_index], dtype=torch.float32).to(device)
+    
     z_sort_index = torch.argsort(z)
 
     theta_hats_all = []
