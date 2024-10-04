@@ -10,7 +10,7 @@ if __name__ == "__main__":
     load_dotenv()
     hf_token = os.getenv('HF_TOKEN')
 
-    output_dir = "../../../data/real/pre_irt_data/answer"
+    output_dir = "../../../gather_data/query_real/answer"
     os.makedirs(output_dir, exist_ok=True)
 
     parser = argparse.ArgumentParser(description='get answer from model')
@@ -25,12 +25,12 @@ if __name__ == "__main__":
     login(token = hf_token)
     airbench = datasets.load_dataset("stanford-crfm/air-bench-2024", split="test")
 
-    model_string_list = [
+    model_strings = [
         'meta-llama/Meta-Llama-3-8B-Instruct',
         ]
-    subset_model_string_list = model_string_list[start-1:end]
+    subset_model_strings = model_strings[start-1:end]
 
-    for model_string in subset_model_string_list:
+    for model_string in subset_model_strings:
         batcher = Batcher(
             api_name="vllm",
             api_key="EMPTY",

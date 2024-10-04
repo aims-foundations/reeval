@@ -59,16 +59,16 @@ def get_bool_answers_logprob(data, threshold):
 if __name__ == "__main__":
     wandb.init(project="get_response_matrix")
     parser = argparse.ArgumentParser()
-    parser.add_argument('--leaderboard', type=str, default="classic") # classic, mmlu
-    parser.add_argument('--start_string', type=str, required=True) # use wandb sweep, mmlu
+    parser.add_argument('--leaderboard', type=str, default="classic", choices=['classic', 'mmlu'])
+    parser.add_argument('--dataset', type=str, required=True) # use wandb sweep, mmlu
     args = parser.parse_args()
   
-    input_dir = f'../../../data/gather_data/crawl_real/jsons/{args.start_string}_json'
-    output_dir = f'../../../data/pre_calibration/{args.start_string}'
+    input_dir = f'../../../data/gather_data/crawl_real/jsons/{args.dataset}_json'
+    output_dir = f'../../../data/pre_calibration/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     
     full_strings_all = pd.read_csv(f'../../../data/gather_data/crawl_real/crawl_dataset_name_{args.leaderboard}.csv')['Run'].tolist()
-    full_strings = [f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.start_string)]
+    full_strings = [f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.dataset)]
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])
     non_model_strings = list(set([delete_model_name(f) for f in full_strings]))

@@ -10,13 +10,13 @@ if __name__ == "__main__":
     hf_token = os.getenv('HF_TOKEN')
     together_key = os.getenv('TOGETHERAI_KEY')
 
-    output_dir = "../../../data/real/pre_irt_data/answer"
+    output_dir = "../../../gather_data/query_real/answer"
     os.makedirs(output_dir, exist_ok=True)
     
     login(token = hf_token)
     airbench = datasets.load_dataset("stanford-crfm/air-bench-2024", split="test")
 
-    model_string_list = [
+    model_strings = [
         # "zero-one-ai/Yi-34B-Chat",
         "Austism/chronos-hermes-13b",
         "cognitivecomputations/dolphin-2.5-mixtral-8x7b",
@@ -75,9 +75,9 @@ if __name__ == "__main__":
         "WizardLM/WizardLM-13B-V1.2",
         "upstage/SOLAR-10.7B-Instruct-v1.0"
     ]
-    print(len(model_string_list))
+    print(len(model_strings))
 
-    for model_string in model_string_list:
+    for model_string in model_strings:
         print(model_string)
 
         batcher = Batcher(
@@ -92,13 +92,19 @@ if __name__ == "__main__":
         row_list = []
         question_list = []
         for i in range(len(airbench['cate-idx'])):
-            row_list.append([airbench[i]["cate-idx"], airbench[i]["l2-name"], airbench[i]["l3-name"], airbench[i]["l4-name"], airbench[i]["prompt"]])
+            row_list.append([
+                airbench[i]["cate-idx"], 
+                airbench[i]["l2-name"], 
+                airbench[i]["l3-name"], 
+                airbench[i]["l4-name"], 
+                airbench[i]["prompt"]
+            ])
             question_list.append(airbench[i]["prompt"])
 
         result_list = batcher.handle_message_list(question_list)
 
         model_string = model_string.replace("/", "_")
-        with open(f'../raw_data_more/answer/{model_string}_result.csv', 'w', newline='', encoding='utf-8') as outfile:
+        with open(f'{output_dir}/answer_{model_string}_result.csv', 'w', newline='', encoding='utf-8') as outfile:
             writer = csv.writer(outfile)
             writer.writerow(['cate-idx', 'l2-name', 'l3-name', 'l4-name', 'prompt', 'response'])
 

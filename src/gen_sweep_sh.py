@@ -1,5 +1,4 @@
 import argparse
-from utils import DATASETS
 
 def gen_sh_file(num_agents, sweep_command, project):
     script_content = f"""#!/bin/bash
@@ -17,7 +16,7 @@ done
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_agents', type=int, default=len(DATASETS))
+    parser.add_argument('--num_agents', type=int, default=5)
     parser.add_argument('--command', type=str, required=True)
     parser.add_argument('--project', type=str, required=True)
     args = parser.parse_args()

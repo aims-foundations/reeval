@@ -9,17 +9,30 @@ if __name__ == "__main__":
     parser.add_argument('--project', type=str, required=True)
     args = parser.parse_args()
     
+    if args.project == "save_json_classic":
+        datasets = [d for d in DATASETS if d != 'mmlu' and d != 'airbench']
+        program = 'save_json.py'
+    elif args.project == "get_response_matrix_classic":
+        datasets = [d for d in DATASETS if d != 'mmlu' and d != 'airbench']
+        program = 'get_response_matrix.py'
+    else:
+        datasets = DATASETS
+        program = f'{args.project}.py'
+        
+    project = f'{args.project}'
+    save_path = f'{args.project}.yaml'
+    
     yaml_content = {
-        'program': f'{args.project}.py',
-        'project': f'{args.project}',
+        'program': program,
+        'project': project,
         'method': 'grid',
         'parameters': {
             'dataset': {
-                'values': DATASETS
+                'values': datasets
             },
         }
     }
 
-    with open(f'{args.project}.yaml', 'w') as yaml_file:
+    with open(save_path, 'w') as yaml_file:
         yaml.dump(yaml_content, yaml_file, default_flow_style=False)
         

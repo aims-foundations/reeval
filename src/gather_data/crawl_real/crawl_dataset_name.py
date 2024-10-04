@@ -11,7 +11,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--leaderboard', type=str, required=True) # classic, lite, mmlu
+    parser.add_argument('--leaderboard', type=str, required=True, choices=['classic', 'lite', 'mmlu'])
     args = parser.parse_args()
     
     base_url = f'https://crfm.stanford.edu/{args.leaderboard}/classic/latest/#/runs?page='

@@ -31,7 +31,7 @@ def get_question_count(exp_string, leaderboard):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--leaderboard', type=str, required=True) # classic, lite, mmlu
+    parser.add_argument('--leaderboard', type=str, required=True, choices=['classic', 'lite', 'mmlu'])
     args = parser.parse_args()
 
     input_path = f'../../../data/gather_data/crawl_real/crawl_dataset_name_{args.leaderboard}.csv'

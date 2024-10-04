@@ -1,3 +1,4 @@
+import json
 import wandb
 from utils import DESCRIPTION_MAP, get_embed
 import argparse
@@ -23,13 +24,17 @@ def main(
     embed = get_embed(text_dataset, bs=bs) # list of list
     assert len(embed) == len(text_df) == len(z_df)
     
-    save_df = pd.DataFrame({
-        'dataset': [dataset] * len(text_df),
-        'text': text_df['text'],
-        'z': z_df['z'],
-        'embed': embed
-    })
-    save_df.to_csv(save_path, index=False)
+    save_list = [
+        {
+            'dataset': dataset,
+            'text': text,
+            'z': z,
+            'embed': emb
+        }
+        for text, z, emb in zip(text_df['text'], z_df['z'], embed)
+    ]
+    with open(save_path, 'w', encoding='utf-8') as f:
+        json.dump(save_list, f, indent=4)
     
 if __name__ == "__main__":
     wandb.init(project="agg_embed")
@@ -47,6 +52,6 @@ if __name__ == "__main__":
         description=description,
         search_path=f'../data/pre_calibration/{args.dataset}/search.csv',
         z_path=f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv',
-        save_path=f'{output_dir}/embed_{args.dataset}.csv',
+        save_path=f'{output_dir}/embed_{args.dataset}.json',
         bs=args.bs
     )

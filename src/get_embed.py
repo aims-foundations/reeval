@@ -1,5 +1,6 @@
 import argparse
-from datasets import Dataset, DatasetDict
+import json
+from datasets import Dataset
 import pandas as pd
 import os
 from huggingface_hub import login
@@ -10,7 +11,6 @@ from utils import get_embed
 def main(
     search_path,
     z_path, 
-    hf_repo, 
     save_path,
     bs=1024
 ):
@@ -23,24 +23,17 @@ def main(
     embed = get_embed(text_dataset, bs=bs) # list of list
     assert len(embed) == len(text_df) == len(z_df)
     
-    push_df = pd.DataFrame({
-        'text': text_df['text'],
-        'z': z_df['z'],
-        'embed': embed
-    })
-    push_df.to_csv(save_path, index=False)
-    
-    split_index = int(0.8 * len(push_df))
-    push_train_df, push_test_df = push_df[:split_index], push_df[split_index:]
-    push_train_dataset = Dataset.from_pandas(push_train_df.reset_index(drop=True))
-    push_test_dataset = Dataset.from_pandas(push_test_df.reset_index(drop=True))
-    
-    push_dataset_dict = DatasetDict({
-        'train': push_train_dataset,
-        'test': push_test_dataset
-    })
-    push_dataset_dict.push_to_hub(hf_repo)
-
+    save_list = [
+        {
+            'text': text,
+            'z': z,
+            'embed': emb
+        }
+        for text, z, emb in zip(text_df['text'], z_df['z'], embed)
+    ]
+    with open(save_path, 'w', encoding='utf-8') as f:
+        json.dump(save_list, f, indent=4)
+        
 if __name__ == "__main__":
     wandb.init(project="get_embed")
     parser = argparse.ArgumentParser()
@@ -58,8 +51,7 @@ if __name__ == "__main__":
     main(
         search_path=f'../data/pre_calibration/{args.dataset}/search.csv',
         z_path=f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv',
-        hf_repo=f'stair-lab/reeval_{args.dataset}-embed',
-        save_path=f'{output_dir}/embed.csv',
+        save_path=f'{output_dir}/embed.json',
         bs=args.bs
     )
 
