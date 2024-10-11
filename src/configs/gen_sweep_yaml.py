@@ -9,30 +9,95 @@ if __name__ == "__main__":
     parser.add_argument('--project', type=str, required=True)
     args = parser.parse_args()
     
-    if args.project == "save_json_classic":
-        datasets = [d for d in DATASETS if d != 'mmlu' and d != 'airbench']
-        program = 'save_json.py'
-    elif args.project == "get_response_matrix_classic":
-        datasets = [d for d in DATASETS if d != 'mmlu' and d != 'airbench']
-        program = 'get_response_matrix.py'
-    else:
-        datasets = DATASETS
-        program = f'{args.project}.py'
-        
-    project = f'{args.project}'
     save_path = f'{args.project}.yaml'
     
-    yaml_content = {
-        'program': program,
-        'project': project,
-        'method': 'grid',
-        'parameters': {
-            'dataset': {
-                'values': datasets
-            },
+    if args.project == "plugin_regression":
+        datasets = DATASETS
+        program = f'{args.project}.py'
+        project = f'{args.project}'
+        
+        yaml_content = {
+            'program': program,
+            'project': project,
+            'method': 'grid',
+            'parameters': {
+                'dataset': {
+                    'values': datasets
+                },
+                'seed': {
+                    'values': [i for i in range(10)]
+                },
+            }
         }
-    }
+    
+    elif args.project == "plugin_regression_aggregate":
+        program = 'plugin_regression.py'
+        project = 'plugin_regression.py'
+        
+        yaml_content = {
+            'program': program,
+            'project': project,
+            'method': 'grid',
+            'parameters': {
+                'dataset': {
+                    'values': ['aggregate']
+                },
+                'seed': {
+                    'values': [i for i in range(10)]
+                },
+                'task': {
+                    'values': ['byrandom', 'bydataset']
+                },
+            }
+        }
+    
+    elif args.project == "agg_embed":
+        datasets = DATASETS
+        program = 'embed.py'
+        project = 'embed.py'
+        
+        yaml_content = {
+            'program': program,
+            'project': project,
+            'method': 'grid',
+            'parameters': {
+                'dataset': {
+                    'values': datasets
+                },
+                'agg_tag': {
+                    'values': [True]
+                },
+            }
+        }
+        
+    else:
+        if args.project == "save_json_classic":
+            datasets = [d for d in DATASETS if d != 'mmlu' and d != 'airbench']
+            program = 'save_json.py'
+            project = 'save_json.py'
+            
+        elif args.project == "get_response_matrix_classic":
+            datasets = [d for d in DATASETS if d != 'mmlu' and d != 'airbench']
+            program = 'get_response_matrix.py'
+            project = 'get_response_matrix.py'
+            
+        else:
+            datasets = DATASETS
+            program = f'{args.project}.py'
+            project = f'{args.project}.py'
+        
+        yaml_content = {
+            'program': program,
+            'project': project,
+            'method': 'grid',
+            'parameters': {
+                'dataset': {
+                    'values': datasets
+                },
+            }
+        }
 
     with open(save_path, 'w') as yaml_file:
         yaml.dump(yaml_content, yaml_file, default_flow_style=False)
+        
         

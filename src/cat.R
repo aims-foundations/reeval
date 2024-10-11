@@ -65,7 +65,7 @@ func.catSim <- function(resp, item.bank, method, stop.size){
                     thetaSE = list.se))
 }
 
-monte.carlo.cat.simulation <- function(th.sample, item.bank, iteration, stop.size){
+monte.carlo.cat.simulation <- function(th.sample, item.bank, iteration, stop.size, ni){
   resp.sample <- func.create.response(item.bank$b, th.sample, np, ni)
   
   # add simulated_pid to first column
@@ -114,60 +114,85 @@ func.visualize.differences.validate.all <- function(df.compare){
 set.seed(42)
 np <- 200
 iter <- 5
-stop.size <- 400
 
 args <- commandArgs(trailingOnly = TRUE)
-arg1 <- args[1]
-arg2 <- args[2]
+arg <- args[1]
 
-if (arg1 == "syn") {
-  ni <- 400
-  theta <- rnorm(np, mean=0, sd=1)
-  b <- rnorm(ni, mean=0, sd=1)
-  save.path <- glue("../data/cat/{arg1}/cat.csv")
-} else if (arg1 == "semi_syn") {
-  thata.path <- glue("../data/nonamor_calibration/{arg2}/nonamor_theta.csv")
-  df.theta <- read_csv(thata.path, col_select = 1)
-  theta_mean <- mean(df.theta$theta)
-  theta_std <- sd(df.theta$theta)
-  theta <- rnorm(np, mean = theta_mean, sd = theta_std)
-  
-  b.path <- glue("../data/nonamor_calibration/{arg2}/nonamor_z.csv")
-  df.b <- read_csv(b.path, col_select = 1)
-  b <- df.b$z
-  b <- b * -1
-  ni <- length(b)
-  
-  save.path <- glue("../data/cat/{arg2}/cat.csv")
-}
+thata.path <- glue("../data/nonamor_calibration/{arg}/nonamor_theta.csv")
+df.theta <- read_csv(thata.path, col_select = 1)
+theta_mean <- mean(df.theta$theta)
+theta_std <- sd(df.theta$theta)
+theta <- rnorm(np, mean = theta_mean, sd = theta_std)
 
-stop.size <- min(stop.size, ni)
+b.path <- glue("../data/nonamor_calibration/{arg}/nonamor_z.csv")
+df.b <- read_csv(b.path, col_select = 1)
+b <- df.b$z
+b <- b * -1
 
-item.bank <- data.frame(
-  a = rep(1, ni),
+# full set as item bank
+stop.size.full <- 50
+ni.full <- length(b)
+save.path.full <- glue("../data/cat/{arg}/cat_full.csv")
+stop.size.full <- min(stop.size.full, ni.full)
+
+item.bank.full <- data.frame(
+  a = rep(1, ni.full),
   b = b,       
-  c = rep(0, ni),
-  d = rep(1, ni)
+  c = rep(0, ni.full),
+  d = rep(1, ni.full)
 )
 
-df.monte.carlo.results.v2 <- monte.carlo.cat.simulation(theta, item.bank, iter, stop.size)
+df.monte.carlo.results.v2.full <- monte.carlo.cat.simulation(theta, item.bank.full, iter, stop.size.full, ni.full)
 
-# set the true estimate as the final theta estimate
-df.monte.carlo.simulation.compare <- df.monte.carlo.results.v2  %>%
-  mutate(thetaEstimate = round(thetaEstimate, digits = 6)) %>%
-  filter(trialNumTotal == stop.size) %>%
-  select(pid, thetaEstimate) %>%
-  dplyr :: rename(trueEstimate = thetaEstimate) %>%
-  left_join(df.monte.carlo.results.v2 %>%
-  mutate(thetaEstimate = round(thetaEstimate, digits = 6)))
+df.true.theta.full <- data.frame(
+  pid = sprintf("sim_%03d", 1:np), 
+  trueEstimate = theta  
+)
 
-df.compare.all <- df.monte.carlo.simulation.compare %>%
+df.monte.carlo.simulation.compare.full <- df.true.theta.full %>%
+  left_join(df.monte.carlo.results.v2.full, by = "pid")
+
+df.compare.all.full <- df.monte.carlo.simulation.compare.full %>%
   select(pid, variant, trialNumTotal, thetaEstimate, iteration, thetaSE, trueEstimate) %>%
-  unique() %>%
   mutate(variant = ifelse(variant == "adaptive", "CAT", "Random"))
 
-df.aggregrate.learning.curve.all <- func.visualize.differences.validate.all(df.compare.all) %>% 
+df.aggregrate.learning.curve.all.full <- func.visualize.differences.validate.all(df.compare.all.full) %>% 
   mutate(bias = abs(bias))
 
-write.csv(df.aggregrate.learning.curve.all, save.path, row.names = FALSE)
+write.csv(df.aggregrate.learning.curve.all.full, save.path.full, row.names = FALSE)
+
+# subset as item bank
+b.first <- b[1]
+b.rest <- sample(b[-1], 49)
+b.sub <- c(b.first, b.rest)
+ni.sub <- length(b.sub)
+stop.size.sub <- length(b.sub)
+
+save.path.sub <- glue("../data/cat/{arg}/cat_sub.csv")
+
+item.bank.sub <- data.frame(
+  a = rep(1, ni.sub),
+  b = b.sub,       
+  c = rep(0, ni.sub),
+  d = rep(1, ni.sub)
+)
+
+df.monte.carlo.results.v2.sub <- monte.carlo.cat.simulation(theta, item.bank.sub, iter, stop.size.sub, ni.sub)
+
+df.true.theta.sub <- data.frame(
+  pid = sprintf("sim_%03d", 1:np), 
+  trueEstimate = theta  
+)
+
+df.monte.carlo.simulation.compare.sub <- df.true.theta.sub %>%
+  left_join(df.monte.carlo.results.v2.sub, by = "pid")
+
+df.compare.all.sub <- df.monte.carlo.simulation.compare.sub %>%
+  select(pid, variant, trialNumTotal, thetaEstimate, iteration, thetaSE, trueEstimate) %>%
+  mutate(variant = ifelse(variant == "adaptive", "CAT", "Random"))
+
+df.aggregrate.learning.curve.all.sub <- func.visualize.differences.validate.all(df.compare.all.sub) %>% 
+  mutate(bias = abs(bias))
+
+write.csv(df.aggregrate.learning.curve.all.sub, save.path.sub, row.names = FALSE)
 

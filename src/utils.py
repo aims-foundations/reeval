@@ -502,29 +502,18 @@ def plot_rewards(rewards, plot_path):
     plt.tick_params(axis='both', labelsize=16)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
-    
-def plot_loss(
-    losses,
-    plot_path,
-    ylabel,
-):
-    plt.figure(figsize=(6, 6))
-    plt.plot(losses)
-    plt.tick_params(axis='both', labelsize=16)
-    plt.ylabel(ylabel, fontsize=25)
-    plt.ylim(0, 10)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    plt.close()
 
 def plot_cat(
     randoms,
     cats,
+    cat_subs,
     plot_path,
     ylabel,
 ):
     plt.figure(figsize=(6, 6))
-    plt.plot(randoms, label='Random', color='red', linewidth=3)
-    plt.plot(cats, label='Fisher', color='blue', linewidth=3)
+    plt.plot(randoms, label='Random', color='red', linewidth=2)
+    plt.plot(cats, label='Fisher large', color='blue', linewidth=2)
+    plt.plot(cat_subs, label='Fisher small', color='darkgoldenrod', linewidth=2)
     plt.tick_params(axis='both', labelsize=25)
     plt.ylabel(ylabel, fontsize=25)
     plt.legend(fontsize=25)
