@@ -1,12 +1,14 @@
 import pandas as pd
 import torch
 import numpy as np
+import jax.numpy as jnp
 import random
 import warnings
 from embed_text_package.embed_text import Embedder
 import torch.nn as nn
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
@@ -62,11 +64,24 @@ DESCRIPTION_MAP = {
 }
 DATASETS = list(DESCRIPTION_MAP.keys())
 
+# overleaf/R_library: z1/g, z2/a1, z3/d
 def item_response_fn_1PL(z3, theta):
     return 1 / (1 + torch.exp(-(theta + z3)))
 
 def item_response_fn_1PL_np(z3, theta):
     return 1 / (1 + np.exp(-(theta + z3)))
+
+def item_response_fn_2PL(z2, z3, theta):
+    return 1 / (1 + torch.exp(-(z2 * theta + z3)))
+
+def item_response_fn_2PL_jnp(z2, z3, theta):
+    return 1 / (1 + jnp.exp(-(z2 * theta + z3)))
+
+def item_response_fn_3PL(z1, z2, z3, theta):
+    return z1 + (1 - z1) / (1 + torch.exp(-(z2 * theta + z3)))
+
+def item_response_fn_3PL_jnp(z1, z2, z3, theta):
+    return z1 + (1 - z1) / (1 + jnp.exp(-(z2 * theta + z3)))
 
 def sample_mean_std(data: np.array):
     masked_data = data[data != -1]
@@ -180,6 +195,133 @@ def goodness_of_fit_1PL_plot(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     
+    return mean_diff, std_diff
+
+def goodness_of_fit_2PL(
+    theta_samples, 
+    z2_samples, 
+    z3_samples, 
+    y_df, 
+    plot_path,
+    bin_size: int=6,
+):
+    theta_mean = np.mean(theta_samples, axis=0)
+    theta = torch.tensor(theta_mean, dtype=torch.float32)
+    question_num = y_df.shape[1]
+    
+    bin_start, bin_end = torch.min(theta), torch.max(theta)
+    bins = torch.linspace(bin_start, bin_end, bin_size+1)
+    print(bins)
+
+    diff_list = []
+    for i in tqdm(range(question_num)):
+        single_z2_samples = torch.tensor(z2_samples[:, i], dtype=torch.float32)
+        single_z3_samples = torch.tensor(z3_samples[:, i], dtype=torch.float32)
+        y_col = y_df.iloc[:, i].values
+
+        for j in range(len(bins) - 1):
+            bin_mask = (theta >= bins[j]) & (theta < bins[j + 1])
+            if bin_mask.sum() > 0:  # Bin not empty
+                y_empirical = y_col[bin_mask].mean()
+
+                theta_mid = (bins[j] + bins[j + 1]) / 2
+                theta_mid_tensor = torch.tensor([theta_mid], dtype=torch.float32)
+                y_theoretical_tensor = item_response_fn_2PL(
+                    single_z2_samples,
+                    single_z3_samples,
+                    theta_mid_tensor
+                )
+                y_theoretical = y_theoretical_tensor.numpy()
+                in_diff_list = [1 - abs(y_empirical - yt) for yt in y_theoretical]
+                diff = sum(in_diff_list) / len(in_diff_list)
+                diff_list.append(diff)
+
+    diff_array = np.array(diff_list)
+    mean_diff = diff_array.mean()
+    std_diff = diff_array.std()
+
+    plt.figure(figsize=(10, 6))
+    plt.hist(diff_array, bins=40, density=True, alpha=0.4)
+    plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
+    plt.ylabel(r'Goodness of fit', fontsize=30)
+    plt.tick_params(axis='both', labelsize=25)
+    plt.xlim(0, 1)
+    plt.axvline(mean_diff, linestyle='--')
+    plt.text(
+        mean_diff, 
+        plt.gca().get_ylim()[1], 
+        f'{mean_diff:.2f} $\\pm$ {3 * std_diff:.2f}', 
+        ha='center', 
+        va='bottom', 
+        fontsize=25
+    )
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    return mean_diff, std_diff
+
+def goodness_of_fit_3PL(
+    theta_samples, 
+    z1_samples, 
+    z2_samples, 
+    z3_samples, 
+    y_df, 
+    plot_path,
+    bin_size: int=6,
+):
+    theta_mean = np.mean(theta_samples, axis=0)
+    theta = torch.tensor(theta_mean, dtype=torch.float32)
+    question_num = y_df.shape[1]
+    
+    bin_start, bin_end = torch.min(theta), torch.max(theta)
+    bins = torch.linspace(bin_start, bin_end, bin_size+1)
+    print(bins)
+
+    diff_list = []
+    for i in tqdm(range(question_num)):
+        single_z1_samples = torch.tensor(z1_samples[:, i], dtype=torch.float32)
+        single_z2_samples = torch.tensor(z2_samples[:, i], dtype=torch.float32)
+        single_z3_samples = torch.tensor(z3_samples[:, i], dtype=torch.float32)
+        y_col = y_df.iloc[:, i].values
+
+        for j in range(len(bins) - 1):
+            bin_mask = (theta >= bins[j]) & (theta < bins[j + 1])
+            if bin_mask.sum() > 0:  # Bin not empty
+                y_empirical = y_col[bin_mask].mean()
+
+                theta_mid = (bins[j] + bins[j + 1]) / 2
+                theta_mid_tensor = torch.tensor([theta_mid], dtype=torch.float32)
+                y_theoretical_tensor = item_response_fn_3PL(
+                    single_z1_samples,
+                    single_z2_samples,
+                    single_z3_samples,
+                    theta_mid_tensor
+                )
+                y_theoretical = y_theoretical_tensor.numpy()
+                in_diff_list = [1 - abs(y_empirical - yt) for yt in y_theoretical]
+                diff = sum(in_diff_list) / len(in_diff_list)
+                diff_list.append(diff)
+
+    diff_array = np.array(diff_list)
+    mean_diff = diff_array.mean()
+    std_diff = diff_array.std()
+
+    plt.figure(figsize=(10, 6))
+    plt.hist(diff_array, bins=40, density=True, alpha=0.4)
+    plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
+    plt.ylabel(r'Goodness of fit', fontsize=30)
+    plt.tick_params(axis='both', labelsize=25)
+    plt.xlim(0, 1)
+    plt.axvline(mean_diff, linestyle='--')
+    plt.text(
+        mean_diff, 
+        plt.gca().get_ylim()[1], 
+        f'{mean_diff:.2f} $\\pm$ {3 * std_diff:.2f}', 
+        ha='center', 
+        va='bottom', 
+        fontsize=25
+    )
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
     return mean_diff, std_diff
 
 def theta_corr_ctt(
