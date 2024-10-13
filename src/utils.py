@@ -98,7 +98,7 @@ def split_indices(length):
     return train_indices.tolist(), test_indices.tolist()
 
 def inverse_sigmoid(x):
-    return np.log(x / (1 - x))
+    return torch.log(x / (1 - x))
 
 def get_embed(
     dataset,

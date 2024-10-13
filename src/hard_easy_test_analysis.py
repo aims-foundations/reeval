@@ -3,10 +3,10 @@ import os
 import numpy as np
 import pandas as pd
 import torch
-from utils import DATASETS, plot_hard_easy, inverse_sigmoid
+from utils import DATASETS, plot_hard_easy
 
 if __name__ == "__main__":
-    for dataset in ['real_tox']:
+    for dataset in DATASETS:
         df = pd.read_csv(f'../data/hard_easy_test/{dataset}/hard_easy_test.csv')
         theta_hats_all = df['theta_hat'].values
         y_means_all = df['y_mean'].values
