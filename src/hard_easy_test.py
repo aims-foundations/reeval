@@ -40,7 +40,7 @@ if __name__ == "__main__":
     y = torch.tensor(filtered_response_matrix[min_index], dtype=torch.float32).to(device)
     valid_cols_mask = y != -1
     y = y[valid_cols_mask]
-    z = torch.tensor(z[valid_cols_mask], dtype=torch.float32).to(device)
+    z = torch.tensor(z[valid_cols_mask.cpu().detach().numpy()], dtype=torch.float32).to(device)
     theta = torch.tensor(filtered_theta[min_index], dtype=torch.float32).to(device)
     
     z_sort_index = torch.argsort(z)
