@@ -6,6 +6,9 @@ import pandas as pd
 import wandb
 from utils import item_response_fn_1PL, set_seed
 
+def inverse_sigmoid(x):
+    return np.log(x / (1 - x))
+
 if __name__ == "__main__":
     wandb.init(project="hard_easy_test")
     parser = argparse.ArgumentParser()
@@ -47,7 +50,7 @@ if __name__ == "__main__":
 
     theta_hats_all = []
     y_means_all = []
-    for iteration in range(iterations):
+    for _ in range(iterations):
         z_sort_index = torch.flip(z_sort_index, dims=[0])
         
         count = 0
@@ -68,9 +71,8 @@ if __name__ == "__main__":
         )
         optim = torch.optim.SGD([theta_hat], lr=0.01)
         
-        losses = []
         theta_hats = []
-        for step in range(step_size):
+        for _ in range(step_size):
             prob = item_response_fn_1PL(z_sub, theta_hat)
             loss = -torch.distributions.Bernoulli(
                 probs=prob[sub_mask]
@@ -78,16 +80,11 @@ if __name__ == "__main__":
             optim.zero_grad()
             loss.backward()
             optim.step()
-            losses.append(loss.item())
             theta_hats.append(theta_hat.item())
         
         theta_hats_all.append(theta_hat.item())
-        y_means_all.append(y_sub[sub_mask].mean().item() * 6 - 3)
-        wandb.log({
-            'iteration': iteration,
-            'step': step,
-            'loss': loss.item(),
-        })
+        y_means_all.append(inverse_sigmoid(y_sub[sub_mask].mean().item()))
+        wandb.log({'loss': loss.item()})
     
     save_dir = f'../data/hard_easy_test/{args.dataset}'
     os.makedirs(save_dir, exist_ok=True)

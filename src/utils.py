@@ -7,6 +7,7 @@ import warnings
 from embed_text_package.embed_text import Embedder
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from scipy.stats import spearmanr
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from tueplots import bundles
@@ -68,9 +69,6 @@ DATASETS = list(DESCRIPTION_MAP.keys())
 def item_response_fn_1PL(z3, theta):
     return 1 / (1 + torch.exp(-(theta + z3)))
 
-def item_response_fn_1PL_np(z3, theta):
-    return 1 / (1 + np.exp(-(theta + z3)))
-
 def item_response_fn_2PL(z2, z3, theta):
     return 1 / (1 + torch.exp(-(z2 * theta + z3)))
 
@@ -82,19 +80,6 @@ def item_response_fn_3PL(z1, z2, z3, theta):
 
 def item_response_fn_3PL_jnp(z1, z2, z3, theta):
     return z1 + (1 - z1) / (1 + jnp.exp(-(z2 * theta + z3)))
-
-def sample_mean_std(data: np.array):
-    masked_data = data[data != -1]
-    mean = np.mean(masked_data)
-    sample_means = []
-    for _ in range(100):
-        indices = np.random.choice(
-            len(masked_data), int(0.8 * masked_data.shape[0]), replace=False
-        )
-        sample_mean = np.mean(masked_data[indices])
-        sample_means.append(sample_mean)
-    sample_std = np.std(sample_means)
-    return mean, sample_std
 
 def set_seed(seed):
     random.seed(seed)
@@ -345,7 +330,8 @@ def theta_corr_ctt(
     
     if np.unique(ctt_scores_masked).size <= 3:
         warnings.warn(f"ctt_scores_masked has little value: {ctt_scores_masked}", UserWarning)
-    corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
+    # corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
+    corr, _ = spearmanr(theta_masked, ctt_scores_masked)
     return corr, theta_masked, ctt_scores_masked
 
 def theta_corr_ctt_plot(
@@ -360,7 +346,8 @@ def theta_corr_ctt_plot(
         indices = np.random.choice(
             len(theta_masked), int(0.8 * len(theta_masked)), replace=False
         )
-        sample_corr = np.corrcoef(theta_masked[indices], ctt_scores_masked[indices])[0, 1]
+        # sample_corr = np.corrcoef(theta_masked[indices], ctt_scores_masked[indices])[0, 1]
+        sample_corr, _ = spearmanr(theta_masked[indices], ctt_scores_masked[indices])
         sample_corrs.append(sample_corr)
     sample_std = np.std(sample_corrs)
     
@@ -399,7 +386,8 @@ def theta_corr_helm(
     aligned_helm_scores = merged_df['score'].values
     aligned_theta = merged_df['theta'].values
     
-    corr = np.corrcoef(aligned_theta, aligned_helm_scores)[0, 1]
+    # corr = np.corrcoef(aligned_theta, aligned_helm_scores)[0, 1]
+    corr, _ = spearmanr(aligned_theta, aligned_helm_scores)
     return corr, aligned_theta, aligned_helm_scores
 
 def theta_corr_helm_plot(
@@ -414,7 +402,8 @@ def theta_corr_helm_plot(
         indices = np.random.choice(
             len(theta), int(0.8 * len(theta)), replace=False
         )
-        sample_corr = np.corrcoef(theta[indices], helm_scores[indices])[0, 1]
+        # sample_corr = np.corrcoef(theta[indices], helm_scores[indices])[0, 1]
+        sample_corr, _ = spearmanr(theta[indices], helm_scores[indices])
         sample_corrs.append(sample_corr)
     sample_std = np.std(sample_corrs)
     
@@ -539,7 +528,7 @@ def plot_corr(
     xlabel,
     ylabel,
 ):
-    corr = np.corrcoef(data1, data2)[0, 1]
+    # corr = np.corrcoef(data1, data2)[0, 1]
     plt.figure(figsize=(6, 6))
     plt.scatter(data1, data2, color='blue')
     plt.xlabel(xlabel, fontsize=25)
@@ -565,8 +554,8 @@ def plot_corr_double(
     xlabel,
     ylabel,
 ):
-    corr_train = np.corrcoef(data1_train, data2_train)[0, 1]
-    corr_test = np.corrcoef(data1_test, data2_test)[0, 1]
+    # corr_train = np.corrcoef(data1_train, data2_train)[0, 1]
+    # corr_test = np.corrcoef(data1_test, data2_test)[0, 1]
     plt.figure(figsize=(6, 6))
     plt.scatter(data1_train, data2_train, color='blue', label='Train')
     plt.scatter(data1_test, data2_test, color='red', label='Test')
@@ -630,17 +619,6 @@ def plot_hist(
         ha='center'
     )
     plt.ylabel(ylabel, fontsize=25)
-    plt.tick_params(axis='both', labelsize=16)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    plt.close()
-
-def plot_rewards(rewards, plot_path):
-    plt.figure(figsize=(6, 6))
-    steps = range(0, 100, 10) 
-    for i in range(len(rewards[0])):
-        prompt_rewards = [reward[i] for reward in rewards]
-        plt.plot(steps, prompt_rewards, marker='o')
-    plt.ylabel(r'Reward', fontsize=25)
     plt.tick_params(axis='both', labelsize=16)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
