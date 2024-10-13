@@ -4,10 +4,7 @@ import numpy as np
 import torch
 import pandas as pd
 import wandb
-from utils import item_response_fn_1PL, set_seed
-
-def inverse_sigmoid(x):
-    return np.log(x / (1 - x))
+from utils import item_response_fn_1PL, set_seed, inverse_sigmoid
 
 if __name__ == "__main__":
     wandb.init(project="hard_easy_test")

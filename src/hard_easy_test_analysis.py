@@ -3,10 +3,10 @@ import os
 import numpy as np
 import pandas as pd
 import torch
-from utils import DATASETS, plot_hard_easy
+from utils import DATASETS, plot_hard_easy, inverse_sigmoid
 
 if __name__ == "__main__":
-    for dataset in DATASETS:
+    for dataset in ['real_tox']:
         df = pd.read_csv(f'../data/hard_easy_test/{dataset}/hard_easy_test.csv')
         theta_hats_all = df['theta_hat'].values
         y_means_all = df['y_mean'].values
@@ -36,4 +36,4 @@ if __name__ == "__main__":
 
         save_dir = f'../plot/hard_easy_test'
         os.makedirs(save_dir, exist_ok=True)
-        plot_hard_easy(theta_hats_all, y_means_all, theta, y, f'{save_dir}/easy_hard_{dataset}.png')
+        plot_hard_easy(theta_hats_all, y_means_all, theta, y, f'{save_dir}/hard_easy_{dataset}.png')
