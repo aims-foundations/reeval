@@ -32,10 +32,10 @@ if __name__ == "__main__":
         z3_hat = np.load(f'{input_dir}/{dataset}/z3_samples.npy')
         
         gof_mean, gof_std = goodness_of_fit_3PL_plot(
-            theta_samples=torch.tensor(theta_hat, dtype=torch.float32),
+            theta=torch.tensor(theta_hat, dtype=torch.float32),
             z1_samples=torch.tensor(z1_hat, dtype=torch.float32),
             z2_samples=torch.tensor(z2_hat, dtype=torch.float32),
-            z3_samples=torch.tensor(z3_hat, dtype=torch.float32),
+            z3_samples=torch.tensor(z3_hat, dtype=torch.float32), 
             y=torch.tensor(y, dtype=torch.float32),
             plot_path=f"{plot_dir}/goodness_of_fit_{dataset}",
         )

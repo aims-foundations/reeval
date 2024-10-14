@@ -257,7 +257,6 @@ def goodness_of_fit_3PL(
     y: torch.Tensor,
     bin_size: int=6,
 ):
-    theta = torch.mean(theta, axis=0)
     bin_start, bin_end = torch.min(theta), torch.max(theta)
     bins = torch.linspace(bin_start, bin_end, bin_size+1)
     print(bins)
