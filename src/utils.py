@@ -250,14 +250,14 @@ def goodness_of_fit_2PL(
     return mean_diff, std_diff
 
 def goodness_of_fit_3PL(
-    theta_samples: torch.Tensor,
+    theta: torch.Tensor,
     z1_samples: torch.Tensor,
     z2_samples: torch.Tensor,
     z3_samples: torch.Tensor,
     y: torch.Tensor,
     bin_size: int=6,
 ):
-    theta = torch.mean(theta_samples, axis=0)
+    theta = torch.mean(theta, axis=0)
     bin_start, bin_end = torch.min(theta), torch.max(theta)
     bins = torch.linspace(bin_start, bin_end, bin_size+1)
     print(bins)
@@ -290,7 +290,7 @@ def goodness_of_fit_3PL(
     return mean_diff, diff_array
 
 def goodness_of_fit_3PL_plot(
-    theta_samples: torch.Tensor,
+    theta: torch.Tensor,
     z1_samples: torch.Tensor,
     z2_samples: torch.Tensor,
     z3_samples: torch.Tensor,
@@ -299,7 +299,7 @@ def goodness_of_fit_3PL_plot(
     bin_size: int=6,
 ):
     mean_diff, diff_array = goodness_of_fit_3PL(
-        theta_samples, z1_samples, z2_samples, z3_samples, y, bin_size
+        theta, z1_samples, z2_samples, z3_samples, y, bin_size
     )
     sample_means = []
     for _ in range(100):
