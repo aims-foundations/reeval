@@ -26,7 +26,7 @@ if __name__ == "__main__":
             continue
         print(f"Processing {dataset}")
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
-        theta_hat = np.load(f'{input_dir}/{dataset}/theta.csv')
+        theta_hat = pd.read_csv(f'{input_dir}/{dataset}/theta.csv')['theta'].values
         z1_hat = np.load(f'{input_dir}/{dataset}/z1_samples.npy')
         z2_hat = np.load(f'{input_dir}/{dataset}/z2_samples.npy')
         z3_hat = np.load(f'{input_dir}/{dataset}/z3_samples.npy')
