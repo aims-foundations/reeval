@@ -26,10 +26,10 @@ if __name__ == "__main__":
             continue
         print(f"Processing {dataset}")
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
-        theta_hat = np.load(f'{input_dir}/{dataset}/theta.npy')
-        z1_hat = np.load(f'{input_dir}/{dataset}/z1.npy')
-        z2_hat = np.load(f'{input_dir}/{dataset}/z2.npy')
-        z3_hat = np.load(f'{input_dir}/{dataset}/z3.npy')
+        theta_hat = np.load(f'{input_dir}/{dataset}/theta_samples.npy')
+        z1_hat = np.load(f'{input_dir}/{dataset}/z1_samples.npy')
+        z2_hat = np.load(f'{input_dir}/{dataset}/z2_samples.npy')
+        z3_hat = np.load(f'{input_dir}/{dataset}/z3_samples.npy')
         
         gof_mean, gof_std = goodness_of_fit_3PL_plot(
             theta=torch.tensor(theta_hat, dtype=torch.float32),
