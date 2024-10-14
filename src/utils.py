@@ -262,7 +262,7 @@ def goodness_of_fit_3PL(
     print(bins)
     
     diff_list = []
-    for i in tqdm(y.shape[1]):
+    for i in tqdm(range(y.shape[1])):
         single_z1 = z1[i]
         single_z2 = z2[i]
         single_z3 = z3[i]
