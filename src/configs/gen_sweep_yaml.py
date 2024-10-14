@@ -32,7 +32,7 @@ if __name__ == "__main__":
     
     elif args.project == "plugin_regression_aggregate":
         program = 'plugin_regression.py'
-        project = 'plugin_regression.py'
+        project = 'plugin_regression'
         
         yaml_content = {
             'program': program,
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     elif args.project == "agg_embed":
         datasets = DATASETS
         program = 'embed.py'
-        project = 'embed.py'
+        project = 'embed'
         
         yaml_content = {
             'program': program,
@@ -74,17 +74,17 @@ if __name__ == "__main__":
         if args.project == "save_json_classic":
             datasets = [d for d in DATASETS if d != 'mmlu' and d != 'airbench']
             program = 'save_json.py'
-            project = 'save_json.py'
+            project = 'save_json'
             
         elif args.project == "get_response_matrix_classic":
             datasets = [d for d in DATASETS if d != 'mmlu' and d != 'airbench']
             program = 'get_response_matrix.py'
-            project = 'get_response_matrix.py'
+            project = 'get_response_matrix'
             
         else:
             datasets = DATASETS
             program = f'{args.project}.py'
-            project = f'{args.project}.py'
+            project = f'{args.project}'
         
         yaml_content = {
             'program': program,
