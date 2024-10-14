@@ -80,7 +80,7 @@ if __name__ == "__main__":
             theta_hats.append(theta_hat.item())
         
         theta_hats_all.append(theta_hat.item())
-        y_means_all.append(inverse_sigmoid(y_sub[sub_mask].mean()))
+        y_means_all.append(inverse_sigmoid(y_sub[sub_mask].mean()).item())
         wandb.log({'loss': loss.item()})
     
     save_dir = f'../data/hard_easy_test/{args.dataset}'
@@ -88,6 +88,6 @@ if __name__ == "__main__":
     
     df = pd.DataFrame({
         "theta_hat": theta_hats_all,
-        "y_mean": y_means_all
+        "y_mean": y_means_all,
     })
     df.to_csv(f'{save_dir}/hard_easy_test.csv', index=False)

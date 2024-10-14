@@ -109,12 +109,3 @@ if __name__ == "__main__":
         z1_df.to_csv(z1_path, index=False)
         z2_df.to_csv(z2_path, index=False)
         z3_df.to_csv(z3_path, index=False)
-    
-    goodness_of_fit_3PL(
-    theta_samples=theta_samples, 
-    z1_samples=z1_samples, 
-    z2_samples=z2_samples, 
-    z3_samples=z3_samples, 
-    y_df=y_df, 
-    plot_path=f'{plot_dir}/gof_{args.dataset}.png',
-)
