@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import jax.random as random
 import pandas as pd
 import wandb
-from utils import item_response_fn_2PL_jnp, set_seed, goodness_of_fit_2PL
+from utils import item_response_fn_2PL_jnp, set_seed
 
 def model(question_num, testtaker_num, response_matrix):
     z2_hat = numpyro.sample("z2_hat", dist.LogNormal(0.0, 1.0).expand((question_num,)))

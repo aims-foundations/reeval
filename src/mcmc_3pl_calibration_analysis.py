@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import torch
 import pandas as pd
 from tqdm import tqdm
@@ -25,10 +26,10 @@ if __name__ == "__main__":
             continue
         print(f"Processing {dataset}")
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
-        theta_hat = pd.read_csv(f'{input_dir}/{dataset}/theta.csv')['theta'].values
-        z1_hat = pd.read_csv(f'{input_dir}/{dataset}/z1.csv')['z1'].values
-        z2_hat = pd.read_csv(f'{input_dir}/{dataset}/z2.csv')['z2'].values
-        z3_hat = pd.read_csv(f'{input_dir}/{dataset}/z3.csv')['z3'].values
+        theta_hat = np.load(f'{input_dir}/{dataset}/theta.npy')
+        z1_hat = np.load(f'{input_dir}/{dataset}/z1.npy')
+        z2_hat = np.load(f'{input_dir}/{dataset}/z2.npy')
+        z3_hat = np.load(f'{input_dir}/{dataset}/z3.npy')
         
         gof_mean, gof_std = goodness_of_fit_3PL_plot(
             theta=torch.tensor(theta_hat, dtype=torch.float32),

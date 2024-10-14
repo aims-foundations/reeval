@@ -250,34 +250,35 @@ def goodness_of_fit_2PL(
     return mean_diff, std_diff
 
 def goodness_of_fit_3PL(
-    theta: torch.Tensor, 
-    z1: torch.Tensor, 
-    z2: torch.Tensor, 
-    z3: torch.Tensor, 
-    y: torch.Tensor, 
+    theta_samples: torch.Tensor,
+    z1_samples: torch.Tensor,
+    z2_samples: torch.Tensor,
+    z3_samples: torch.Tensor,
+    y: torch.Tensor,
     bin_size: int=6,
 ):
+    theta = torch.mean(theta_samples, axis=0)
     bin_start, bin_end = torch.min(theta), torch.max(theta)
     bins = torch.linspace(bin_start, bin_end, bin_size+1)
     print(bins)
-    
+
     diff_list = []
     for i in tqdm(range(y.shape[1])):
-        single_z1 = z1[i]
-        single_z2 = z2[i]
-        single_z3 = z3[i]
+        single_z1_samples = z1_samples[:, i]
+        single_z2_samples = z2_samples[:, i]
+        single_z3_samples = z3_samples[:, i]
         y_col = y[:, i]
 
-        for j in range(bins.shape[0] - 1):
+        for j in range(len(bins) - 1):
             bin_mask = (theta >= bins[j]) & (theta < bins[j + 1]) & (y_col != -1)
             if bin_mask.sum() > 0:  # Bin not empty
                 y_empirical = y_col[bin_mask].mean()
 
                 theta_mid = (bins[j] + bins[j + 1]) / 2
                 y_theoretical = item_response_fn_3PL(
-                    single_z1,
-                    single_z2,
-                    single_z3,
+                    single_z1_samples,
+                    single_z2_samples,
+                    single_z3_samples,
                     theta_mid
                 )
                 in_diff_list = [1 - abs(y_empirical - yt) for yt in y_theoretical]
@@ -287,18 +288,18 @@ def goodness_of_fit_3PL(
     diff_array = np.array(diff_list)
     mean_diff = diff_array.mean()
     return mean_diff, diff_array
-    
+
 def goodness_of_fit_3PL_plot(
-    theta: torch.Tensor, 
-    z1: torch.Tensor, 
-    z2: torch.Tensor, 
-    z3: torch.Tensor, 
-    y: torch.Tensor, 
+    theta_samples: torch.Tensor,
+    z1_samples: torch.Tensor,
+    z2_samples: torch.Tensor,
+    z3_samples: torch.Tensor,
+    y: torch.Tensor,
     plot_path: str,
     bin_size: int=6,
 ):
     mean_diff, diff_array = goodness_of_fit_3PL(
-        theta, z1, z2, z3, y, bin_size
+        theta_samples, z1_samples, z2_samples, z3_samples, y, bin_size
     )
     sample_means = []
     for _ in range(100):
@@ -308,7 +309,7 @@ def goodness_of_fit_3PL_plot(
         sample_mean = np.mean(diff_array[indices])
         sample_means.append(sample_mean)
     std_diff = np.std(sample_means)
-
+    
     plt.figure(figsize=(10, 6))
     plt.hist(diff_array, bins=40, density=True, alpha=0.4)
     plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
@@ -326,7 +327,6 @@ def goodness_of_fit_3PL_plot(
     )
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
-    
     return mean_diff, std_diff
 
 def theta_corr_ctt(

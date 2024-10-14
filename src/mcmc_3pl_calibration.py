@@ -78,34 +78,25 @@ if __name__ == "__main__":
     z2_samples_path = f'{output_dir}/z2_samples.npy'
     z3_samples_path = f'{output_dir}/z3_samples.npy'
     
-    if os.path.exists(theta_samples_path) and os.path.exists(z1_samples_path) \
-        and os.path.exists(z2_samples_path) and os.path.exists(z3_samples_path):
-        print("Loading existing samples..")
-        theta_samples = np.load(theta_samples_path)
-        z1_samples = np.load(z1_samples_path)
-        z2_samples = np.load(z2_samples_path)
-        z3_samples = np.load(z3_samples_path)
-    else:
-        print("No existing file, Running MCMC..")
-        theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
-            question_num, testtaker_num, response_matrix
-            )
-        theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
-        z1_samples = np.array(z1_samples) # (num_samples, question_num)
-        z2_samples = np.array(z2_samples)
-        z3_samples = np.array(z3_samples)
+    theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
+        question_num, testtaker_num, response_matrix
+    )
+    theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
+    z1_samples = np.array(z1_samples) # (num_samples, question_num)
+    z2_samples = np.array(z2_samples)
+    z3_samples = np.array(z3_samples)
 
-        np.save(theta_samples_path, theta_samples)
-        np.save(z1_samples_path, z1_samples)
-        np.save(z2_samples_path, z2_samples)
-        np.save(z3_samples_path, z3_samples)
-        
-        theta_df = pd.DataFrame({'theta': theta_samples.mean(axis=0)})
-        z1_df = pd.DataFrame({'z1': z1_samples.mean(axis=0)})
-        z2_df = pd.DataFrame({'z2': z2_samples.mean(axis=0)})
-        z3_df = pd.DataFrame({'z3': z3_samples.mean(axis=0)})
-        
-        theta_df.to_csv(theta_path, index=False)
-        z1_df.to_csv(z1_path, index=False)
-        z2_df.to_csv(z2_path, index=False)
-        z3_df.to_csv(z3_path, index=False)
+    np.save(theta_samples_path, theta_samples)
+    np.save(z1_samples_path, z1_samples)
+    np.save(z2_samples_path, z2_samples)
+    np.save(z3_samples_path, z3_samples)
+    
+    theta_df = pd.DataFrame({'theta': theta_samples.mean(axis=0)})
+    z1_df = pd.DataFrame({'z1': z1_samples.mean(axis=0)})
+    z2_df = pd.DataFrame({'z2': z2_samples.mean(axis=0)})
+    z3_df = pd.DataFrame({'z3': z3_samples.mean(axis=0)})
+    
+    theta_df.to_csv(theta_path, index=False)
+    z1_df.to_csv(z1_path, index=False)
+    z2_df.to_csv(z2_path, index=False)
+    z3_df.to_csv(z3_path, index=False)
