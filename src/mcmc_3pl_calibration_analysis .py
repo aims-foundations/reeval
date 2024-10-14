@@ -8,7 +8,6 @@ from utils import (
     theta_corr_helm_plot,
     error_bar_plot_single,
     DATASETS,
-    goodness_of_fit_3PL
 )
 
 if __name__ == "__main__":
@@ -30,8 +29,10 @@ if __name__ == "__main__":
         z3_hat = pd.read_csv(f'{input_dir}/{dataset}/z3.csv')['z3'].values
         
         gof_mean, gof_std = goodness_of_fit_3PL_plot(
-            z=torch.tensor(z_hat, dtype=torch.float32),
             theta=torch.tensor(theta_hat, dtype=torch.float32),
+            z1=torch.tensor(z1_hat, dtype=torch.float32),
+            z2=torch.tensor(z2_hat, dtype=torch.float32),
+            z3=torch.tensor(z3_hat, dtype=torch.float32),
             y=torch.tensor(y, dtype=torch.float32),
             plot_path=f"{plot_dir}/goodness_of_fit_{dataset}",
         )
@@ -55,64 +56,6 @@ if __name__ == "__main__":
             corr_helm_means.append(corr_helm_mean)
             corr_helm_stds.append(corr_helm_std)
 
-        plugin_train_indices = pd.read_csv(f'../data/plugin_regression/{dataset}/train_0.csv')['index'].values
-        plugin_test_indices = pd.read_csv(f'../data/plugin_regression/{dataset}/test_0.csv')['index'].values
-        
-        plugin_gof_train_mean, _ = goodness_of_fit_1PL(
-            z=torch.tensor(z_hat[plugin_train_indices], dtype=torch.float32),
-            theta=torch.tensor(theta_hat, dtype=torch.float32),
-            y=torch.tensor(y[:, plugin_train_indices], dtype=torch.float32),
-        )
-        plugin_gof_train_means.append(plugin_gof_train_mean)
-        
-        plugin_gof_test_mean, _ = goodness_of_fit_1PL(
-            z=torch.tensor(z_hat[plugin_test_indices], dtype=torch.float32),
-            theta=torch.tensor(theta_hat, dtype=torch.float32),
-            y=torch.tensor(y[:, plugin_test_indices], dtype=torch.float32),
-        )
-        plugin_gof_test_means.append(plugin_gof_test_mean)
-        
-        amor_train_indices = pd.read_csv(f'../data/amor_calibration/{dataset}/z_train_0.csv')['index'].values
-        amor_test_indices = pd.read_csv(f'../data/amor_calibration/{dataset}/z_test_0.csv')['index'].values
-        
-        amor_gof_train_mean, _ = goodness_of_fit_1PL(
-            z=torch.tensor(z_hat[amor_train_indices], dtype=torch.float32),
-            theta=torch.tensor(theta_hat, dtype=torch.float32),
-            y=torch.tensor(y[:, amor_train_indices], dtype=torch.float32),
-        )
-        amor_gof_train_means.append(amor_gof_train_mean)
-        
-        amor_gof_test_mean, _ = goodness_of_fit_1PL(
-            z=torch.tensor(z_hat[amor_test_indices], dtype=torch.float32),
-            theta=torch.tensor(theta_hat, dtype=torch.float32),
-            y=torch.tensor(y[:, amor_test_indices], dtype=torch.float32),
-        )
-        amor_gof_test_means.append(amor_gof_test_mean)
-    
-    plugin_gof_df_train = pd.DataFrame({
-        'datasets': DATASETS,
-        'gof_means': plugin_gof_train_means,
-    })
-    plugin_gof_df_train.to_csv(f'{plot_dir}/nonamor4plugin_gof_train.csv', index=False)
-    
-    plugin_gof_df_test = pd.DataFrame({
-        'datasets': DATASETS,
-        'gof_means': plugin_gof_test_means,
-    })
-    plugin_gof_df_test.to_csv(f'{plot_dir}/nonamor4plugin_gof_test.csv', index=False)
-    
-    amor_gof_df_train = pd.DataFrame({
-        'datasets': DATASETS,
-        'gof_means': amor_gof_train_means,
-    })
-    amor_gof_df_train.to_csv(f'{plot_dir}/nonamor4amor_gof_train.csv', index=False)
-    
-    amor_gof_df_test = pd.DataFrame({
-        'datasets': DATASETS,
-        'gof_means': amor_gof_test_means,
-    })
-    amor_gof_df_test.to_csv(f'{plot_dir}/nonamor4amor_gof_test.csv', index=False)
-    
     gof_df = pd.DataFrame({
         'datasets': DATASETS,
         'gof_means': gof_means,

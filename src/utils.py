@@ -289,16 +289,16 @@ def goodness_of_fit_3PL(
     return mean_diff, diff_array
     
 def goodness_of_fit_3PL_plot(
-    theta, 
-    z1, 
-    z2, 
-    z3, 
-    y_df, 
-    plot_path,
+    theta: torch.Tensor, 
+    z1: torch.Tensor, 
+    z2: torch.Tensor, 
+    z3: torch.Tensor, 
+    y: torch.Tensor, 
+    plot_path: str,
     bin_size: int=6,
 ):
     mean_diff, diff_array = goodness_of_fit_3PL(
-        theta, z1, z2, z3, y_df, bin_size
+        theta, z1, z2, z3, y, bin_size
     )
     sample_means = []
     for _ in range(100):
