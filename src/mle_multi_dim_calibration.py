@@ -1,4 +1,3 @@
-import argparse
 import os
 import torch
 import wandb
@@ -10,7 +9,8 @@ import torch.optim as optim
 def mle_multi_dim_calibration(
     response_matrix: torch.Tensor,
     dim: int=2,
-    max_epoch: int = 3000
+    max_epoch: int = 3000,
+    patience: int = 50,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     response_matrix = response_matrix.to(device)
@@ -33,43 +33,48 @@ def mle_multi_dim_calibration(
 
     optimizer = optim.Adam([theta_hat, a, z_hat], lr=0.01)
     pbar = tqdm(range(max_epoch))
-
+    
+    best_loss = float('inf')
+    patience_counter = 0
     for _ in pbar:
-        prob_matrix = item_response_fn_1PL_multi_dim(
-            z_hat[None, :], theta_hat, a
-        )
+        prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a)
         assert prob_matrix.shape == response_matrix.shape
 
         mask = response_matrix != -1
         masked_response_matrix = response_matrix[mask]
         masked_prob_matrix = prob_matrix[mask]
-        print(masked_prob_matrix)
 
         berns = torch.distributions.Bernoulli(masked_prob_matrix)
         loss = -berns.log_prob(masked_response_matrix).mean()
-
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
 
-        print(f"theta max: {theta_hat.max()}, min: {theta_hat.min()}")
-        print(f"a max: {a.max()}, min: {a.min()}")
-        print(f"z max: {z_hat.max()}, min: {z_hat.min()}")
         pbar.set_postfix({'loss': loss.item()})
         # wandb.log({'loss': loss.item()})
 
+        if abs(loss.item() - best_loss) > 1e-4:
+            best_loss = loss.item()
+            patience_counter = 0
+        else:
+            patience_counter += 1
+        
+        if patience_counter >= patience:
+            break
+        
     return theta_hat, a, z_hat
 
 if __name__ == "__main__":
     # wandb.init(project="mle_multi_dim_calibration")
-    matrix_raft = pd.read_csv('../data/pre_calibration/raft/matrix.csv', index_col=0)
-    matrix_entity = pd.read_csv('../data/pre_calibration/ent_data/matrix.csv', index_col=0)
+    matrix_airbench = pd.read_csv('../data/pre_calibration/airbench/matrix.csv', index_col=0)
+    matrix_mmlu = pd.read_csv('../data/pre_calibration/mmlu/matrix.csv', index_col=0)
 
-    all_models = matrix_raft.index.union(matrix_entity.index)
-    all_questions = matrix_raft.columns.union(matrix_entity.columns)
+    all_models = matrix_airbench.index.union(matrix_mmlu.index)
+    all_questions = matrix_airbench.columns.union(matrix_mmlu.columns)
     combined_matrix = pd.DataFrame(-1, index=all_models, columns=all_questions)
-    combined_matrix.update(matrix_raft)
-    combined_matrix.update(matrix_entity)
+    combined_matrix.update(matrix_airbench)
+    combined_matrix.update(matrix_mmlu)
+    print(combined_matrix.shape)
         
     set_seed(42)
     output_dir = f'../data/mle_multi_dim_calibration'
