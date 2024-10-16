@@ -11,7 +11,7 @@ if __name__ == "__main__":
     
     save_path = f'{args.project}.yaml'
     
-    if args.project == "plugin_regression":
+    if args.project == "plugin_regression" or args.project == "amor_calibration":
         datasets = DATASETS
         program = f'{args.project}.py'
         project = f'{args.project}'

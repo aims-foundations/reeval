@@ -38,10 +38,10 @@ if __name__ == "__main__":
             theta_train = pd.read_csv(f'{input_dir}/{dataset}/theta_{i}.csv')['theta'].values
             df_z_train = pd.read_csv(f'{input_dir}/{dataset}/z_train_{i}.csv')
             train_indices = df_z_train['index'].values
-            z_train = df_z_train['z'].values
+            z_train = df_z_train['z_pred'].values
             df_z_test = pd.read_csv(f'{input_dir}/{dataset}/z_test_{i}.csv')
             test_indices = df_z_test['index'].values
-            z_test = df_z_test['z'].values
+            z_test = df_z_test['z_pred'].values
             nonamor_z = pd.read_csv(f'../data/nonamor_calibration/{dataset}/nonamor_z.csv')['z'].values
             
             gof_train_mean, _ = goodness_of_fit_1PL(

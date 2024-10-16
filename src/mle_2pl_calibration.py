@@ -4,10 +4,10 @@ import torch
 import wandb
 import pandas as pd
 from tqdm import tqdm
-from utils import item_response_fn_1PL, set_seed
+from utils import item_response_fn_2PL, set_seed
 import torch.optim as optim
 
-def nonamor_calibration(
+def mle_2pl_calibration(
     response_matrix: torch.Tensor,
     max_epoch: int=3000
 ):
@@ -19,20 +19,24 @@ def nonamor_calibration(
         requires_grad=True,
         device=device
     )
-    z_hat = torch.normal(
+    z2_hat = torch.distributions.LogNormal(0.0, 1.0).sample(
+        (response_matrix.size(1),)
+    ).to(device).requires_grad_(True)
+    z3_hat = torch.normal(
         mean=0.0, std=1.0,
         size=(response_matrix.size(1),),
         requires_grad=True,
         device=device
     )
-
-    optimizer = optim.Adam([theta_hat, z_hat], lr=0.01)
+    optimizer = optim.Adam([theta_hat, z2_hat, z3_hat], lr=0.01)
     
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
         theta_hat_matrix = theta_hat.unsqueeze(1)
-        z_hat_matrix = z_hat.unsqueeze(0)
-        prob_matrix = item_response_fn_1PL(z_hat_matrix, theta_hat_matrix)
+        z2_hat_matrix = z2_hat.unsqueeze(0)
+        z3_hat_matrix = z3_hat.unsqueeze(0)
+        prob_matrix = item_response_fn_2PL(z2_hat_matrix, z3_hat_matrix, theta_hat_matrix)
+        assert prob_matrix.shape == response_matrix.shape
         
         mask = response_matrix != -1
         masked_response_matrix = response_matrix.flatten()[mask.flatten()]
@@ -45,25 +49,29 @@ def nonamor_calibration(
         optimizer.zero_grad()
 
         pbar.set_postfix({'loss': loss.item()})
+        wandb.log({'loss': loss.item()})
 
-    return theta_hat, z_hat
+    return theta_hat, z2_hat, z3_hat
 
 if __name__ == "__main__":
-    wandb.init(project="nonamor_calibration")
+    wandb.init(project="mle_2pl_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
     
     set_seed(42)
     input_dir = '../data/pre_calibration/'
-    output_dir = f'../data/nonamor_calibration/{args.dataset}'
+    output_dir = f'../data/mle_2pl_calibration/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     
     y = pd.read_csv(f'{input_dir}/{args.dataset}/matrix.csv', index_col=0).values
-    theta_hat, z_hat = nonamor_calibration(torch.tensor(y, dtype=torch.float32))
+    theta_hat, z2_hat, z3_hat = mle_2pl_calibration(torch.tensor(y, dtype=torch.float32))
     
-    z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
-    z_df.to_csv(f"{output_dir}/nonamor_z.csv", index=False)
+    z_df = pd.DataFrame({
+        'z2': z2_hat.cpu().detach().numpy(),
+        'z3': z3_hat.cpu().detach().numpy(),
+    })
+    z_df.to_csv(f"{output_dir}/z.csv", index=False)
     theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=["theta"])
-    theta_df.to_csv(f"{output_dir}/nonamor_theta.csv", index=False)
+    theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
     

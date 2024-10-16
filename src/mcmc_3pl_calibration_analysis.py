@@ -21,9 +21,9 @@ if __name__ == "__main__":
     corr_helm_means, corr_helm_stds = [], []
     plugin_gof_train_means, plugin_gof_test_means = [], []
     amor_gof_train_means, amor_gof_test_means = [], []
+    
+    DATASETS = [d for d in DATASETS if d != "civil_comments"]
     for dataset in tqdm(DATASETS):
-        if dataset == "civil_comments":
-            continue
         print(f"Processing {dataset}")
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
         theta_hat = pd.read_csv(f'{input_dir}/{dataset}/theta.csv')['theta'].values
