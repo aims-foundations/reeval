@@ -9,7 +9,8 @@ import torch.optim as optim
 
 def mle_2pl_calibration(
     response_matrix: torch.Tensor,
-    max_epoch: int=3000
+    max_epoch: int=3000,
+    patience: int=50,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     response_matrix = response_matrix.to(device)
@@ -30,6 +31,8 @@ def mle_2pl_calibration(
     )
     optimizer = optim.Adam([theta_hat, z2_hat, z3_hat], lr=0.01)
     
+    best_loss = float('inf')
+    patience_counter = 0
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
         theta_hat_matrix = theta_hat.unsqueeze(1)
@@ -50,7 +53,16 @@ def mle_2pl_calibration(
 
         pbar.set_postfix({'loss': loss.item()})
         wandb.log({'loss': loss.item()})
-
+        
+        if abs(loss.item() - best_loss) > 1e-4:
+            best_loss = loss.item()
+            patience_counter = 0
+        else:
+            patience_counter += 1
+        
+        if patience_counter >= patience:
+            break
+        
     return theta_hat, z2_hat, z3_hat
 
 if __name__ == "__main__":
