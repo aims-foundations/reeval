@@ -3,8 +3,8 @@ import torch
 import wandb
 import pandas as pd
 from tqdm import tqdm
-from utils import item_response_fn_1PL_multi_dim, set_seed, goodness_of_fit_1PL_multi_dim_plot
 import torch.optim as optim
+from utils import item_response_fn_1PL_multi_dim, set_seed, goodness_of_fit_1PL_multi_dim_plot, DATASETS
 
 def mle_multi_dim_calibration(
     response_matrix: torch.Tensor,
@@ -70,17 +70,16 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
-    matrix_airbench = pd.read_csv('../data/pre_calibration/airbench/matrix.csv', index_col=0)
-    matrix_mmlu = pd.read_csv('../data/pre_calibration/mmlu/matrix.csv', index_col=0)
-
-    all_models = matrix_airbench.index.union(matrix_mmlu.index)
-    all_questions = matrix_airbench.columns.union(matrix_mmlu.columns)
-    combined_matrix = pd.DataFrame(-1, index=all_models, columns=all_questions)
-    combined_matrix.update(matrix_airbench)
-    combined_matrix.update(matrix_mmlu)
+    combined_matrix = pd.DataFrame()
+    for dataset in DATASETS:
+        matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+        if combined_matrix.empty:
+            combined_matrix = matrix
+        else:
+            combined_matrix = combined_matrix.join(matrix, how='outer', rsuffix='_dup')
+    combined_matrix.fillna(-1, inplace=True)
     print(combined_matrix.shape)
-    combined_matrix_df = pd.DataFrame(combined_matrix.values, index=all_models, columns=all_questions)
-    combined_matrix_df.to_csv(f"{output_dir}/combined_matrix.csv")
+    combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
     
     theta_hat, a, z_hat = mle_multi_dim_calibration(
         torch.tensor(combined_matrix.values, dtype=torch.float32),
@@ -91,33 +90,22 @@ if __name__ == "__main__":
     a_df.to_csv(f"{output_dir}/a.csv", index=False)
     theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=[f"theta_{i}" for i in range(theta_hat.size(1))])
     theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
-
-    response_matrix_airbench = combined_matrix.loc[matrix_airbench.index, matrix_airbench.columns].values
-    airbench_row_indices = [combined_matrix.index.get_loc(i) for i in matrix_airbench.index]
-    airbench_col_indices = [combined_matrix.columns.get_loc(i) for i in matrix_airbench.columns]
-    response_tensor_airbench = torch.tensor(response_matrix_airbench, dtype=torch.float32)
-    theta_hat_airbench = theta_hat[airbench_row_indices].cpu().detach()
-    z_hat_airbench = z_hat[airbench_col_indices].cpu().detach()
-    a_airbench = a[airbench_col_indices].cpu().detach()
-    mean_diff_airbench, std_diff_airbench = goodness_of_fit_1PL_multi_dim_plot(
-        z=z_hat_airbench, 
-        theta=theta_hat_airbench,
-        a=a_airbench,
-        y=response_tensor_airbench,
-        plot_path=f'{plot_dir}/goodness_of_fit_airbench.png'
-    )
-
-    response_matrix_mmlu = combined_matrix.loc[matrix_mmlu.index, matrix_mmlu.columns].values
-    mmlu_row_indices = [combined_matrix.index.get_loc(i) for i in matrix_mmlu.index]
-    mmlu_col_indices = [combined_matrix.columns.get_loc(i) for i in matrix_mmlu.columns]
-    response_tensor_mmlu = torch.tensor(response_matrix_mmlu, dtype=torch.float32)
-    theta_hat_mmlu = theta_hat[mmlu_row_indices].cpu().detach()
-    z_hat_mmlu = z_hat[mmlu_col_indices].cpu().detach()
-    a_mmlu = a[mmlu_col_indices].cpu().detach()
-    mean_diff_mmlu, std_diff_mmlu = goodness_of_fit_1PL_multi_dim_plot(
-        z=z_hat_mmlu,
-        theta=theta_hat_mmlu,
-        a=a_mmlu,
-        y=response_tensor_mmlu,
-        plot_path=f'{plot_dir}/goodness_of_fit_mmlu.png'
-    )
+    
+    for dataset in DATASETS:
+        matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+        response_matrix = combined_matrix.loc[matrix.index, matrix.columns].values
+        row_indices = [combined_matrix.index.get_loc(i) for i in matrix.index]
+        col_indices = [combined_matrix.columns.get_loc(i) for i in matrix.columns]
+        
+        response_tensor = torch.tensor(response_matrix, dtype=torch.float32)
+        theta_hat_subset = theta_hat[row_indices].cpu().detach()
+        z_hat_subset = z_hat[col_indices].cpu().detach()
+        a_subset = a[col_indices].cpu().detach()
+        
+        mean_diff, std_diff = goodness_of_fit_1PL_multi_dim_plot(
+            z=z_hat_subset, 
+            theta=theta_hat_subset,
+            a=a_subset,
+            y=response_tensor,
+            plot_path=f'{plot_dir}/goodness_of_fit_{dataset}.png'
+        )

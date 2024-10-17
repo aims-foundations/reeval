@@ -55,7 +55,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     set_seed(42)
-    input_dir = '../data/pre_calibration/'
+    input_dir = '../data/pre_calibration'
     output_dir = f'../data/nonamor_calibration/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     
