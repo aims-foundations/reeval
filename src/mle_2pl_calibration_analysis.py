@@ -10,8 +10,8 @@ from utils import (
 )
 
 if __name__ == "__main__":
-    input_dir = '../data/mle_3pl_calibration'
-    plot_dir = f'../plot/mle_3pl_calibration'
+    input_dir = '../data/mle_2pl_calibration'
+    plot_dir = f'../plot/mle_2pl_calibration'
     os.makedirs(plot_dir, exist_ok=True)
     
     gof_means, gof_stds = [], []
@@ -37,13 +37,13 @@ if __name__ == "__main__":
         'gof_means': gof_means,
         'gof_stds': gof_stds
     })
-    gof_df.to_csv(f'{plot_dir}/nonamor_calibration_gof.csv', index=False)
+    gof_df.to_csv(f'{plot_dir}/mle_2pl_calibration_gof.csv', index=False)
     
     error_bar_plot_single(
         datasets=DATASETS,
         means=gof_means,
         stds=gof_stds,
-        plot_path=f"{plot_dir}/nonamor_calibration_summarize_gof",
+        plot_path=f"{plot_dir}/mle_2pl_calibration_summarize_gof",
         xlabel=r"Goodness of Fit",
     )
     
