@@ -35,6 +35,13 @@ def mle_2pl_calibration(
     last_z3_hat = None
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
+        if not (torch.isnan(theta_hat).any() or torch.isnan(z2_hat).any() or torch.isnan(z3_hat).any()):
+            last_theta_hat = theta_hat.cpu().detach().clone()
+            last_z2_hat = z2_hat.cpu().detach().clone()
+            last_z3_hat = z3_hat.cpu().detach().clone()
+        else:
+            break
+        
         theta_hat_matrix = theta_hat.unsqueeze(1)
         z2_hat_matrix = z2_hat.unsqueeze(0)
         z3_hat_matrix = z3_hat.unsqueeze(0)
@@ -48,19 +55,12 @@ def mle_2pl_calibration(
         berns = torch.distributions.Bernoulli(masked_prob_matrix)
         loss = -berns.log_prob(masked_response_matrix).mean()
         loss.backward()
-        torch.nn.utils.clip_grad_value_([theta_hat, z2_hat, z3_hat], clip_value=1.0)
+        # torch.nn.utils.clip_grad_value_([theta_hat, z2_hat, z3_hat], clip_value=1.0)
         optimizer.step()
         optimizer.zero_grad()
 
         pbar.set_postfix({'loss': loss.item()})
         wandb.log({'loss': loss.item()})
-        
-        if not (torch.isnan(theta_hat).any() or torch.isnan(z2_hat).any() or torch.isnan(z3_hat).any()):
-            last_theta_hat = theta_hat.cpu().detach().clone()
-            last_z2_hat = z2_hat.cpu().detach().clone()
-            last_z3_hat = z3_hat.cpu().detach().clone()
-        else:
-            break
         
     return last_theta_hat, last_z2_hat, last_z3_hat
 

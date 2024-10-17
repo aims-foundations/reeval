@@ -31,8 +31,8 @@ def mle_3pl_calibration(
         requires_grad=True,
         device=device
     )
-    optimizer_z1 = optim.Adam([z1_hat], lr=0.001)
-    optimizer_others = optim.Adam([theta_hat, z2_hat, z3_hat], lr=0.01)
+    optimizer_z1 = optim.Adam([z1_hat], lr=0.0001)
+    optimizer_others = optim.Adam([theta_hat, z2_hat, z3_hat], lr=0.001)
     
     last_theta_hat = None
     last_z1_hat = None
@@ -40,6 +40,15 @@ def mle_3pl_calibration(
     last_z3_hat = None
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
+        if not (torch.isnan(theta_hat).any() or torch.isnan(z1_hat).any() \
+            or torch.isnan(z2_hat).any() or torch.isnan(z3_hat).any()):
+            last_theta_hat = theta_hat.cpu().detach().clone()
+            last_z1_hat = z1_hat.cpu().detach().clone()
+            last_z2_hat = z2_hat.cpu().detach().clone()
+            last_z3_hat = z3_hat.cpu().detach().clone()
+        else:
+            break
+        
         theta_hat_matrix = theta_hat.unsqueeze(1)
         z1_hat.data.clamp_(min=0.0, max=1.0)
         z1_hat_matrix = z1_hat.unsqueeze(0)
@@ -55,7 +64,7 @@ def mle_3pl_calibration(
         berns = torch.distributions.Bernoulli(masked_prob_matrix)
         loss = -berns.log_prob(masked_response_matrix).mean()
         loss.backward()
-        torch.nn.utils.clip_grad_value_([z1_hat, theta_hat, z2_hat, z3_hat], clip_value=1.0)
+        # torch.nn.utils.clip_grad_value_([z1_hat, theta_hat, z2_hat, z3_hat], clip_value=1.0)
         optimizer_z1.step()
         optimizer_others.step()
         optimizer_z1.zero_grad()
@@ -63,15 +72,6 @@ def mle_3pl_calibration(
         
         pbar.set_postfix({'loss': loss.item()})
         wandb.log({'loss': loss.item()})
-        
-        if not (torch.isnan(theta_hat).any() or torch.isnan(z1_hat).any() \
-            or torch.isnan(z2_hat).any() or torch.isnan(z3_hat).any()):
-            last_theta_hat = theta_hat.cpu().detach().clone()
-            last_z1_hat = z1_hat.cpu().detach().clone()
-            last_z2_hat = z2_hat.cpu().detach().clone()
-            last_z3_hat = z3_hat.cpu().detach().clone()
-        else:
-            break
 
     return last_theta_hat, last_z1_hat, last_z2_hat, last_z3_hat
 
