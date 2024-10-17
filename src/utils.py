@@ -277,15 +277,12 @@ def goodness_of_fit_1PL_multi_dim_plot(
     return mean_diff, std_diff
 
 def goodness_of_fit_2PL(
-    theta_samples, 
-    z2_samples, 
-    z3_samples, 
-    y_df, 
-    plot_path,
+    theta: torch.Tensor,
+    z2: torch.Tensor,
+    z3: torch.Tensor,
+    y: torch.Tensor,
     bin_size: int=6,
 ):
-    theta_mean = np.mean(theta_samples, axis=0)
-    theta = torch.tensor(theta_mean, dtype=torch.float32)
     question_num = y_df.shape[1]
     
     bin_start, bin_end = torch.min(theta), torch.max(theta)
@@ -340,9 +337,9 @@ def goodness_of_fit_2PL(
 
 def goodness_of_fit_3PL(
     theta: torch.Tensor,
-    z1_samples: torch.Tensor,
-    z2_samples: torch.Tensor,
-    z3_samples: torch.Tensor,
+    z1: torch.Tensor,
+    z2: torch.Tensor,
+    z3: torch.Tensor,
     y: torch.Tensor,
     bin_size: int=6,
 ):
@@ -352,9 +349,9 @@ def goodness_of_fit_3PL(
 
     diff_list = []
     for i in tqdm(range(y.shape[1])):
-        single_z1_samples = z1_samples[:, i]
-        single_z2_samples = z2_samples[:, i]
-        single_z3_samples = z3_samples[:, i]
+        single_z1 = z1[i]
+        single_z2 = z2[i]
+        single_z3 = z3[i]
         y_col = y[:, i]
 
         for j in range(len(bins) - 1):
@@ -364,9 +361,9 @@ def goodness_of_fit_3PL(
 
                 theta_mid = (bins[j] + bins[j + 1]) / 2
                 y_theoretical = item_response_fn_3PL(
-                    single_z1_samples,
-                    single_z2_samples,
-                    single_z3_samples,
+                    single_z1,
+                    single_z2,
+                    single_z3,
                     theta_mid
                 )
                 in_diff_list = [1 - abs(y_empirical - yt) for yt in y_theoretical]
@@ -379,15 +376,15 @@ def goodness_of_fit_3PL(
 
 def goodness_of_fit_3PL_plot(
     theta: torch.Tensor,
-    z1_samples: torch.Tensor,
-    z2_samples: torch.Tensor,
-    z3_samples: torch.Tensor,
+    z1: torch.Tensor,
+    z2: torch.Tensor,
+    z3: torch.Tensor,
     y: torch.Tensor,
     plot_path: str,
     bin_size: int=6,
 ):
     mean_diff, diff_array = goodness_of_fit_3PL(
-        theta, z1_samples, z2_samples, z3_samples, y, bin_size
+        theta, z1, z2, z3, y, bin_size
     )
     sample_means = []
     for _ in range(100):

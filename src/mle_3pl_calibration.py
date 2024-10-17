@@ -83,9 +83,7 @@ if __name__ == "__main__":
     set_seed(42)
     input_dir = '../data/pre_calibration/'
     output_dir = f'../data/mle_3pl_calibration/{args.dataset}'
-    plot_dir = f'../plot/mle_3pl_calibration/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
-    os.makedirs(plot_dir, exist_ok=True)
     
     y = pd.read_csv(f'{input_dir}/{args.dataset}/matrix.csv', index_col=0).values
     theta_hat, z1_hat, z2_hat, z3_hat = mle_3pl_calibration(torch.tensor(y, dtype=torch.float32))
@@ -98,3 +96,4 @@ if __name__ == "__main__":
     z_df.to_csv(f"{output_dir}/z.csv", index=False)
     theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=["theta"])
     theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
+    
