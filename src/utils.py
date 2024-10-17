@@ -304,8 +304,8 @@ def goodness_of_fit_2PL(
                     single_z3,
                     theta_mid
                 )
-                in_diff_list = [1 - abs(y_empirical - yt) for yt in y_theoretical]
-                diff = sum(in_diff_list) / len(in_diff_list)
+                
+                diff = 1 - abs(y_empirical - y_theoretical)
                 diff_list.append(diff)
 
     diff_array = np.array(diff_list)
@@ -382,10 +382,10 @@ def goodness_of_fit_3PL(
                     single_z3,
                     theta_mid
                 )
-                in_diff_list = [1 - abs(y_empirical - yt) for yt in y_theoretical]
-                diff = sum(in_diff_list) / len(in_diff_list)
+                
+                diff = 1 - abs(y_empirical - y_theoretical)
                 diff_list.append(diff)
-
+                
     diff_array = np.array(diff_list)
     mean_diff = diff_array.mean()
     return mean_diff, diff_array
