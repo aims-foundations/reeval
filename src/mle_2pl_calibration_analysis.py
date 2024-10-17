@@ -19,13 +19,11 @@ if __name__ == "__main__":
         print(f"Processing {dataset}")
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
         theta_hat = pd.read_csv(f'{input_dir}/{dataset}/theta.csv')['theta'].values
-        z1_hat = pd.read_csv(f'{input_dir}/{dataset}/z.csv')['z1'].values
         z2_hat = pd.read_csv(f'{input_dir}/{dataset}/z.csv')['z2'].values
         z3_hat = pd.read_csv(f'{input_dir}/{dataset}/z.csv')['z3'].values
         
         gof_mean, gof_std = goodness_of_fit_2PL_plot(
             theta=torch.tensor(theta_hat, dtype=torch.float32),
-            z1=torch.tensor(z1_hat, dtype=torch.float32),
             z2=torch.tensor(z2_hat, dtype=torch.float32),
             z3=torch.tensor(z3_hat, dtype=torch.float32), 
             y=torch.tensor(y, dtype=torch.float32),
