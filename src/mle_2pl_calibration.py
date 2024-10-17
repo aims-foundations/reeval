@@ -48,6 +48,7 @@ def mle_2pl_calibration(
         berns = torch.distributions.Bernoulli(masked_prob_matrix)
         loss = -berns.log_prob(masked_response_matrix).mean()
         loss.backward()
+        torch.nn.utils.clip_grad_value_([theta_hat, z2_hat, z3_hat], clip_value=1.0)
         optimizer.step()
         optimizer.zero_grad()
 
