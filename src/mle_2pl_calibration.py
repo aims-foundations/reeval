@@ -10,7 +10,6 @@ import torch.optim as optim
 def mle_2pl_calibration(
     response_matrix: torch.Tensor,
     max_epoch: int=3000,
-    patience: int=50,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     response_matrix = response_matrix.to(device)
@@ -31,8 +30,9 @@ def mle_2pl_calibration(
     )
     optimizer = optim.Adam([theta_hat, z2_hat, z3_hat], lr=0.01)
     
-    best_loss = float('inf')
-    patience_counter = 0
+    last_theta_hat = None
+    last_z2_hat = None
+    last_z3_hat = None
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
         theta_hat_matrix = theta_hat.unsqueeze(1)
@@ -54,16 +54,14 @@ def mle_2pl_calibration(
         pbar.set_postfix({'loss': loss.item()})
         wandb.log({'loss': loss.item()})
         
-        if abs(loss.item() - best_loss) > 1e-4:
-            best_loss = loss.item()
-            patience_counter = 0
+        if not (torch.isnan(theta_hat).any() or torch.isnan(z2_hat).any() or torch.isnan(z3_hat).any()):
+            last_theta_hat = theta_hat.cpu().detach().clone()
+            last_z2_hat = z2_hat.cpu().detach().clone()
+            last_z3_hat = z3_hat.cpu().detach().clone()
         else:
-            patience_counter += 1
-        
-        if patience_counter >= patience:
             break
         
-    return theta_hat, z2_hat, z3_hat
+    return last_theta_hat, last_z2_hat, last_z3_hat
 
 if __name__ == "__main__":
     wandb.init(project="mle_2pl_calibration")
@@ -86,4 +84,5 @@ if __name__ == "__main__":
     z_df.to_csv(f"{output_dir}/z.csv", index=False)
     theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=["theta"])
     theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
+    
     
