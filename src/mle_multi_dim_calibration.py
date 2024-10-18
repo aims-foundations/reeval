@@ -4,7 +4,12 @@ import wandb
 import pandas as pd
 from tqdm import tqdm
 import torch.optim as optim
-from utils import item_response_fn_1PL_multi_dim, set_seed, goodness_of_fit_1PL_multi_dim_plot, DATASETS
+from utils import (
+    set_seed, 
+    DATASETS,
+    item_response_fn_1PL_multi_dim, 
+    goodness_of_fit_1PL_multi_dim_plot, 
+)
 
 def mle_multi_dim_calibration(
     response_matrix: torch.Tensor,
@@ -33,11 +38,12 @@ def mle_multi_dim_calibration(
     optimizer = optim.Adam([theta_hat, a, z_hat], lr=0.01)
     
     last_theta_hat = None
-    last_a = None
+    last_a_softmax = None
     last_z_hat = None
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
-        prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a)
+        a_softmax = torch.nn.functional.softmax(a, dim=1)
+        prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a_softmax)
         assert prob_matrix.shape == response_matrix.shape
 
         mask = response_matrix != -1
@@ -53,14 +59,14 @@ def mle_multi_dim_calibration(
         pbar.set_postfix({'loss': loss.item()})
         # wandb.log({'loss': loss.item()})
         
-        if not (torch.isnan(theta_hat).any() or torch.isnan(a).any() or torch.isnan(z_hat).any()):
+        if not (torch.isnan(theta_hat).any() or torch.isnan(a_softmax).any() or torch.isnan(z_hat).any()):
             last_theta_hat = theta_hat.cpu().detach().clone()
-            last_a = a.cpu().detach().clone()
+            last_a_softmax = a_softmax.cpu().detach().clone()
             last_z_hat = z_hat.cpu().detach().clone()
         else:
             break
         
-    return last_theta_hat, last_a, last_z_hat
+    return last_theta_hat, last_a_softmax, last_z_hat
 
 if __name__ == "__main__":
     # wandb.init(project="mle_multi_dim_calibration")
@@ -70,16 +76,17 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
-    combined_matrix = pd.DataFrame()
-    for dataset in DATASETS:
-        matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-        if combined_matrix.empty:
-            combined_matrix = matrix
-        else:
-            combined_matrix = combined_matrix.join(matrix, how='outer', rsuffix='_dup')
-    combined_matrix.fillna(-1, inplace=True)
-    print(combined_matrix.shape)
-    combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
+    # combined_matrix = pd.DataFrame()
+    # for dataset in DATASETS:
+    #     matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+    #     if combined_matrix.empty:
+    #         combined_matrix = matrix
+    #     else:
+    #         combined_matrix = combined_matrix.join(matrix, how='outer', rsuffix='_dup')
+    # combined_matrix.fillna(-1, inplace=True)
+    # print(combined_matrix.shape)
+    # combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
+    combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
     
     theta_hat, a, z_hat = mle_multi_dim_calibration(
         torch.tensor(combined_matrix.values, dtype=torch.float32),
