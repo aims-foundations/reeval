@@ -77,17 +77,17 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
-    # combined_matrix = pd.DataFrame()
-    # for dataset in DATASETS:
-    #     matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-    #     if combined_matrix.empty:
-    #         combined_matrix = matrix
-    #     else:
-    #         combined_matrix = combined_matrix.join(matrix, how='outer', rsuffix='_dup')
-    # combined_matrix.fillna(-1, inplace=True)
-    # print(combined_matrix.shape)
-    # combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
-    combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
+    combined_matrix = pd.DataFrame()
+    for dataset in DATASETS:
+        matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+        if combined_matrix.empty:
+            combined_matrix = matrix
+        else:
+            combined_matrix = combined_matrix.join(matrix, how='outer', rsuffix='_dup')
+    combined_matrix.fillna(-1, inplace=True)
+    print(combined_matrix.shape)
+    combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
+    # combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
     
     theta_hat, a, z_hat = mle_multi_dim_calibration(
         torch.tensor(combined_matrix.values, dtype=torch.float32),
