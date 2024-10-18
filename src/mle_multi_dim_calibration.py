@@ -119,7 +119,7 @@ if __name__ == "__main__":
         )
         
         plot_hist(
-            data=a_subset[:, 0],
+            data=a_subset[:, 0].numpy(),
             plot_path=f'{plot_dir}/a_histogram_{dataset}.png',
             ylabel='Histiogram of a',
         )
