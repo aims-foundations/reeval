@@ -86,12 +86,12 @@ def mle_3pl_calibration(
         optimizer_others.zero_grad()
         
         pbar.set_postfix({'loss': loss.item()})
-        # wandb.log({'loss': loss.item()})
+        wandb.log({'loss': loss.item()})
 
     return last_theta_hat, last_z1_hat, last_z2_hat, last_z3_hat
 
 if __name__ == "__main__":
-    # wandb.init(project="mle_3pl_calibration")
+    wandb.init(project="mle_3pl_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()

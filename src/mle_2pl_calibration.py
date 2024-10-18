@@ -42,9 +42,13 @@ def mle_2pl_calibration(
         else:
             break
         
-        theta_hat_matrix = theta_hat.unsqueeze(1)
-        z2_hat_matrix = z2_hat.unsqueeze(0)
-        z3_hat_matrix = z3_hat.unsqueeze(0)
+        theta_hat_norm = (theta_hat - theta_hat.mean()) / theta_hat.std()
+        z2_hat_norm = (z2_hat - z2_hat.mean()) / z2_hat.std()
+        z3_hat_norm = (z3_hat - z3_hat.mean()) / z3_hat.std()
+        
+        theta_hat_matrix = theta_hat_norm.unsqueeze(1)
+        z2_hat_matrix = z2_hat_norm.unsqueeze(0)
+        z3_hat_matrix = z3_hat_norm.unsqueeze(0)
         prob_matrix = item_response_fn_2PL(z2_hat_matrix, z3_hat_matrix, theta_hat_matrix)
         assert prob_matrix.shape == response_matrix.shape
         
@@ -85,5 +89,4 @@ if __name__ == "__main__":
     z_df.to_csv(f"{output_dir}/z.csv", index=False)
     theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=["theta"])
     theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
-    
     
