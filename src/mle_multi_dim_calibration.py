@@ -7,6 +7,7 @@ import torch.optim as optim
 from utils import (
     set_seed, 
     DATASETS,
+    plot_hist,
     item_response_fn_1PL_multi_dim, 
     goodness_of_fit_1PL_multi_dim_plot, 
 )
@@ -98,7 +99,7 @@ if __name__ == "__main__":
     theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=[f"theta_{i}" for i in range(theta_hat.size(1))])
     theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
     
-    for dataset in DATASETS:
+    for dataset in tqdm(DATASETS):
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
         response_matrix = combined_matrix.loc[matrix.index, matrix.columns].values
         row_indices = [combined_matrix.index.get_loc(i) for i in matrix.index]
@@ -114,5 +115,11 @@ if __name__ == "__main__":
             theta=theta_hat_subset,
             a=a_subset,
             y=response_tensor,
-            plot_path=f'{plot_dir}/goodness_of_fit_{dataset}.png'
+            plot_path=f'{plot_dir}/goodness_of_fit_{dataset}.png',
+        )
+        
+        plot_hist(
+            data=a_subset,
+            plot_path=f'{plot_dir}/a_histogram_{dataset}.png',
+            ylabel='Histiogram of a',
         )
