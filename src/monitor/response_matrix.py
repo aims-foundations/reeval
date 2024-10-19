@@ -1,6 +1,6 @@
-# 2 models * 2 timepoints = 4 models
-# column name is question id
-# if model answer ==  ref answer, then 1, else 0
+# totally 2 models * 2 timepoints = 4 models, the row name of the response matrix is model_name-timepoint
+# every question of a dataset have a question id, the column name of the response matrix is question_id
+# the content of the response matrix: if model answer == ref answer, then 1, else 0
 
 import os
 import pandas as pd

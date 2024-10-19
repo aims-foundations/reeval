@@ -777,7 +777,6 @@ def plot_hard_easy(
     plt.xlabel(r'Ability', fontsize=25)
     plt.ylabel(r'Density', fontsize=25)
     plt.legend(fontsize=20)
-    plt.xlim(-5, 5)
     plt.tick_params(axis='both', labelsize=20)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
