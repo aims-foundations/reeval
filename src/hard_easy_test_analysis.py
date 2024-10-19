@@ -17,9 +17,6 @@ if __name__ == "__main__":
         theta = pd.read_csv(
             f'../data/nonamor_calibration/{dataset}/nonamor_theta.csv'
         )["theta"].values
-        z = pd.read_csv(
-            f'../data/nonamor_calibration/{dataset}/nonamor_z.csv'
-        )["z"].values
 
         # rows in y with more than 500 non -1 values
         valid_rows_mask = (response_matrix != -1).sum(axis=1) > 500
@@ -31,7 +28,6 @@ if __name__ == "__main__":
         y = torch.tensor(filtered_response_matrix[min_index], dtype=torch.float32)
         valid_cols_mask = y != -1
         y = y[valid_cols_mask]
-        z = torch.tensor(z[valid_cols_mask], dtype=torch.float32)
         theta = torch.tensor(filtered_theta[min_index], dtype=torch.float32)
 
         save_dir = f'../plot/hard_easy_test'
