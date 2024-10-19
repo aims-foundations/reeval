@@ -99,7 +99,6 @@ if __name__ == "__main__":
         args.constraint = True
     elif args.constraint == 'False':
         args.constraint = False
-    print(args.constraint)
     
     set_seed(42)
     output_dir = f'../data/mle_multi_dim_calibration'
