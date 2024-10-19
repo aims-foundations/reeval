@@ -25,13 +25,8 @@ if __name__ == "__main__":
     theta = pd.read_csv(f'../data/nonamor_calibration/{args.dataset}/nonamor_theta.csv')["theta"].values
     z = pd.read_csv(f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv')["z"].values
 
-    # rows in y with more than 500 non -1 values
-    valid_rows_mask = (y != -1).sum(axis=1) > 500
-    theta = theta[valid_rows_mask]
-    y = y[valid_rows_mask]
-    
-    # theta value closest to zero
-    min_index = np.argmin(np.abs(theta))
+    count_minus_one = np.sum(y == -1, axis=1)
+    min_index = np.argmin(count_minus_one)
     y = y[min_index]
     theta = theta[min_index]
     

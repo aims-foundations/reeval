@@ -92,8 +92,14 @@ def mle_multi_dim_calibration(
 if __name__ == "__main__":
     # wandb.init(project="mle_multi_dim_calibration")
     parser = argparse.ArgumentParser()
-    parser.add_argument('--constraint', type=bool, required=True)
+    parser.add_argument('--constraint', type=str, required=True, choices=['True', 'False'])
     args = parser.parse_args()
+    
+    if args.constraint == 'True':
+        args.constraint = True
+    elif args.constraint == 'False':
+        args.constraint = False
+    print(args.constraint)
     
     set_seed(42)
     output_dir = f'../data/mle_multi_dim_calibration'
@@ -136,7 +142,6 @@ if __name__ == "__main__":
         row_indices = [combined_matrix.index.get_loc(i) for i in matrix.index]
         col_indices = [combined_matrix.columns.get_loc(i) for i in matrix.columns]
         
-        response_tensor = torch.tensor(response_matrix, dtype=torch.float32)
         theta_hat_subset = theta_hat[row_indices].cpu().detach()
         z_hat_subset = z_hat[col_indices].cpu().detach()
         a_subset = a[col_indices].cpu().detach()
@@ -145,7 +150,7 @@ if __name__ == "__main__":
             z=z_hat_subset, 
             theta=theta_hat_subset,
             a=a_subset,
-            y=response_tensor,
+            y=torch.tensor(response_matrix, dtype=torch.float32),
             plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}.png',
         )
         gof_means.append(gof_mean)

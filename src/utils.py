@@ -104,8 +104,8 @@ def split_indices(length):
     return train_indices.tolist(), test_indices.tolist()
 
 def inverse_sigmoid(x):
-    # epsilon = 1e-7
-    # x = torch.clamp(x, min=epsilon, max=1 - epsilon)  # Clip the input to (0, 1)
+    epsilon = 1e-7
+    x = torch.clamp(x, min=epsilon, max=1 - epsilon)  # Clip the input to (0, 1)
     return torch.log(x / (1 - x))
 
 def get_embed(
@@ -761,16 +761,23 @@ def plot_cat(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
 
-def plot_hard_easy(theta_hats_all, y_means_all, theta, y, plot_path):
+def plot_hard_easy(
+    theta_hats: list,
+    y_means: list,
+    theta: float,
+    y_mean: float, 
+    plot_path: str,
+):
     plt.figure(figsize=(8, 6))
-    plt.hist(theta_hats_all, bins=40, color='red', alpha=0.2, label='IRT Estimation', density=True)
-    plt.hist(y_means_all, bins=40, color='blue', alpha=0.2, label='CTT Estimation', density=True)
+    plt.hist(theta_hats, bins=40, color='red', alpha=0.2, label='IRT Estimation', density=True)
+    plt.hist(y_means, bins=40, color='blue', alpha=0.2, label='CTT Estimation', density=True)
     plt.axvline(x=theta, color='red', linestyle='-', linewidth=2)
-    plt.axvline(x=inverse_sigmoid(y.mean()), color='blue', linewidth=2)
-    sns.kdeplot(theta_hats_all, color='red', linewidth=2, bw_adjust=2)
+    plt.axvline(x=y_mean, color='blue', linewidth=2)
+    sns.kdeplot(theta_hats, color='red', linewidth=2, bw_adjust=2)
     plt.xlabel(r'Ability', fontsize=25)
     plt.ylabel(r'Density', fontsize=25)
     plt.legend(fontsize=20)
+    plt.xlim(-5, 5)
     plt.tick_params(axis='both', labelsize=20)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
