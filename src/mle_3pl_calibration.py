@@ -51,7 +51,7 @@ def mle_3pl_calibration(
         
         # theta_hat_norm = (theta_hat - theta_hat.mean()) / theta_hat.std()
         # z1_hat_norm = (z1_hat - z1_hat.mean()) / z1_hat.std()
-        # z1_hat_norm.data.clamp_(min=0.0, max=1.0)
+        z1_hat.data.clamp_(min=0.0, max=1.0)
         # z2_hat_norm = (z2_hat - z2_hat.mean()) / z2_hat.std()
         # z3_hat_norm = (z3_hat - z3_hat.mean()) / z3_hat.std()
 
@@ -69,7 +69,7 @@ def mle_3pl_calibration(
         berns = torch.distributions.Bernoulli(masked_prob_matrix)
         loss = -berns.log_prob(masked_response_matrix).mean()
         loss.backward()
-        torch.nn.utils.clip_grad_value_([z1_hat, theta_hat, z2_hat, z3_hat], clip_value=1.0)
+        # torch.nn.utils.clip_grad_value_([z1_hat, theta_hat, z2_hat, z3_hat], clip_value=1.0)
         
         print(f"Gradients:")
         for name, param in zip(['theta_hat', 'z1_hat', 'z2_hat', 'z3_hat'], [theta_hat, z1_hat, z2_hat, z3_hat]):

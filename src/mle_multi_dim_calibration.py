@@ -10,6 +10,7 @@ from utils import (
     plot_hist,
     item_response_fn_1PL_multi_dim, 
     goodness_of_fit_1PL_multi_dim_plot, 
+    error_bar_plot_single,
 )
 
 def mle_multi_dim_calibration(
@@ -77,28 +78,34 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
-    combined_matrix = pd.DataFrame()
-    for dataset in DATASETS:
-        matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-        if combined_matrix.empty:
-            combined_matrix = matrix
-        else:
-            combined_matrix = combined_matrix.join(matrix, how='outer', rsuffix='_dup')
-    combined_matrix.fillna(-1, inplace=True)
-    print(combined_matrix.shape)
-    combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
-    # combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
+    # combined_matrix = pd.DataFrame()
+    # for dataset in DATASETS:
+    #     matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+    #     if combined_matrix.empty:
+    #         combined_matrix = matrix
+    #     else:
+    #         combined_matrix = combined_matrix.join(matrix, how='outer', rsuffix='_dup')
+    # combined_matrix.fillna(-1, inplace=True)
+    # print(combined_matrix.shape)
+    # combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
+    combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
     
-    theta_hat, a, z_hat = mle_multi_dim_calibration(
-        torch.tensor(combined_matrix.values, dtype=torch.float32),
-    )
-    z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
-    z_df.to_csv(f"{output_dir}/z.csv", index=False)
-    a_df = pd.DataFrame(a.cpu().detach().numpy(), columns=[f"a_{i}" for i in range(a.size(1))])
-    a_df.to_csv(f"{output_dir}/a.csv", index=False)
-    theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=[f"theta_{i}" for i in range(theta_hat.size(1))])
-    theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
+    # theta_hat, a, z_hat = mle_multi_dim_calibration(
+    #     torch.tensor(combined_matrix.values, dtype=torch.float32),
+    # )
+    # z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
+    # z_df.to_csv(f"{output_dir}/z.csv", index=False)
+    # a_df = pd.DataFrame(a.cpu().detach().numpy(), columns=[f"a_{i}" for i in range(a.size(1))])
+    # a_df.to_csv(f"{output_dir}/a.csv", index=False)
+    # theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=[f"theta_{i}" for i in range(theta_hat.size(1))])
+    # theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
     
+    theta_hat = pd.read_csv(f"{output_dir}/theta.csv")
+    a = pd.read_csv(f"{output_dir}/a.csv")
+    z_hat = pd.read_csv(f"{output_dir}/z.csv")
+    
+    gof_means, gof_stds = [], []
+    a_means = []
     for dataset in tqdm(DATASETS):
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
         response_matrix = combined_matrix.loc[matrix.index, matrix.columns].values
@@ -110,16 +117,39 @@ if __name__ == "__main__":
         z_hat_subset = z_hat[col_indices].cpu().detach()
         a_subset = a[col_indices].cpu().detach()
         
-        mean_diff, std_diff = goodness_of_fit_1PL_multi_dim_plot(
+        gof_mean, gof_std = goodness_of_fit_1PL_multi_dim_plot(
             z=z_hat_subset, 
             theta=theta_hat_subset,
             a=a_subset,
             y=response_tensor,
             plot_path=f'{plot_dir}/goodness_of_fit_{dataset}.png',
         )
+        gof_means.append(gof_mean)
+        gof_stds.append(gof_std)
         
-        plot_hist(
-            data=a_subset[:, 0].numpy(),
-            plot_path=f'{plot_dir}/a_histogram_{dataset}.png',
-            ylabel='Histiogram of a',
-        )
+        a_mean = a_subset[:, 0].numpy().mean()
+        a_means.append(a_mean)
+        # plot_hist(
+        #     data=a_subset[:, 0].numpy(),
+        #     plot_path=f'{plot_dir}/a_histogram_{dataset}.png',
+        #     ylabel='Histiogram of a',
+        # )
+        
+    error_bar_plot_single(
+        datasets=DATASETS,
+        means=gof_means,
+        stds=gof_stds,
+        plot_path=f"{plot_dir}/mle_multi_dim_calibration_summarize_gof",
+        xlabel=r"Goodness of Fit",
+    )
+    
+    error_bar_plot_single(
+        datasets=DATASETS,
+        means=a_means,
+        stds=[0] * len(a_means),
+        plot_path=f"{plot_dir}/mle_multi_dim_calibration_summarize_a",
+        xlabel=r"Mean of $a$",
+    )
+        
+        
+        

@@ -42,13 +42,13 @@ def mle_2pl_calibration(
         else:
             break
         
-        theta_hat_norm = (theta_hat - theta_hat.mean()) / theta_hat.std()
-        z2_hat_norm = (z2_hat - z2_hat.mean()) / z2_hat.std()
-        z3_hat_norm = (z3_hat - z3_hat.mean()) / z3_hat.std()
+        # theta_hat_norm = (theta_hat - theta_hat.mean()) / theta_hat.std()
+        # z2_hat_norm = (z2_hat - z2_hat.mean()) / z2_hat.std()
+        # z3_hat_norm = (z3_hat - z3_hat.mean()) / z3_hat.std()
         
-        theta_hat_matrix = theta_hat_norm.unsqueeze(1)
-        z2_hat_matrix = z2_hat_norm.unsqueeze(0)
-        z3_hat_matrix = z3_hat_norm.unsqueeze(0)
+        theta_hat_matrix = theta_hat.unsqueeze(1)
+        z2_hat_matrix = z2_hat.unsqueeze(0)
+        z3_hat_matrix = z3_hat.unsqueeze(0)
         prob_matrix = item_response_fn_2PL(z2_hat_matrix, z3_hat_matrix, theta_hat_matrix)
         assert prob_matrix.shape == response_matrix.shape
         
@@ -60,6 +60,15 @@ def mle_2pl_calibration(
         loss = -berns.log_prob(masked_response_matrix).mean()
         loss.backward()
         # torch.nn.utils.clip_grad_value_([theta_hat, z2_hat, z3_hat], clip_value=1.0)
+        
+        print(f"Gradients:")
+        for name, param in zip(['theta_hat', 'z2_hat', 'z3_hat'], [theta_hat, z2_hat, z3_hat]):
+            print(f"{name} grad: {param.grad}")
+
+            nan_indices = torch.nonzero(torch.isnan(param.grad)).squeeze()
+            if nan_indices.numel() > 0:
+                print(f"{name} grad NaN indices: {nan_indices.cpu().numpy()}")
+                
         optimizer.step()
         optimizer.zero_grad()
 
