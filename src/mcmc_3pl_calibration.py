@@ -169,13 +169,13 @@ if __name__ == "__main__":
     z2_samples = np.array(z2_samples)
     z3_samples = np.array(z3_samples)
 
-    theta_hat = pd.read_csv(theta_path)['theta'].values
-    z1_samples = np.load(z1_samples_path)
-    z2_samples = np.load(z2_samples_path)
-    z3_samples = np.load(z3_samples_path)
+    # theta_hat = pd.read_csv(theta_path)['theta'].values
+    # z1_samples = np.load(z1_samples_path)
+    # z2_samples = np.load(z2_samples_path)
+    # z3_samples = np.load(z3_samples_path)
     
     _, _ = goodness_of_fit_3PL_plot(
-        theta=torch.tensor(theta_hat, dtype=torch.float32),
+        theta=torch.tensor(theta_samples.mean(axis=0), dtype=torch.float32),
         z1_samples=torch.tensor(z1_samples, dtype=torch.float32),
         z2_samples=torch.tensor(z2_samples, dtype=torch.float32),
         z3_samples=torch.tensor(z3_samples, dtype=torch.float32),
