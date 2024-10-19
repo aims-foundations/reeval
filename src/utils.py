@@ -766,7 +766,7 @@ def plot_hard_easy(theta_hats_all, y_means_all, theta, y, plot_path):
     plt.hist(theta_hats_all, bins=40, color='red', alpha=0.2, label='IRT Estimation', density=True)
     plt.hist(y_means_all, bins=40, color='blue', alpha=0.2, label='CTT Estimation', density=True)
     plt.axvline(x=theta, color='red', linestyle='-', linewidth=2)
-    plt.axvline(x=inverse_sigmoid(y.mean().item()), color='blue', linewidth=2)
+    plt.axvline(x=inverse_sigmoid(y.mean()), color='blue', linewidth=2)
     sns.kdeplot(theta_hats_all, color='red', linewidth=2, bw_adjust=2)
     plt.xlabel(r'Ability', fontsize=25)
     plt.ylabel(r'Density', fontsize=25)

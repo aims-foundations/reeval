@@ -37,8 +37,8 @@ if __name__ == "__main__":
         save_dir = f'../plot/hard_easy_test'
         os.makedirs(save_dir, exist_ok=True)
         plot_hard_easy(
-            torch.tensor(theta_hats_all, dtype=torch.float32),
-            torch.tensor(y_means_all, dtype=torch.float32), 
+            theta_hats_all,
+            y_means_all,
             theta, 
             y, 
             f'{save_dir}/hard_easy_{dataset}.png',
