@@ -9,8 +9,8 @@ from utils import DATASETS, plot_hard_easy
 if __name__ == "__main__":
     for dataset in tqdm(DATASETS):
         df = pd.read_csv(f'../data/hard_easy_test/{dataset}/hard_easy_test.csv')
-        theta_hats_all = df['theta_hat'].values
-        y_means_all = df['y_mean'].values
+        theta_hats = df['theta_hat'].values
+        y_means = df['y_mean'].values
 
         response_matrix = pd.read_csv(
             f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0
@@ -34,8 +34,8 @@ if __name__ == "__main__":
         save_dir = f'../plot/hard_easy_test'
         os.makedirs(save_dir, exist_ok=True)
         plot_hard_easy(
-            theta_hats_all,
-            y_means_all,
+            theta_hats,
+            y_means,
             theta, 
             y, 
             f'{save_dir}/hard_easy_{dataset}.png',
