@@ -104,8 +104,8 @@ def split_indices(length):
     return train_indices.tolist(), test_indices.tolist()
 
 def inverse_sigmoid(x):
-    epsilon = 1e-7
-    x = torch.clamp(x, min=epsilon, max=1 - epsilon)  # Clip the input to (0, 1)
+    # epsilon = 1e-7
+    # x = torch.clamp(x, min=epsilon, max=1 - epsilon)  # Clip the input to (0, 1)
     return torch.log(x / (1 - x))
 
 def get_embed(
