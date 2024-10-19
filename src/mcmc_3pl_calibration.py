@@ -161,13 +161,13 @@ if __name__ == "__main__":
     z2_samples_path = f'{output_dir}/z2_samples.npy'
     z3_samples_path = f'{output_dir}/z3_samples.npy'
     
-    # theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
-    #     question_num, testtaker_num, y
-    # )
-    # theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
-    # z1_samples = np.array(z1_samples) # (num_samples, question_num)
-    # z2_samples = np.array(z2_samples)
-    # z3_samples = np.array(z3_samples)
+    theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
+        question_num, testtaker_num, y
+    )
+    theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
+    z1_samples = np.array(z1_samples) # (num_samples, question_num)
+    z2_samples = np.array(z2_samples)
+    z3_samples = np.array(z3_samples)
 
     theta_hat = pd.read_csv(theta_path)['theta'].values
     z1_samples = np.load(z1_samples_path)
