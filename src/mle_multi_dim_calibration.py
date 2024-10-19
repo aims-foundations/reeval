@@ -1,3 +1,4 @@
+import argparse
 import os
 import torch
 import wandb
@@ -15,8 +16,9 @@ from utils import (
 
 def mle_multi_dim_calibration(
     response_matrix: torch.Tensor,
+    constraint: bool,
     dim: int=2,
-    max_epoch: int = 3000,
+    max_epoch: int=3000,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     response_matrix = response_matrix.to(device)
@@ -40,12 +42,18 @@ def mle_multi_dim_calibration(
     optimizer = optim.Adam([theta_hat, a, z_hat], lr=0.01)
     
     last_theta_hat = None
-    last_a_softmax = None
+    if constraint:
+        last_a_softmax = None
+    else:
+        last_a = None
     last_z_hat = None
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
-        a_softmax = torch.nn.functional.softmax(a, dim=1)
-        prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a_softmax)
+        if constraint:
+            a_softmax = torch.nn.functional.softmax(a, dim=1)
+            prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a_softmax)
+        else:   
+            prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a)
         assert prob_matrix.shape == response_matrix.shape
 
         mask = response_matrix != -1
@@ -61,17 +69,32 @@ def mle_multi_dim_calibration(
         pbar.set_postfix({'loss': loss.item()})
         # wandb.log({'loss': loss.item()})
         
-        if not (torch.isnan(theta_hat).any() or torch.isnan(a_softmax).any() or torch.isnan(z_hat).any()):
-            last_theta_hat = theta_hat.cpu().detach().clone()
-            last_a_softmax = a_softmax.cpu().detach().clone()
-            last_z_hat = z_hat.cpu().detach().clone()
+        if constraint:
+            if not (torch.isnan(theta_hat).any() or torch.isnan(a_softmax).any() or torch.isnan(z_hat).any()):
+                last_theta_hat = theta_hat.cpu().detach().clone()
+                last_a_softmax = a_softmax.cpu().detach().clone()
+                last_z_hat = z_hat.cpu().detach().clone()
+            else:
+                break
         else:
-            break
-        
-    return last_theta_hat, last_a_softmax, last_z_hat
+            if not (torch.isnan(theta_hat).any() or torch.isnan(a).any() or torch.isnan(z_hat).any()):
+                last_theta_hat = theta_hat.cpu().detach().clone()
+                last_a = a.cpu().detach().clone()
+                last_z_hat = z_hat.cpu().detach().clone()
+            else:
+                break
+    
+    if constraint:
+        return last_theta_hat, last_a_softmax, last_z_hat
+    else:
+        return last_theta_hat, last_a, last_z_hat
 
 if __name__ == "__main__":
     # wandb.init(project="mle_multi_dim_calibration")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--constraint', type=bool, required=True)
+    args = parser.parse_args()
+    
     set_seed(42)
     output_dir = f'../data/mle_multi_dim_calibration'
     plot_dir = f'../plot/mle_multi_dim_calibration'
@@ -90,19 +113,20 @@ if __name__ == "__main__":
     # combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
     combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
     
-    # theta_hat, a, z_hat = mle_multi_dim_calibration(
-    #     torch.tensor(combined_matrix.values, dtype=torch.float32),
-    # )
-    # z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
-    # z_df.to_csv(f"{output_dir}/z.csv", index=False)
-    # a_df = pd.DataFrame(a.cpu().detach().numpy(), columns=[f"a_{i}" for i in range(a.size(1))])
-    # a_df.to_csv(f"{output_dir}/a.csv", index=False)
-    # theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=[f"theta_{i}" for i in range(theta_hat.size(1))])
-    # theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
+    theta_hat, a, z_hat = mle_multi_dim_calibration(
+        torch.tensor(combined_matrix.values, dtype=torch.float32),
+        constraint=args.constraint,
+    )
+    z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
+    z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
+    a_df = pd.DataFrame(a.cpu().detach().numpy(), columns=[f"a_{i}" for i in range(a.size(1))])
+    a_df.to_csv(f"{output_dir}/a_con_{args.constraint}.csv", index=False)
+    theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=[f"theta_{i}" for i in range(theta_hat.size(1))])
+    theta_df.to_csv(f"{output_dir}/theta_con_{args.constraint}.csv", index=False)
     
-    theta_hat = pd.read_csv(f"{output_dir}/theta.csv")
-    a = pd.read_csv(f"{output_dir}/a.csv")
-    z_hat = pd.read_csv(f"{output_dir}/z.csv")
+    # theta_hat = pd.read_csv(f"{output_dir}/theta_con_{args.constraint}.csv")
+    # a = pd.read_csv(f"{output_dir}/a_con_{args.constraint}.csv")
+    # z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv")
     
     gof_means, gof_stds = [], []
     a_means = []
@@ -122,34 +146,33 @@ if __name__ == "__main__":
             theta=theta_hat_subset,
             a=a_subset,
             y=response_tensor,
-            plot_path=f'{plot_dir}/goodness_of_fit_{dataset}.png',
+            plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}.png',
         )
         gof_means.append(gof_mean)
         gof_stds.append(gof_std)
         
-        a_mean = a_subset[:, 0].numpy().mean()
-        a_means.append(a_mean)
-        # plot_hist(
-        #     data=a_subset[:, 0].numpy(),
-        #     plot_path=f'{plot_dir}/a_histogram_{dataset}.png',
-        #     ylabel='Histiogram of a',
-        # )
+        if args.constraint:
+            a_mean = a_subset[:, 0].numpy().mean()
+            a_means.append(a_mean)
+            # plot_hist(
+            #     data=a_subset[:, 0].numpy(),
+            #     plot_path=f'{plot_dir}/a_histogram_{dataset}.png',
+            #     ylabel='Histiogram of a',
+            # )
         
     error_bar_plot_single(
         datasets=DATASETS,
         means=gof_means,
         stds=gof_stds,
-        plot_path=f"{plot_dir}/mle_multi_dim_calibration_summarize_gof",
+        plot_path=f"{plot_dir}/mle_multi_dim_calibration_summarize_gof_con_{args.constraint}",
         xlabel=r"Goodness of Fit",
     )
     
-    error_bar_plot_single(
-        datasets=DATASETS,
-        means=a_means,
-        stds=[0] * len(a_means),
-        plot_path=f"{plot_dir}/mle_multi_dim_calibration_summarize_a",
-        xlabel=r"Mean of $a$",
-    )
-        
-        
-        
+    if args.constraint:
+        error_bar_plot_single(
+            datasets=DATASETS,
+            means=a_means,
+            stds=[0] * len(a_means),
+            plot_path=f"{plot_dir}/mle_multi_dim_calibration_summarize_a_con_{args.constraint}",
+            xlabel=r"Mean of $a$",
+        )
