@@ -49,16 +49,16 @@ def mle_3pl_calibration(
         else:
             break
         
-        theta_hat_norm = (theta_hat - theta_hat.mean()) / theta_hat.std()
-        z1_hat_norm = (z1_hat - z1_hat.mean()) / z1_hat.std()
-        z1_hat_norm.data.clamp_(min=0.0, max=1.0)
-        z2_hat_norm = (z2_hat - z2_hat.mean()) / z2_hat.std()
-        z3_hat_norm = (z3_hat - z3_hat.mean()) / z3_hat.std()
+        # theta_hat_norm = (theta_hat - theta_hat.mean()) / theta_hat.std()
+        # z1_hat_norm = (z1_hat - z1_hat.mean()) / z1_hat.std()
+        # z1_hat_norm.data.clamp_(min=0.0, max=1.0)
+        # z2_hat_norm = (z2_hat - z2_hat.mean()) / z2_hat.std()
+        # z3_hat_norm = (z3_hat - z3_hat.mean()) / z3_hat.std()
 
-        theta_hat_matrix = theta_hat_norm.unsqueeze(1)
-        z1_hat_matrix = z1_hat_norm.unsqueeze(0)
-        z2_hat_matrix = z2_hat_norm.unsqueeze(0)
-        z3_hat_matrix = z3_hat_norm.unsqueeze(0)
+        theta_hat_matrix = theta_hat.unsqueeze(1)
+        z1_hat_matrix = z1_hat.unsqueeze(0)
+        z2_hat_matrix = z2_hat.unsqueeze(0)
+        z3_hat_matrix = z3_hat.unsqueeze(0)
         prob_matrix = item_response_fn_3PL(z1_hat_matrix, z2_hat_matrix, z3_hat_matrix, theta_hat_matrix)
         assert prob_matrix.shape == response_matrix.shape
         
@@ -69,15 +69,15 @@ def mle_3pl_calibration(
         berns = torch.distributions.Bernoulli(masked_prob_matrix)
         loss = -berns.log_prob(masked_response_matrix).mean()
         loss.backward()
-        # torch.nn.utils.clip_grad_value_([z1_hat, theta_hat, z2_hat, z3_hat], clip_value=1.0)
+        torch.nn.utils.clip_grad_value_([z1_hat, theta_hat, z2_hat, z3_hat], clip_value=1.0)
         
-        # print(f"Gradients:")
-        # for name, param in zip(['theta_hat', 'z1_hat', 'z2_hat', 'z3_hat'], [theta_hat, z1_hat, z2_hat, z3_hat]):
-        #     print(f"{name} grad: {param.grad}")
+        print(f"Gradients:")
+        for name, param in zip(['theta_hat', 'z1_hat', 'z2_hat', 'z3_hat'], [theta_hat, z1_hat, z2_hat, z3_hat]):
+            print(f"{name} grad: {param.grad}")
 
-        #     nan_indices = torch.nonzero(torch.isnan(param.grad)).squeeze()
-        #     if nan_indices.numel() > 0:
-        #         print(f"{name} grad NaN indices: {nan_indices.cpu().numpy()}")
+            nan_indices = torch.nonzero(torch.isnan(param.grad)).squeeze()
+            if nan_indices.numel() > 0:
+                print(f"{name} grad NaN indices: {nan_indices.cpu().numpy()}")
         
         optimizer_z1.step()
         optimizer_others.step()
