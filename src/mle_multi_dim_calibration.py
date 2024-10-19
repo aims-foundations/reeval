@@ -114,7 +114,7 @@ if __name__ == "__main__":
     combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
     
     theta_hat, a, z_hat = mle_multi_dim_calibration(
-        torch.tensor(combined_matrix.values, dtype=torch.float32),
+        response_matrix=torch.tensor(combined_matrix.values, dtype=torch.float32),
         constraint=args.constraint,
     )
     z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])

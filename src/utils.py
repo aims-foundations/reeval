@@ -773,6 +773,7 @@ def plot_hard_easy(theta_hats_all, y_means_all, theta, y, plot_path):
     plt.legend(fontsize=20)
     plt.tick_params(axis='both', labelsize=20)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
     
 PLOT_NAME_MAP = {
     'wikifact': 'wikifact',

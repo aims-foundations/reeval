@@ -68,7 +68,6 @@ if __name__ == "__main__":
         )
         optim = torch.optim.SGD([theta_hat], lr=0.01)
         
-        theta_hats = []
         for _ in range(step_size):
             prob = item_response_fn_1PL(z_sub, theta_hat)
             loss = -torch.distributions.Bernoulli(
@@ -77,7 +76,6 @@ if __name__ == "__main__":
             optim.zero_grad()
             loss.backward()
             optim.step()
-            theta_hats.append(theta_hat.item())
         
         theta_hats_all.append(theta_hat.item())
         y_means_all.append(inverse_sigmoid(y_sub[sub_mask].mean()).item())
