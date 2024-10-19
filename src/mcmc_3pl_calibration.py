@@ -143,10 +143,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     set_seed(42)
-    y_df = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0)
-    
-    response_matrix = y_df.values
-    testtaker_num, question_num = response_matrix.shape
+    y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
+    testtaker_num, question_num = y.shape
 
     output_dir = f'../data/mcmc_3pl_calibration/{args.dataset}'
     plot_dir = f'../plot/mcmc_3pl_calibration'
@@ -163,34 +161,39 @@ if __name__ == "__main__":
     z2_samples_path = f'{output_dir}/z2_samples.npy'
     z3_samples_path = f'{output_dir}/z3_samples.npy'
     
-    theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
-        question_num, testtaker_num, response_matrix
-    )
-    theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
-    z1_samples = np.array(z1_samples) # (num_samples, question_num)
-    z2_samples = np.array(z2_samples)
-    z3_samples = np.array(z3_samples)
+    # theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
+    #     question_num, testtaker_num, y
+    # )
+    # theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
+    # z1_samples = np.array(z1_samples) # (num_samples, question_num)
+    # z2_samples = np.array(z2_samples)
+    # z3_samples = np.array(z3_samples)
 
+    theta_hat = pd.read_csv(theta_path)['theta'].values
+    z1_samples = np.load(z1_samples_path)
+    z2_samples = np.load(z2_samples_path)
+    z3_samples = np.load(z3_samples_path)
+    
     _, _ = goodness_of_fit_3PL_plot(
-        theta=theta_samples.mean(axis=0),
+        theta=torch.tensor(theta_hat, dtype=torch.float32),
         z1_samples=torch.tensor(z1_samples, dtype=torch.float32),
         z2_samples=torch.tensor(z2_samples, dtype=torch.float32),
         z3_samples=torch.tensor(z3_samples, dtype=torch.float32),
-        y=torch.tensor(response_matrix, dtype=torch.float32),
+        y=torch.tensor(y, dtype=torch.float32),
         plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}",
     )
     
-    np.save(theta_samples_path, theta_samples)
-    np.save(z1_samples_path, z1_samples)
-    np.save(z2_samples_path, z2_samples)
-    np.save(z3_samples_path, z3_samples)
+    # np.save(theta_samples_path, theta_samples)
+    # np.save(z1_samples_path, z1_samples)
+    # np.save(z2_samples_path, z2_samples)
+    # np.save(z3_samples_path, z3_samples)
     
-    theta_df = pd.DataFrame({'theta': theta_samples.mean(axis=0)})
-    z1_df = pd.DataFrame({'z1': z1_samples.mean(axis=0)})
-    z2_df = pd.DataFrame({'z2': z2_samples.mean(axis=0)})
-    z3_df = pd.DataFrame({'z3': z3_samples.mean(axis=0)})
+    # theta_df = pd.DataFrame({'theta': theta_samples.mean(axis=0)})
+    # z1_df = pd.DataFrame({'z1': z1_samples.mean(axis=0)})
+    # z2_df = pd.DataFrame({'z2': z2_samples.mean(axis=0)})
+    # z3_df = pd.DataFrame({'z3': z3_samples.mean(axis=0)})
     
-    theta_df.to_csv(theta_path, index=False)
-    z1_df.to_csv(z1_path, index=False)
-    z2_df.to_csv(z2_path, index=False)
-    z3_df.to_csv(z3_path, index=False)
+    # theta_df.to_csv(theta_path, index=False)
+    # z1_df.to_csv(z1_path, index=False)
+    # z2_df.to_csv(z2_path, index=False)
+    # z3_df.to_csv(z3_path, index=False)
