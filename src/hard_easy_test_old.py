@@ -76,20 +76,20 @@ if __name__ == "__main__":
         theta_hats.append(theta_hat.item())
         y_means.append(inverse_sigmoid(y_sub.mean()).item())
     
-    save_dir = f'../data/hard_easy_test/{args.dataset}'
+    save_dir = f'../data/hard_easy_test_old/{args.dataset}'
     os.makedirs(save_dir, exist_ok=True)
     df = pd.DataFrame({
         "theta_hat": theta_hats,
         "y_mean": y_means,
     })
-    df.to_csv(f'{save_dir}/hard_easy_test.csv', index=False)
+    df.to_csv(f'{save_dir}/hard_easy_test_old.csv', index=False)
     
-    plot_dir = f'../plot/hard_easy_test'
+    plot_dir = f'../plot/hard_easy_test_old'
     os.makedirs(plot_dir, exist_ok=True)
     plot_hard_easy(
         theta_hats,
         y_means,
         theta, 
         inverse_sigmoid(y.mean()).item(), 
-        f'{plot_dir}/hard_easy_{args.dataset}.png',
+        f'{plot_dir}/hard_easy_old_{args.dataset}.png',
     )
