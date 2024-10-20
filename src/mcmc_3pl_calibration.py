@@ -11,6 +11,7 @@ import wandb
 from tqdm import tqdm
 import torch
 from utils import item_response_fn_3PL_jnp, set_seed, item_response_fn_3PL
+import seaborn as sns
 import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
@@ -36,7 +37,7 @@ def model(question_num, testtaker_num, response_matrix):
     
     numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
 
-def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=9000, num_warmup=1000):
+def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=2000, num_warmup=1000):
     rng_key = random.PRNGKey(0)
     rng_key, rng_key_ = random.split(rng_key)
     
@@ -136,8 +137,30 @@ def goodness_of_fit_3PL_plot(
     plt.close()
     return mean_diff, std_diff
     
+def plot_trace_and_density(theta_samples_list):
+    plt.rcParams["text.usetex"] = False  # Disable LaTeX text rendering
+    plt.figure(figsize=(10, 6))
+    
+    plt.subplot(1, 2, 1)
+    for i, theta_samples in enumerate(theta_samples_list):
+        plt.plot(theta_samples, label=f'Run {i+1}', alpha=0.3)
+    plt.xlabel('Iteration')
+    plt.ylabel('θ')  # Unicode character for theta
+    plt.title('Trace Plot of θ')
+    plt.legend()
+    
+    plt.subplot(1, 2, 2)
+    for i, theta_samples in enumerate(theta_samples_list):
+        sns.kdeplot(theta_samples, bw_adjust=0.5, label=f'Run {i+1}', alpha=0.3)
+    plt.xlabel('θ')  # Unicode character for theta
+    plt.title('Posterior Density of θ')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.savefig("../mcmc_diagnostic.png")
+    
 if __name__ == "__main__":
-    wandb.init(project="mcmc_3pl_calibration")
+    # wandb.init(project="mcmc_3pl_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
@@ -161,18 +184,23 @@ if __name__ == "__main__":
     z2_samples_path = f'{output_dir}/z2_samples.npy'
     z3_samples_path = f'{output_dir}/z3_samples.npy'
     
-    theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
-        question_num, testtaker_num, y
-    )
-    theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
-    z1_samples = np.array(z1_samples) # (num_samples, question_num)
-    z2_samples = np.array(z2_samples)
-    z3_samples = np.array(z3_samples)
-
-    # theta_hat = pd.read_csv(theta_path)['theta'].values
-    # z1_samples = np.load(z1_samples_path)
-    # z2_samples = np.load(z2_samples_path)
-    # z3_samples = np.load(z3_samples_path)
+    # theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
+    #     question_num, testtaker_num, y
+    # )
+    # theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
+    # z1_samples = np.array(z1_samples) # (num_samples, question_num)
+    # z2_samples = np.array(z2_samples)
+    # z3_samples = np.array(z3_samples)
+    
+    theta_samples = np.load(theta_samples_path)
+    z1_samples = np.load(z1_samples_path)
+    z2_samples = np.load(z2_samples_path)
+    z3_samples = np.load(z3_samples_path)
+    
+    plot_trace_and_density(theta_samples)
+    plot_trace_and_density(z1_samples)
+    plot_trace_and_density(z2_samples)
+    plot_trace_and_density(z3_samples)
     
     _, _ = goodness_of_fit_3PL_plot(
         theta=torch.tensor(theta_samples.mean(axis=0), dtype=torch.float32),
