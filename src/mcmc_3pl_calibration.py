@@ -138,18 +138,18 @@ def goodness_of_fit_3PL_plot(
     return mean_diff, std_diff
     
 def plot_trace_and_density(samples, var_name):
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 6))
     
     plt.subplot(1, 2, 1)
-    for i, theta_samples in enumerate(samples):
-        plt.plot(theta_samples, label=f'Run {i+1}', alpha=0.3)
+    for i in range(5):
+        plt.plot(samples[:, i], alpha=0.3)
     plt.xlabel('Iteration')
     plt.ylabel(f'{var_name}')
     plt.title(f'Trace Plot of {var_name}')
     
     plt.subplot(1, 2, 2)
-    for i, theta_samples in enumerate(samples):
-        sns.kdeplot(theta_samples, bw_adjust=0.5, label=f'Run {i+1}', alpha=0.3)
+    for i in range(5):
+        sns.kdeplot(samples[:, i], bw_adjust=0.5, alpha=0.3)
     plt.xlabel(f'{var_name}')
     plt.title(f'Posterior Density of {var_name}')
 
@@ -180,18 +180,19 @@ if __name__ == "__main__":
     z2_samples_path = f'{output_dir}/z2_samples.npy'
     z3_samples_path = f'{output_dir}/z3_samples.npy'
     
-    # theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
-    #     question_num, testtaker_num, y
-    # )
-    # theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
-    # z1_samples = np.array(z1_samples) # (num_samples, question_num)
-    # z2_samples = np.array(z2_samples)
-    # z3_samples = np.array(z3_samples)
+    theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
+        question_num, testtaker_num, y
+    )
+    theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
+    z1_samples = np.array(z1_samples) # (num_samples, question_num)
+    z2_samples = np.array(z2_samples)
+    z3_samples = np.array(z3_samples)
+    print(theta_samples.shape, z1_samples.shape, z2_samples.shape, z3_samples.shape)
     
-    theta_samples = np.load(theta_samples_path)
-    z1_samples = np.load(z1_samples_path)
-    z2_samples = np.load(z2_samples_path)
-    z3_samples = np.load(z3_samples_path)
+    # theta_samples = np.load(theta_samples_path)
+    # z1_samples = np.load(z1_samples_path)
+    # z2_samples = np.load(z2_samples_path)
+    # z3_samples = np.load(z3_samples_path)
     
     plot_trace_and_density(theta_samples, 'theta')
     plot_trace_and_density(z1_samples, 'z1')
@@ -207,17 +208,17 @@ if __name__ == "__main__":
         plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}",
     )
     
-    # np.save(theta_samples_path, theta_samples)
-    # np.save(z1_samples_path, z1_samples)
-    # np.save(z2_samples_path, z2_samples)
-    # np.save(z3_samples_path, z3_samples)
+    np.save(theta_samples_path, theta_samples)
+    np.save(z1_samples_path, z1_samples)
+    np.save(z2_samples_path, z2_samples)
+    np.save(z3_samples_path, z3_samples)
     
-    # theta_df = pd.DataFrame({'theta': theta_samples.mean(axis=0)})
-    # z1_df = pd.DataFrame({'z1': z1_samples.mean(axis=0)})
-    # z2_df = pd.DataFrame({'z2': z2_samples.mean(axis=0)})
-    # z3_df = pd.DataFrame({'z3': z3_samples.mean(axis=0)})
+    theta_df = pd.DataFrame({'theta': theta_samples.mean(axis=0)})
+    z1_df = pd.DataFrame({'z1': z1_samples.mean(axis=0)})
+    z2_df = pd.DataFrame({'z2': z2_samples.mean(axis=0)})
+    z3_df = pd.DataFrame({'z3': z3_samples.mean(axis=0)})
     
-    # theta_df.to_csv(theta_path, index=False)
-    # z1_df.to_csv(z1_path, index=False)
-    # z2_df.to_csv(z2_path, index=False)
-    # z3_df.to_csv(z3_path, index=False)
+    theta_df.to_csv(theta_path, index=False)
+    z1_df.to_csv(z1_path, index=False)
+    z2_df.to_csv(z2_path, index=False)
+    z3_df.to_csv(z3_path, index=False)
