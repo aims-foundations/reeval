@@ -14,8 +14,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     set_seed(42)
-    device = torch.device('cpu')
-    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     selection_prob = 0.8
     subset_size = 100
