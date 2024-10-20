@@ -153,7 +153,6 @@ def plot_trace_and_density(theta_samples_list):
         sns.kdeplot(theta_samples, bw_adjust=0.5, label=f'Run {i+1}', alpha=0.3)
     plt.xlabel('theta')
     plt.title('Posterior Density of theta')
-    plt.legend()
 
     plt.tight_layout()
     plt.savefig("../mcmc_diagnostic.png")
