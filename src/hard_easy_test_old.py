@@ -24,15 +24,20 @@ if __name__ == "__main__":
     y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
     theta = pd.read_csv(f'../data/nonamor_calibration/{args.dataset}/nonamor_theta.csv')["theta"].values
     z = pd.read_csv(f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv')["z"].values
+    assert y.shape[1] == z.shape[0], f"y.shape[1]: {y.shape[1]}, z.shape[0]: {z.shape[0]}"
+    assert y.shape[0] == theta.shape[0], f"y.shape[0]: {y.shape[0]}, theta.shape[0]: {theta.shape[0]}"
 
+    
     count_minus_one = np.sum(y == -1, axis=1)
     min_index = np.argmin(count_minus_one)
     y = y[min_index]
     theta = theta[min_index]
+    assert y.shape == z.shape, f"y.shape: {y.shape}, z.shape: {z.shape}"
     
     valid_cols_mask = y != -1
     y = y[valid_cols_mask]
     z = z[valid_cols_mask]
+    assert y.shape == z.shape, f"y.shape: {y.shape}, z.shape: {z.shape}"
     
     y = torch.tensor(y, dtype=torch.float32).to(device)
     z = torch.tensor(z, dtype=torch.float32).to(device)
