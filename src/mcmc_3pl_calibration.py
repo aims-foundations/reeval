@@ -138,22 +138,21 @@ def goodness_of_fit_3PL_plot(
     return mean_diff, std_diff
     
 def plot_trace_and_density(theta_samples_list):
-    plt.rcParams["text.usetex"] = False  # Disable LaTeX text rendering
     plt.figure(figsize=(10, 6))
     
     plt.subplot(1, 2, 1)
     for i, theta_samples in enumerate(theta_samples_list):
         plt.plot(theta_samples, label=f'Run {i+1}', alpha=0.3)
     plt.xlabel('Iteration')
-    plt.ylabel('θ')  # Unicode character for theta
-    plt.title('Trace Plot of θ')
+    plt.ylabel('theta')
+    plt.title('Trace Plot of theta')
     plt.legend()
     
     plt.subplot(1, 2, 2)
     for i, theta_samples in enumerate(theta_samples_list):
         sns.kdeplot(theta_samples, bw_adjust=0.5, label=f'Run {i+1}', alpha=0.3)
-    plt.xlabel('θ')  # Unicode character for theta
-    plt.title('Posterior Density of θ')
+    plt.xlabel('theta')
+    plt.title('Posterior Density of theta')
     plt.legend()
 
     plt.tight_layout()
