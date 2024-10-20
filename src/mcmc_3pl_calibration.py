@@ -137,25 +137,23 @@ def goodness_of_fit_3PL_plot(
     plt.close()
     return mean_diff, std_diff
     
-def plot_trace_and_density(theta_samples_list):
+def plot_trace_and_density(samples, var_name):
     plt.figure(figsize=(10, 6))
     
     plt.subplot(1, 2, 1)
-    for i, theta_samples in enumerate(theta_samples_list):
+    for i, theta_samples in enumerate(samples):
         plt.plot(theta_samples, label=f'Run {i+1}', alpha=0.3)
     plt.xlabel('Iteration')
-    plt.ylabel('theta')
-    plt.title('Trace Plot of theta')
-    plt.legend()
+    plt.ylabel(f'{var_name}')
+    plt.title(f'Trace Plot of {var_name}')
     
     plt.subplot(1, 2, 2)
-    for i, theta_samples in enumerate(theta_samples_list):
+    for i, theta_samples in enumerate(samples):
         sns.kdeplot(theta_samples, bw_adjust=0.5, label=f'Run {i+1}', alpha=0.3)
-    plt.xlabel('theta')
-    plt.title('Posterior Density of theta')
+    plt.xlabel(f'{var_name}')
+    plt.title(f'Posterior Density of {var_name}')
 
-    plt.tight_layout()
-    plt.savefig("../mcmc_diagnostic.png")
+    plt.savefig(f"../mcmc_diagnostic_{var_name}.png")
     
 if __name__ == "__main__":
     # wandb.init(project="mcmc_3pl_calibration")
@@ -195,10 +193,10 @@ if __name__ == "__main__":
     z2_samples = np.load(z2_samples_path)
     z3_samples = np.load(z3_samples_path)
     
-    plot_trace_and_density(theta_samples)
-    plot_trace_and_density(z1_samples)
-    plot_trace_and_density(z2_samples)
-    plot_trace_and_density(z3_samples)
+    plot_trace_and_density(theta_samples, 'theta')
+    plot_trace_and_density(z1_samples, 'z1')
+    plot_trace_and_density(z2_samples, 'z2')
+    plot_trace_and_density(z3_samples, 'z3')
     
     _, _ = goodness_of_fit_3PL_plot(
         theta=torch.tensor(theta_samples.mean(axis=0), dtype=torch.float32),
