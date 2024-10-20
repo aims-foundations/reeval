@@ -8,7 +8,7 @@ import wandb
 from utils import item_response_fn_1PL, set_seed, inverse_sigmoid, plot_hard_easy
 
 if __name__ == "__main__":
-    wandb.init(project="hard_easy_test")
+    wandb.init(project="hard_easy_test_old")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
