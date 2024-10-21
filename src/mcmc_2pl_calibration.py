@@ -45,7 +45,7 @@ def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=2000, num
         testtaker_num=testtaker_num,
         response_matrix=response_matrix,
     )
-    mcmc.print_summary()
+    # mcmc.print_summary()
     
     theta_samples = mcmc.get_samples()["theta_hat"]
     z2_samples = mcmc.get_samples()["z2_hat"]

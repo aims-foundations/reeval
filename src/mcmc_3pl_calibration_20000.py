@@ -37,7 +37,7 @@ def model(question_num, testtaker_num, response_matrix):
     
     numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
 
-def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=2000, num_warmup=1000):
+def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=20000, num_warmup=2000):
     rng_key = random.PRNGKey(0)
     rng_key, rng_key_ = random.split(rng_key)
     
@@ -165,8 +165,8 @@ if __name__ == "__main__":
     y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
     testtaker_num, question_num = y.shape
 
-    output_dir = f'../data/mcmc_3pl_calibration/{args.dataset}'
-    plot_dir = f'../plot/mcmc_3pl_calibration'
+    output_dir = f'../data/mcmc_3pl_calibration_20000/{args.dataset}'
+    plot_dir = f'../plot/mcmc_3pl_calibration_20000'
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
