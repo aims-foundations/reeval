@@ -28,7 +28,6 @@ def model(question_num, testtaker_num, response_matrix):
     )
     mask = response_matrix != -1
     numpyro.sample("obs", dist.Bernoulli(prob_matrix[mask]), obs=response_matrix[mask])
-    
     # numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
 
 def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=18000, num_warmup=2000):
