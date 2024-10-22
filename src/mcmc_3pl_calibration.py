@@ -18,7 +18,8 @@ plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
 
 def model(question_num, testtaker_num, response_matrix):
-    z1_hat = numpyro.sample("z1_hat", dist.Beta(0.5, 4).expand((question_num,)))
+    # z1_hat = numpyro.sample("z1_hat", dist.Beta(0.5, 4).expand((question_num,)))
+    z1_hat = jnp.zeros(question_num)
     z2_hat = numpyro.sample("z2_hat", dist.LogNormal(0.0, 1.0).expand((question_num,)))
     z3_hat = numpyro.sample("z3_hat", dist.Normal(0.0, 1.0).expand((question_num,)))
     
@@ -35,10 +36,12 @@ def model(question_num, testtaker_num, response_matrix):
         theta_hat_expanded,
     )
     
-    numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
+    mask = response_matrix != -1
+    numpyro.sample("obs", dist.Bernoulli(prob_matrix[mask]), obs=response_matrix[mask])
+    # numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
 
-def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=2000, num_warmup=1000):
-    rng_key = random.PRNGKey(0)
+def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=18000, num_warmup=2000, key=0):
+    rng_key = random.PRNGKey(key)
     rng_key, rng_key_ = random.split(rng_key)
     
     nuts_kernel = NUTS(model)
@@ -52,7 +55,7 @@ def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=2000, num
     # mcmc.print_summary()
     
     theta_samples = mcmc.get_samples()["theta_hat"]
-    z1_samples = mcmc.get_samples()["z1_hat"]
+    # z1_samples = mcmc.get_samples()["z1_hat"]
     z2_samples = mcmc.get_samples()["z2_hat"]
     z3_samples = mcmc.get_samples()["z3_hat"]
 
@@ -136,20 +139,20 @@ def goodness_of_fit_3PL_plot(
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     return mean_diff, std_diff
-    
-def plot_trace_and_density(samples, var_name):
+
+def plot_trace_and_density(list_of_samples, var_name):
     plt.figure(figsize=(12, 6))
     
     plt.subplot(1, 2, 1)
-    for i in range(5):
-        plt.plot(samples[:, i], alpha=0.3)
+    for sample in list_of_samples:
+        plt.plot(sample, alpha=0.3)
     plt.xlabel('Iteration')
     plt.ylabel(f'{var_name}')
     plt.title(f'Trace Plot of {var_name}')
     
     plt.subplot(1, 2, 2)
-    for i in range(5):
-        sns.kdeplot(samples[:, i], bw_adjust=0.5, alpha=0.3)
+    for sample in list_of_samples:
+        sns.kdeplot(sample, bw_adjust=0.5, alpha=0.3)
     plt.xlabel(f'{var_name}')
     plt.title(f'Posterior Density of {var_name}')
 
@@ -181,22 +184,27 @@ if __name__ == "__main__":
     z3_samples_path = f'{output_dir}/z3_samples.npy'
     
     theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
-        question_num, testtaker_num, y
+        question_num, testtaker_num, y, key=1
     )
     theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
     z1_samples = np.array(z1_samples) # (num_samples, question_num)
     z2_samples = np.array(z2_samples)
     z3_samples = np.array(z3_samples)
 
-    # theta_samples = np.load(theta_samples_path)
-    # z1_samples = np.load(z1_samples_path)
-    # z2_samples = np.load(z2_samples_path)
-    # z3_samples = np.load(z3_samples_path)
+    theta_samples_2 = np.load(theta_samples_path)
+    z1_samples_2 = np.load(z1_samples_path)
+    z2_samples_2 = np.load(z2_samples_path)
+    z3_samples_2 = np.load(z3_samples_path)
     
-    plot_trace_and_density(theta_samples, 'theta')
-    plot_trace_and_density(z1_samples, 'z1')
-    plot_trace_and_density(z2_samples, 'z2')
-    plot_trace_and_density(z3_samples, 'z3')
+    list_of_sample_theta = [theta_samples[:,0], theta_samples_2[:,0]]
+    list_of_sample_z1 = [z1_samples[:,0], z1_samples_2[:,0]]
+    list_of_sample_z2 = [z2_samples[:,0], z2_samples_2[:,0]]
+    list_of_sample_z3 = [z3_samples[:,0], z3_samples_2[:,0]]
+    
+    plot_trace_and_density(list_of_sample_theta, 'theta')
+    plot_trace_and_density(list_of_sample_z1, 'z1')
+    plot_trace_and_density(list_of_sample_z2, 'z2')
+    plot_trace_and_density(list_of_sample_z3, 'z3')
     
     _, _ = goodness_of_fit_3PL_plot(
         theta=torch.tensor(theta_samples.mean(axis=0), dtype=torch.float32),

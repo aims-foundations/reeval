@@ -7,7 +7,7 @@ from numpyro.infer import MCMC, NUTS
 import jax.numpy as jnp
 import jax.random as random
 import pandas as pd
-import wandb
+# import wandb
 from tqdm import tqdm
 import torch
 from utils import item_response_fn_1PL_jnp, set_seed, item_response_fn_1PL
@@ -26,10 +26,12 @@ def model(question_num, testtaker_num, response_matrix):
         z3_hat_expanded,
         theta_hat_expanded,
     )
+    mask = response_matrix != -1
+    numpyro.sample("obs", dist.Bernoulli(prob_matrix[mask]), obs=response_matrix[mask])
     
-    numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
+    # numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
 
-def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=2000, num_warmup=1000):
+def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=18000, num_warmup=2000):
     rng_key = random.PRNGKey(0)
     rng_key, rng_key_ = random.split(rng_key)
     
@@ -41,7 +43,7 @@ def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=2000, num
         testtaker_num=testtaker_num,
         response_matrix=response_matrix,
     )
-    mcmc.print_summary()
+    # mcmc.print_summary()
     
     theta_samples = mcmc.get_samples()["theta_hat"]
     z3_samples = mcmc.get_samples()["z3_hat"]
@@ -119,7 +121,7 @@ def goodness_of_fit_1PL_plot(
     return mean_diff, std_diff
 
 if __name__ == "__main__":
-    wandb.init(project="mcmc_1pl_calibration")
+    # wandb.init(project="mcmc_1pl_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()

@@ -8,7 +8,7 @@ import wandb
 from utils import item_response_fn_1PL, set_seed, inverse_sigmoid, plot_hard_easy
 
 if __name__ == "__main__":
-    wandb.init(project="hard_easy_test")
+    # wandb.init(project="hard_easy_test")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     
     selection_prob = 0.8
     subset_size = 100
-    step_size = 4000
+    step_size = 10000
     iterations = 100
     
     y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
@@ -75,7 +75,7 @@ if __name__ == "__main__":
             loss.backward()
             optim.step()
             
-        wandb.log({'loss': loss.item()})
+        # wandb.log({'loss': loss.item()})
         theta_hats.append(theta_hat.item())
         y_means.append(inverse_sigmoid(y_sub.mean()).item())
     
