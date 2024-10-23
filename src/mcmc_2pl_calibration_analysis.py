@@ -9,7 +9,7 @@ from utils import (
 )
 
 if __name__ == "__main__":
-    DATASETS = [d for d in DATASETS if d != "civil_comments" or d != "imdb" or d != "boolq" or d != "truthful_qa"]
+    DATASETS = [d for d in DATASETS if d != "civil_comments" and d != "imdb" and d != "boolq" and d != "truthful_qa"]
     input_dir = '../data/mcmc_2pl_calibration'
     plot_dir = f'../plot/mcmc_2pl_calibration'
     os.makedirs(plot_dir, exist_ok=True)
