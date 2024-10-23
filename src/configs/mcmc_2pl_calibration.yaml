@@ -1,0 +1,12 @@
+method: grid
+parameters:
+  dataset:
+    values:
+    - airbench
+    - bbq
+    - bold
+    - commonsense
+    - entity_matching
+    - math
+program: mcmc_2pl_calibration.py
+project: mcmc_2pl_calibration
