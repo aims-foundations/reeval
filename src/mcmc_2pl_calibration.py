@@ -33,7 +33,7 @@ def model(question_num, testtaker_num, response_matrix):
     numpyro.sample("obs", dist.Bernoulli(prob_matrix[mask]), obs=response_matrix[mask])
     # numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
 
-def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=18, num_warmup=2, key=0):
+def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=18000, num_warmup=2000, key=0):
     rng_key = random.PRNGKey(key)
     rng_key, rng_key_ = random.split(rng_key)
     
