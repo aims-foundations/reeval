@@ -33,7 +33,7 @@ def model(question_num, testtaker_num, response_matrix):
     numpyro.sample("obs", dist.Bernoulli(prob_matrix[mask]), obs=response_matrix[mask])
     # numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
 
-def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=18000, num_warmup=2000, key=0):
+def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=18, num_warmup=2, key=0):
     rng_key = random.PRNGKey(key)
     rng_key, rng_key_ = random.split(rng_key)
     
@@ -107,6 +107,7 @@ def goodness_of_fit_2PL_plot(
         sample_mean = np.mean(diff_array[indices])
         sample_means.append(sample_mean)
     std_diff = np.std(sample_means)
+    print()
     
     plt.figure(figsize=(10, 6))
     plt.hist(diff_array, bins=40, density=True, alpha=0.4)
@@ -168,6 +169,8 @@ if __name__ == "__main__":
     theta_df.to_csv(theta_path, index=False)
     z2_df.to_csv(z2_path, index=False)
     z3_df.to_csv(z3_path, index=False)
+    
+    
     
     _, _ = goodness_of_fit_2PL_plot(
         theta=torch.tensor(theta_samples.mean(axis=0), dtype=torch.float32),
