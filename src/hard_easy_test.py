@@ -8,7 +8,7 @@ import wandb
 from utils import item_response_fn_1PL, set_seed, inverse_sigmoid, plot_hard_easy
 
 if __name__ == "__main__":
-    # wandb.init(project="hard_easy_test")
+    wandb.init(project="hard_easy_test_old")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     
     selection_prob = 0.8
     subset_size = 100
-    step_size = 10000
+    step_size = 4000
     iterations = 100
     
     y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
@@ -26,14 +26,9 @@ if __name__ == "__main__":
     z = pd.read_csv(f'../data/nonamor_calibration/{args.dataset}/nonamor_z.csv')["z"].values
     assert y.shape[1] == z.shape[0], f"y.shape[1]: {y.shape[1]}, z.shape[0]: {z.shape[0]}"
     assert y.shape[0] == theta.shape[0], f"y.shape[0]: {y.shape[0]}, theta.shape[0]: {theta.shape[0]}"
-
-    # rows in y with more than 500 non -1 values
-    valid_rows_mask = (y != -1).sum(axis=1) > 500
-    theta = theta[valid_rows_mask]
-    y = y[valid_rows_mask]
     
-    # theta value closest to zero
-    min_index = np.argmin(np.abs(theta))
+    count_minus_one = np.sum(y == -1, axis=1)
+    min_index = np.argmin(count_minus_one)
     y = y[min_index]
     theta = theta[min_index]
     assert y.shape == z.shape, f"y.shape: {y.shape}, z.shape: {z.shape}"
@@ -75,24 +70,24 @@ if __name__ == "__main__":
             loss.backward()
             optim.step()
             
-        # wandb.log({'loss': loss.item()})
+        wandb.log({'loss': loss.item()})
         theta_hats.append(theta_hat.item())
         y_means.append(inverse_sigmoid(y_sub.mean()).item())
     
-    save_dir = f'../data/hard_easy_test/{args.dataset}'
+    save_dir = f'../data/hard_easy_test_old/{args.dataset}'
     os.makedirs(save_dir, exist_ok=True)
     df = pd.DataFrame({
         "theta_hat": theta_hats,
         "y_mean": y_means,
     })
-    df.to_csv(f'{save_dir}/hard_easy_test.csv', index=False)
+    df.to_csv(f'{save_dir}/hard_easy_test_old.csv', index=False)
     
-    plot_dir = f'../plot/hard_easy_test'
+    plot_dir = f'../plot/hard_easy_test_old'
     os.makedirs(plot_dir, exist_ok=True)
     plot_hard_easy(
         theta_hats,
         y_means,
         theta, 
         inverse_sigmoid(y.mean()).item(), 
-        f'{plot_dir}/hard_easy_{args.dataset}.png',
+        f'{plot_dir}/hard_easy_old_{args.dataset}.png',
     )

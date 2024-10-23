@@ -157,14 +157,6 @@ if __name__ == "__main__":
     z2_samples = np.array(z2_samples)
     z3_samples = np.array(z3_samples)
     
-    _, _ = goodness_of_fit_2PL_plot(
-        theta=torch.tensor(theta_samples.mean(axis=0), dtype=torch.float32),
-        z2_samples=torch.tensor(z2_samples, dtype=torch.float32),
-        z3_samples=torch.tensor(z3_samples, dtype=torch.float32),
-        y=torch.tensor(y, dtype=torch.float32),
-        plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}",
-    )
-    
     np.save(theta_samples_path, theta_samples)
     np.save(z2_samples_path, z2_samples)
     np.save(z3_samples_path, z3_samples)
@@ -176,3 +168,11 @@ if __name__ == "__main__":
     theta_df.to_csv(theta_path, index=False)
     z2_df.to_csv(z2_path, index=False)
     z3_df.to_csv(z3_path, index=False)
+    
+    _, _ = goodness_of_fit_2PL_plot(
+        theta=torch.tensor(theta_samples.mean(axis=0), dtype=torch.float32),
+        z2_samples=torch.tensor(z2_samples, dtype=torch.float32),
+        z3_samples=torch.tensor(z3_samples, dtype=torch.float32),
+        y=torch.tensor(y, dtype=torch.float32),
+        plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}",
+    )
