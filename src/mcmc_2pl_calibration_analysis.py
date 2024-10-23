@@ -48,8 +48,8 @@ if __name__ == "__main__":
     for dataset in tqdm(DATASETS):
         print(f"Processing {dataset}")
         y = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0).values
-        theta_hat = pd.read_csv(f'{input_dir}/{dataset}/nonamor_theta.csv')['theta'].values
-        # z_hat = pd.read_csv(f'{input_dir}/{dataset}/nonamor_z.csv')['z'].values
+        theta_hat = pd.read_csv(f'{input_dir}/{dataset}/theta.csv')['theta'].values
+        # z_hat = pd.read_csv(f'{input_dir}/{dataset}/z.csv')['z'].values
         
         corr_ctt_mean, corr_ctt_std = theta_corr_ctt_plot(
             theta=theta_hat,
