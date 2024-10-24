@@ -9,7 +9,7 @@ from utils import (
 )
 
 if __name__ == "__main__":
-    DATASETS = [d for d in DATASETS if d != "civil_comments" and d != "imdb" and d != "boolq" and d != "truthful_qa"]
+    DATASETS = [d for d in DATASETS if d != "civil_comments" and d != "imdb"]
     input_dir = '../data/mcmc_2pl_calibration'
     plot_dir = f'../plot/mcmc_2pl_calibration'
     os.makedirs(plot_dir, exist_ok=True)
@@ -22,17 +22,17 @@ if __name__ == "__main__":
         'real_toxicity_prompts': [0.9, 0.0],
         # 'civil_comments': [0.0, 0.0],
         # 'imdb': [0.0, 0.0],
-        # 'boolq': [0.0, 0.0],
+        'boolq': [0.79, 0.0],
         'wikifact': [0.85, 0.0],
         'babi_qa': [0.79, 0.0],
         'mmlu': [0.94, 0.0],
-        # 'truthful_qa': [0.0, 0.0],
+        'truthful_qa': [0.78, 0.0],
         'legal_support': [0.84, 0.0],
         'synthetic_reasoning': [0.92, 0.0],
         'quac': [0.95, 0.0],
-        'entity_matching': [0.79, 0.0],
+        'entity_matching': [0.83, 0.0],
         'synthetic_reasoning_natural': [0.89, 0.0],
-        'bbq': [0.77, 0.0],
+        'bbq': [0.78, 0.0],
         'raft': [0.8, 0.0],
         'narrative_qa': [0.58, 0.0],
         'commonsense': [0.78, 0.0],
