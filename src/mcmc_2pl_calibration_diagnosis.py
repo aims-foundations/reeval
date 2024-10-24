@@ -8,34 +8,28 @@ import jax.numpy as jnp
 import jax.random as random
 import pandas as pd
 import wandb
+import seaborn as sns
 from tqdm import tqdm
 import torch
-from utils import item_response_fn_3PL_jnp, set_seed, item_response_fn_3PL
-import seaborn as sns
+from utils import item_response_fn_2PL_jnp, set_seed, item_response_fn_2PL
 import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
 
 def model(question_num, testtaker_num, response_matrix):
-    # z1_hat = numpyro.sample("z1_hat", dist.Beta(0.5, 4).expand((question_num,)))
-    z1_hat = jnp.zeros(question_num)
     z2_hat = numpyro.sample("z2_hat", dist.LogNormal(0.0, 1.0).expand((question_num,)))
     z3_hat = numpyro.sample("z3_hat", dist.Normal(0.0, 1.0).expand((question_num,)))
-    
     theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0).expand((testtaker_num,)))
     
-    z1_hat_expanded = jnp.expand_dims(z1_hat, 0)  # Shape: (1, question_num)
     z2_hat_expanded = jnp.expand_dims(z2_hat, 0)  # Shape: (1, question_num)
     z3_hat_expanded = jnp.expand_dims(z3_hat, 0)  # Shape: (1, question_num)
     theta_hat_expanded = jnp.expand_dims(theta_hat, 1)  # Shape: (testtaker_num, 1)
-    prob_matrix = item_response_fn_3PL_jnp(
-        z1_hat_expanded,
+    prob_matrix = item_response_fn_2PL_jnp(
         z2_hat_expanded,
         z3_hat_expanded,
         theta_hat_expanded,
     )
-    
     mask = response_matrix != -1
     numpyro.sample("obs", dist.Bernoulli(prob_matrix[mask]), obs=response_matrix[mask])
     # numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
@@ -55,15 +49,12 @@ def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=18000, nu
     # mcmc.print_summary()
     
     theta_samples = mcmc.get_samples()["theta_hat"]
-    # z1_samples = mcmc.get_samples()["z1_hat"]
     z2_samples = mcmc.get_samples()["z2_hat"]
     z3_samples = mcmc.get_samples()["z3_hat"]
+    return theta_samples, z2_samples, z3_samples
 
-    return theta_samples, z1_samples, z2_samples, z3_samples
-
-def goodness_of_fit_3PL(
+def goodness_of_fit_2PL(
     theta: torch.Tensor,
-    z1_samples: torch.Tensor,
     z2_samples: torch.Tensor,
     z3_samples: torch.Tensor,
     y: torch.Tensor,
@@ -75,7 +66,6 @@ def goodness_of_fit_3PL(
 
     diff_list = []
     for i in tqdm(range(y.shape[1])):
-        single_z1_samples = z1_samples[:, i]
         single_z2_samples = z2_samples[:, i]
         single_z3_samples = z3_samples[:, i]
         y_col = y[:, i]
@@ -86,8 +76,7 @@ def goodness_of_fit_3PL(
                 y_empirical = y_col[bin_mask].mean()
 
                 theta_mid = (bins[j] + bins[j + 1]) / 2
-                y_theoretical = item_response_fn_3PL(
-                    single_z1_samples,
+                y_theoretical = item_response_fn_2PL(
                     single_z2_samples,
                     single_z3_samples,
                     theta_mid
@@ -100,17 +89,16 @@ def goodness_of_fit_3PL(
     mean_diff = diff_array.mean()
     return mean_diff, diff_array
 
-def goodness_of_fit_3PL_plot(
+def goodness_of_fit_2PL_plot(
     theta: torch.Tensor,
-    z1_samples: torch.Tensor,
     z2_samples: torch.Tensor,
     z3_samples: torch.Tensor,
     y: torch.Tensor,
     plot_path: str,
     bin_size: int=6,
 ):
-    mean_diff, diff_array = goodness_of_fit_3PL(
-        theta, z1_samples, z2_samples, z3_samples, y, bin_size
+    mean_diff, diff_array = goodness_of_fit_2PL(
+        theta, z2_samples, z3_samples, y, bin_size
     )
     sample_means = []
     for _ in range(100):
@@ -159,7 +147,7 @@ def plot_trace_and_density(list_of_samples, var_name):
     plt.savefig(f"../mcmc_diagnostic_{var_name}.png")
     
 if __name__ == "__main__":
-    # wandb.init(project="mcmc_3pl_calibration")
+    wandb.init(project="mcmc_2pl_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
@@ -168,64 +156,34 @@ if __name__ == "__main__":
     y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
     testtaker_num, question_num = y.shape
 
-    output_dir = f'../data/mcmc_3pl_calibration/{args.dataset}'
-    plot_dir = f'../plot/mcmc_3pl_calibration'
+    output_dir = f'../data/mcmc_2pl_calibration/{args.dataset}'
+    plot_dir = f'../plot/mcmc_2pl_calibration'
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
     theta_path = f'{output_dir}/theta.csv'
-    z1_path = f'{output_dir}/z1.csv'
     z2_path = f'{output_dir}/z2.csv'
     z3_path = f'{output_dir}/z3.csv'
     
     theta_samples_path = f'{output_dir}/theta_samples.npy'
-    z1_samples_path = f'{output_dir}/z1_samples.npy'
     z2_samples_path = f'{output_dir}/z2_samples.npy'
     z3_samples_path = f'{output_dir}/z3_samples.npy'
     
-    theta_samples, z1_samples, z2_samples, z3_samples = irt_mcmc(
-        question_num, testtaker_num, y, key=1
+    theta_samples, z2_samples, z3_samples = irt_mcmc(
+        question_num, testtaker_num, y
     )
     theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
-    z1_samples = np.array(z1_samples) # (num_samples, question_num)
     z2_samples = np.array(z2_samples)
     z3_samples = np.array(z3_samples)
-
-    # theta_samples_2 = np.load(theta_samples_path)
-    # z1_samples_2 = np.load(z1_samples_path)
-    # z2_samples_2 = np.load(z2_samples_path)
-    # z3_samples_2 = np.load(z3_samples_path)
     
-    # list_of_sample_theta = [theta_samples[:,0], theta_samples_2[:,0]]
-    # list_of_sample_z1 = [z1_samples[:,0], z1_samples_2[:,0]]
-    # list_of_sample_z2 = [z2_samples[:,0], z2_samples_2[:,0]]
-    # list_of_sample_z3 = [z3_samples[:,0], z3_samples_2[:,0]]
+    theta_samples_2 = np.load(theta_samples_path)
+    z2_samples_2 = np.load(z2_samples_path)
+    z3_samples_2 = np.load(z3_samples_path)
     
-    # plot_trace_and_density(list_of_sample_theta, 'theta')
-    # plot_trace_and_density(list_of_sample_z1, 'z1')
-    # plot_trace_and_density(list_of_sample_z2, 'z2')
-    # plot_trace_and_density(list_of_sample_z3, 'z3')
+    list_of_sample_theta = [theta_samples[:,0], theta_samples_2[:,0]]
+    list_of_sample_z2 = [z2_samples[:,0], z2_samples_2[:,0]]
+    list_of_sample_z3 = [z3_samples[:,0], z3_samples_2[:,0]]
     
-    _, _ = goodness_of_fit_3PL_plot(
-        theta=torch.tensor(theta_samples.mean(axis=0), dtype=torch.float32),
-        z1_samples=torch.tensor(z1_samples, dtype=torch.float32),
-        z2_samples=torch.tensor(z2_samples, dtype=torch.float32),
-        z3_samples=torch.tensor(z3_samples, dtype=torch.float32),
-        y=torch.tensor(y, dtype=torch.float32),
-        plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}",
-    )
-    
-    np.save(theta_samples_path, theta_samples)
-    np.save(z1_samples_path, z1_samples)
-    np.save(z2_samples_path, z2_samples)
-    np.save(z3_samples_path, z3_samples)
-    
-    theta_df = pd.DataFrame({'theta': theta_samples.mean(axis=0)})
-    z1_df = pd.DataFrame({'z1': z1_samples.mean(axis=0)})
-    z2_df = pd.DataFrame({'z2': z2_samples.mean(axis=0)})
-    z3_df = pd.DataFrame({'z3': z3_samples.mean(axis=0)})
-    
-    theta_df.to_csv(theta_path, index=False)
-    z1_df.to_csv(z1_path, index=False)
-    z2_df.to_csv(z2_path, index=False)
-    z3_df.to_csv(z3_path, index=False)
+    plot_trace_and_density(list_of_sample_theta, 'theta')
+    plot_trace_and_density(list_of_sample_z2, 'z2')
+    plot_trace_and_density(list_of_sample_z3, 'z3')

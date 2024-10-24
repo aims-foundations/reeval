@@ -123,7 +123,7 @@ set.seed(42)
 np <- 2
 iter <- 1
 
-arg <- "airbench"
+arg <- "twitter_aae"
 
 theta <- rep(0.5, np)
 
