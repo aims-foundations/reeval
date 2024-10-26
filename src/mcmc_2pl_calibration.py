@@ -17,7 +17,7 @@ plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
 
 def model(question_num, testtaker_num, response_matrix):
-    z2_hat = numpyro.sample("z2_hat", dist.LogNormal(0.0, 1.0).expand((question_num,)))
+    z2_hat = numpyro.sample("z2_hat", dist.Normal(0.0, 1.0).expand((question_num,)))
     z3_hat = numpyro.sample("z3_hat", dist.Normal(0.0, 1.0).expand((question_num,)))
     theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0).expand((testtaker_num,)))
     
@@ -128,7 +128,7 @@ def goodness_of_fit_2PL_plot(
     return mean_diff, std_diff
     
 if __name__ == "__main__":
-    wandb.init(project="mcmc_2pl_calibration")
+    # wandb.init(project="mcmc_2pl_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
@@ -150,36 +150,36 @@ if __name__ == "__main__":
     z2_samples_path = f'{output_dir}/z2_samples.npy'
     z3_samples_path = f'{output_dir}/z3_samples.npy'
     
-    # theta_samples, z2_samples, z3_samples = irt_mcmc(
-    #     question_num, testtaker_num, y
-    # )
-    # theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
-    # z2_samples = np.array(z2_samples)
-    # z3_samples = np.array(z3_samples)
+    theta_samples, z2_samples, z3_samples = irt_mcmc(
+        question_num, testtaker_num, y
+    )
+    theta_samples = np.array(theta_samples) # (num_samples, testtaker_num)
+    z2_samples = np.array(z2_samples)
+    z3_samples = np.array(z3_samples)
     
-    theta_hat = pd.read_csv(theta_path)['theta'].values
-    z2_samples = np.load(z2_samples_path)
-    z3_samples = np.load(z3_samples_path)
+    np.save(theta_samples_path, theta_samples)
+    np.save(z2_samples_path, z2_samples)
+    np.save(z3_samples_path, z3_samples)
     
-    # np.save(theta_samples_path, theta_samples)
-    # np.save(z2_samples_path, z2_samples)
-    # np.save(z3_samples_path, z3_samples)
+    theta_df = pd.DataFrame({'theta': theta_samples.mean(axis=0)})
+    z2_df = pd.DataFrame({'z2': z2_samples.mean(axis=0)})
+    z3_df = pd.DataFrame({'z3': z3_samples.mean(axis=0)})
     
-    # theta_df = pd.DataFrame({'theta': theta_samples.mean(axis=0)})
-    # z2_df = pd.DataFrame({'z2': z2_samples.mean(axis=0)})
-    # z3_df = pd.DataFrame({'z3': z3_samples.mean(axis=0)})
+    theta_df.to_csv(theta_path, index=False)
+    z2_df.to_csv(z2_path, index=False)
+    z3_df.to_csv(z3_path, index=False)
     
-    # theta_df.to_csv(theta_path, index=False)
-    # z2_df.to_csv(z2_path, index=False)
-    # z3_df.to_csv(z3_path, index=False)
+    # theta_hat = pd.read_csv(theta_path)['theta'].values
+    # z2_samples = np.load(z2_samples_path)
+    # z3_samples = np.load(z3_samples_path)
     
-    # _, _ = goodness_of_fit_2PL_plot(
-    #     theta=torch.tensor(theta_hat, dtype=torch.float32),
-    #     z2_samples=torch.tensor(z2_samples, dtype=torch.float32),
-    #     z3_samples=torch.tensor(z3_samples, dtype=torch.float32),
-    #     y=torch.tensor(y, dtype=torch.float32),
-    #     plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}",
-    # )
+    _, _ = goodness_of_fit_2PL_plot(
+        theta=torch.tensor(theta_hat, dtype=torch.float32),
+        z2_samples=torch.tensor(z2_samples, dtype=torch.float32),
+        z3_samples=torch.tensor(z3_samples, dtype=torch.float32),
+        y=torch.tensor(y, dtype=torch.float32),
+        plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}",
+    )
     
     _, _ = theta_corr_ctt_plot(
         theta=theta_hat,

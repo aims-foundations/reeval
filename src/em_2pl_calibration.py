@@ -11,7 +11,7 @@ import torch.optim as optim
 def em_2pl_calibration(
     response_matrix: torch.Tensor,
     max_epoch: int=3000,
-    num_node: int=20,
+    num_node: int=3,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     response_matrix = response_matrix.to(device)
@@ -22,9 +22,12 @@ def em_2pl_calibration(
     theta_matrix = theta_nodes[None, :].repeat(num_model, 1) # (num_model, num_node)
     weights = torch.tensor(weights, device=device)
     
-    z2_hat = torch.distributions.LogNormal(0.0, 1.0).sample(
-        (num_item,)
-    ).to(device).requires_grad_(True)
+    z2_hat = torch.normal(
+        mean=0.0, std=1.0,
+        size=(num_item,),
+        requires_grad=True,
+        device=device
+    )
     z3_hat = torch.normal(
         mean=0.0, std=1.0,
         size=(num_item,),
@@ -35,8 +38,6 @@ def em_2pl_calibration(
     
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
-        z2_hat.data = z2_hat.data / torch.mean(z2_hat.data)
-        
         theta_matrix_expand = theta_matrix.unsqueeze(1) # (num_model, 1, num_node)
         z2_hat_matrix = z2_hat.unsqueeze(0)
         z3_hat_matrix = z3_hat.unsqueeze(0)

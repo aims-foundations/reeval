@@ -7,7 +7,7 @@ from tqdm import tqdm
 from utils import item_response_fn_2PL, set_seed, goodness_of_fit_2PL_plot, theta_corr_ctt_plot
 import torch.optim as optim
 
-def mle_2pl_calibration(
+def mle_2pl_calibration_norm(
     response_matrix: torch.Tensor,
     max_epoch: int=3000,
 ):
@@ -30,24 +30,11 @@ def mle_2pl_calibration(
     )
     optimizer = optim.Adam([theta_hat, z2_hat, z3_hat], lr=0.01)
     
-    last_theta_hat = None
-    last_z2_hat = None
-    last_z3_hat = None
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
-        if not (torch.isnan(theta_hat).any() or torch.isnan(z2_hat).any() or torch.isnan(z3_hat).any()):
-            last_theta_hat = theta_hat.cpu().detach().clone()
-            last_z2_hat = z2_hat.cpu().detach().clone()
-            last_z3_hat = z3_hat.cpu().detach().clone()
-        else:
-            break
-        
-        # theta_hat_norm = (theta_hat - theta_hat.mean()) / theta_hat.std()
-        # z2_hat_norm = (z2_hat - z2_hat.mean()) / z2_hat.std()
-        # z3_hat_norm = (z3_hat - z3_hat.mean()) / z3_hat.std()
-        
+        z2_hat_norm = z2_hat / torch.mean(z2_hat)
         theta_hat_matrix = theta_hat.unsqueeze(1)
-        z2_hat_matrix = z2_hat.unsqueeze(0)
+        z2_hat_matrix = z2_hat_norm.unsqueeze(0)
         z3_hat_matrix = z3_hat.unsqueeze(0)
         prob_matrix = item_response_fn_2PL(z2_hat_matrix, z3_hat_matrix, theta_hat_matrix)
         assert prob_matrix.shape == response_matrix.shape
@@ -59,39 +46,30 @@ def mle_2pl_calibration(
         berns = torch.distributions.Bernoulli(masked_prob_matrix)
         loss = -berns.log_prob(masked_response_matrix).mean()
         loss.backward()
-        # torch.nn.utils.clip_grad_value_([theta_hat, z2_hat, z3_hat], clip_value=1.0)
         
-        # print(f"Gradients:")
-        # for name, param in zip(['theta_hat', 'z2_hat', 'z3_hat'], [theta_hat, z2_hat, z3_hat]):
-        #     print(f"{name} grad: {param.grad}")
-
-        #     nan_indices = torch.nonzero(torch.isnan(param.grad)).squeeze()
-        #     if nan_indices.numel() > 0:
-        #         print(f"{name} grad NaN indices: {nan_indices.cpu().numpy()}")
-                
         optimizer.step()
         optimizer.zero_grad()
 
         pbar.set_postfix({'loss': loss.item()})
-        wandb.log({'loss': loss.item()})
+        # wandb.log({'loss': loss.item()})
         
-    return last_theta_hat, last_z2_hat, last_z3_hat
+    return theta_hat, z2_hat_norm, z3_hat
 
 if __name__ == "__main__":
-    wandb.init(project="mle_2pl_calibration")
+    # wandb.init(project="mle_2pl_calibration_norm")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
     
     set_seed(42)
     input_dir = '../data/pre_calibration/'
-    output_dir = f'../data/mle_2pl_calibration/{args.dataset}'
-    plot_dir = f'../plot/mle_2pl_calibration/{args.dataset}'
+    output_dir = f'../data/mle_2pl_calibration_norm/{args.dataset}'
+    plot_dir = f'../plot/mle_2pl_calibration_norm/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
     y = pd.read_csv(f'{input_dir}/{args.dataset}/matrix.csv', index_col=0).values
-    theta_hat, z2_hat, z3_hat = mle_2pl_calibration(torch.tensor(y, dtype=torch.float32))
+    theta_hat, z2_hat, z3_hat = mle_2pl_calibration_norm(torch.tensor(y, dtype=torch.float32))
     
     z_df = pd.DataFrame({
         'z2': z2_hat.cpu().detach().numpy(),
