@@ -33,7 +33,7 @@ def model(question_num, testtaker_num, response_matrix):
     numpyro.sample("obs", dist.Bernoulli(prob_matrix[mask]), obs=response_matrix[mask])
     # numpyro.sample("obs", dist.Bernoulli(prob_matrix), obs=response_matrix)
 
-def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=18000, num_warmup=2000, key=0):
+def irt_mcmc(question_num, testtaker_num, response_matrix, num_samples=9000, num_warmup=1000, key=0):
     rng_key = random.PRNGKey(key)
     rng_key, rng_key_ = random.split(rng_key)
     
@@ -128,7 +128,7 @@ def goodness_of_fit_2PL_plot(
     return mean_diff, std_diff
     
 if __name__ == "__main__":
-    # wandb.init(project="mcmc_2pl_calibration")
+    # wandb.init(project="em_2pl_calibration_prior")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
@@ -137,8 +137,8 @@ if __name__ == "__main__":
     y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
     testtaker_num, question_num = y.shape
 
-    output_dir = f'../data/mcmc_2pl_calibration/{args.dataset}'
-    plot_dir = f'../plot/mcmc_2pl_calibration'
+    output_dir = f'../data/em_2pl_calibration_prior/{args.dataset}'
+    plot_dir = f'../plot/em_2pl_calibration_prior'
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
@@ -161,7 +161,8 @@ if __name__ == "__main__":
     np.save(z2_samples_path, z2_samples)
     np.save(z3_samples_path, z3_samples)
     
-    theta_df = pd.DataFrame({'theta': theta_samples.mean(axis=0)})
+    theta_hat = theta_samples.mean(axis=0)
+    theta_df = pd.DataFrame({'theta': theta_hat})
     z2_df = pd.DataFrame({'z2': z2_samples.mean(axis=0)})
     z3_df = pd.DataFrame({'z3': z3_samples.mean(axis=0)})
     
