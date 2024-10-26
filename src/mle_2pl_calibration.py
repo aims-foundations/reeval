@@ -4,7 +4,7 @@ import torch
 import wandb
 import pandas as pd
 from tqdm import tqdm
-from utils import item_response_fn_2PL, set_seed
+from utils import item_response_fn_2PL, set_seed, goodness_of_fit_2PL_plot, theta_corr_ctt_plot
 import torch.optim as optim
 
 def mle_2pl_calibration(
@@ -61,13 +61,13 @@ def mle_2pl_calibration(
         loss.backward()
         # torch.nn.utils.clip_grad_value_([theta_hat, z2_hat, z3_hat], clip_value=1.0)
         
-        print(f"Gradients:")
-        for name, param in zip(['theta_hat', 'z2_hat', 'z3_hat'], [theta_hat, z2_hat, z3_hat]):
-            print(f"{name} grad: {param.grad}")
+        # print(f"Gradients:")
+        # for name, param in zip(['theta_hat', 'z2_hat', 'z3_hat'], [theta_hat, z2_hat, z3_hat]):
+        #     print(f"{name} grad: {param.grad}")
 
-            nan_indices = torch.nonzero(torch.isnan(param.grad)).squeeze()
-            if nan_indices.numel() > 0:
-                print(f"{name} grad NaN indices: {nan_indices.cpu().numpy()}")
+        #     nan_indices = torch.nonzero(torch.isnan(param.grad)).squeeze()
+        #     if nan_indices.numel() > 0:
+        #         print(f"{name} grad NaN indices: {nan_indices.cpu().numpy()}")
                 
         optimizer.step()
         optimizer.zero_grad()
@@ -86,7 +86,9 @@ if __name__ == "__main__":
     set_seed(42)
     input_dir = '../data/pre_calibration/'
     output_dir = f'../data/mle_2pl_calibration/{args.dataset}'
+    plot_dir = f'../plot/mle_2pl_calibration/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(plot_dir, exist_ok=True)
     
     y = pd.read_csv(f'{input_dir}/{args.dataset}/matrix.csv', index_col=0).values
     theta_hat, z2_hat, z3_hat = mle_2pl_calibration(torch.tensor(y, dtype=torch.float32))
@@ -98,4 +100,18 @@ if __name__ == "__main__":
     z_df.to_csv(f"{output_dir}/z.csv", index=False)
     theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=["theta"])
     theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
+
+    _, _ = goodness_of_fit_2PL_plot(
+        z2=z2_hat.cpu().detach(),        
+        z3=z3_hat.cpu().detach(),                        
+        theta=theta_hat.cpu().detach(),
+        y=torch.tensor(y, dtype=torch.float32),
+        plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}.png"
+    )
+    
+    _, _ = theta_corr_ctt_plot(
+        theta=theta_hat.cpu().detach().numpy(),
+        y=y,
+        plot_path=f"{plot_dir}/theta_corr_ctt_{args.dataset}",
+    )
     

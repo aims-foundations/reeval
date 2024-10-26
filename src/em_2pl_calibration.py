@@ -5,13 +5,13 @@ import torch
 import wandb
 import pandas as pd
 from tqdm import tqdm
-from utils import item_response_fn_1PL, set_seed, goodness_of_fit_1PL_plot, theta_corr_ctt_plot
+from utils import item_response_fn_2PL, set_seed, goodness_of_fit_2PL_plot, theta_corr_ctt_plot
 import torch.optim as optim
 
-def em_calibration(
+def em_2pl_calibration(
     response_matrix: torch.Tensor,
     max_epoch: int=3000,
-    num_node: int=10,
+    num_node: int=20,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     response_matrix = response_matrix.to(device)
@@ -22,21 +22,27 @@ def em_calibration(
     theta_matrix = theta_nodes[None, :].repeat(num_model, 1) # (num_model, num_node)
     weights = torch.tensor(weights, device=device)
     
-    z_hat = torch.normal(
+    z2_hat = torch.distributions.LogNormal(0.0, 1.0).sample(
+        (num_item,)
+    ).to(device).requires_grad_(True)
+    z3_hat = torch.normal(
         mean=0.0, std=1.0,
         size=(num_item,),
         requires_grad=True,
         device=device
     )
-    optimizer = optim.Adam([z_hat], lr=0.01)
+    optimizer = optim.Adam([z2_hat, z3_hat], lr=0.01)
     
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
+        z2_hat.data = z2_hat.data / torch.mean(z2_hat.data)
+        
         theta_matrix_expand = theta_matrix.unsqueeze(1) # (num_model, 1, num_node)
-        z_hat_matrix = z_hat.unsqueeze(0)
+        z2_hat_matrix = z2_hat.unsqueeze(0)
+        z3_hat_matrix = z3_hat.unsqueeze(0)
         prob_matrixes = torch.zeros(num_model, num_item, num_node)
         for i in range(num_node):
-            prob_matrix = item_response_fn_1PL(z_hat_matrix, theta_matrix_expand[:,:,i])
+            prob_matrix = item_response_fn_2PL(z2_hat_matrix, z3_hat_matrix, theta_matrix_expand[:,:,i])
             mult = torch.exp(theta_nodes[i]**2 / 2) / torch.sqrt(torch.tensor(2 * torch.pi))
             prob_matrixes[:, :, i] = prob_matrix * mult * weights[i]
             
@@ -56,11 +62,12 @@ def em_calibration(
         pbar.set_postfix({'loss': loss.item()})
         # wandb.log({'loss': loss.item()})
 
-    return z_hat
+    return z2_hat, z3_hat
 
 def fit_theta_mle(
     response_matrix: torch.Tensor,
-    z: torch.Tensor,
+    z2: torch.Tensor,
+    z3: torch.Tensor,
     max_epoch: int=3000,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -78,8 +85,9 @@ def fit_theta_mle(
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
         theta_hat_matrix = theta_hat.unsqueeze(1)
-        z_matrix = z.unsqueeze(0)
-        prob_matrix = item_response_fn_1PL(z_matrix, theta_hat_matrix)
+        z2_matrix = z2.unsqueeze(0)
+        z3_matrix = z3.unsqueeze(0)
+        prob_matrix = item_response_fn_2PL(z2_matrix, z3_matrix, theta_hat_matrix)
         
         mask = response_matrix != -1
         masked_response_matrix = response_matrix.flatten()[mask.flatten()]
@@ -95,31 +103,35 @@ def fit_theta_mle(
     return theta_hat
 
 if __name__ == "__main__":
-    # wandb.init(project="em_1pl_calibration")
+    # wandb.init(project="em_2pl_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
     
     set_seed(42)
     input_dir = '../data/pre_calibration'
-    output_dir = f'../data/em_1pl_calibration/{args.dataset}'
-    plot_dir = f'../plot/em_1pl_calibration/{args.dataset}'
+    output_dir = f'../data/em_2pl_calibration/{args.dataset}'
+    plot_dir = f'../plot/em_2pl_calibration/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
     y = pd.read_csv(f'{input_dir}/{args.dataset}/matrix.csv', index_col=0).values
-    z_hat = em_calibration(torch.tensor(y, dtype=torch.float32))
+    z2_hat, z3_hat = em_2pl_calibration(torch.tensor(y, dtype=torch.float32))
     
-    z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
+    z_df = pd.DataFrame({
+        "z2": z2_hat.cpu().detach().numpy(),
+        "z3": z3_hat.cpu().detach().numpy(),
+    })
     z_df.to_csv(f"{output_dir}/z.csv", index=False)
 
-    theta_hat = fit_theta_mle(torch.tensor(y, dtype=torch.float32), z_hat)
+    theta_hat = fit_theta_mle(torch.tensor(y, dtype=torch.float32), z2_hat, z3_hat)
     theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=["theta"])
     theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
     
-    _, _ = goodness_of_fit_1PL_plot(
-        z=z_hat,                                
-        theta=theta_hat,
+    _, _ = goodness_of_fit_2PL_plot(
+        z2=z2_hat.cpu().detach(),        
+        z3=z3_hat.cpu().detach(),                        
+        theta=theta_hat.cpu().detach(),
         y=torch.tensor(y, dtype=torch.float32),
         plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}.png"
     )

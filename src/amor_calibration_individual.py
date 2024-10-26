@@ -114,7 +114,6 @@ if __name__ == "__main__":
     parser.add_argument('--dataset', type=str, required=True)
     parser.add_argument('--seed', type=int, required=True)
     parser.add_argument('--model', type=str, default='mlp', choices=['mlp'])
-    parser.add_argument('--task', type=str, default='byrandom', choices=['byrandom', 'bydataset'])
     args = parser.parse_args()
     
     input_dir = '../data/pre_calibration/'
@@ -122,25 +121,23 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     
     set_seed(args.seed)
-    if args.dataset != 'aggregate':
-        assert args.task == 'byrandom'
-        dataset = load_dataset(f'stair-lab/reeval_individual-embed', split=args.dataset)
-        emb = np.array(dataset['embed'])
-        z = np.array(dataset['z'])
-        
-        train_indices, test_indices = split_indices(z.shape[0])    
-        emb_train, z_train_true = emb[train_indices], z[train_indices]
-        emb_test, z_test_true = emb[test_indices], z[test_indices]
+    dataset = load_dataset(f'stair-lab/reeval_individual-embed', split=args.dataset)
+    emb = np.array(dataset['embed'])
+    z = np.array(dataset['z'])
+    
+    train_indices, test_indices = split_indices(z.shape[0])    
+    emb_train, z_train_true = emb[train_indices], z[train_indices]
+    emb_test, z_test_true = emb[test_indices], z[test_indices]
 
-        y = pd.read_csv(f'{input_dir}/{args.dataset}/matrix.csv', index_col=0).values
-        y_train = y[:, train_indices]
+    y = pd.read_csv(f'{input_dir}/{args.dataset}/matrix.csv', index_col=0).values
+    y_train = y[:, train_indices]
 
-        main(
-            train_indices, test_indices,
-            emb_train, z_train_true, 
-            emb_test, z_test_true,
-            y_train,
-            df_z_train_path=f'{output_dir}/z_train_{args.seed}.csv',
-            df_z_test_path=f'{output_dir}/z_test_{args.seed}.csv',
-            df_theta_path=f'{output_dir}/theta_{args.seed}.csv',
-        )
+    main(
+        train_indices, test_indices,
+        emb_train, z_train_true, 
+        emb_test, z_test_true,
+        y_train,
+        df_z_train_path=f'{output_dir}/z_train_{args.seed}.csv',
+        df_z_test_path=f'{output_dir}/z_test_{args.seed}.csv',
+        df_theta_path=f'{output_dir}/theta_{args.seed}.csv',
+    )

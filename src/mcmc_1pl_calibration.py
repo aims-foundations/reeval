@@ -10,7 +10,7 @@ import pandas as pd
 # import wandb
 from tqdm import tqdm
 import torch
-from utils import item_response_fn_1PL_jnp, set_seed, item_response_fn_1PL
+from utils import item_response_fn_1PL_jnp, set_seed, item_response_fn_1PL, theta_corr_ctt_plot
 import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
@@ -149,18 +149,27 @@ if __name__ == "__main__":
     # theta_hat = pd.read_csv(theta_path)['theta'].values
     # z3_samples = np.load(z3_samples_path)
     
+    np.save(theta_samples_path, theta_samples)
+    np.save(z3_samples_path, z3_samples)
+    
+    theta_hat = theta_samples.mean(axis=0)
+    theta_df = pd.DataFrame({'theta': theta_samples.mean(axis=0)})
+    z3_df = pd.DataFrame({'z3': z3_samples.mean(axis=0)})
+    
+    theta_df.to_csv(theta_path, index=False)
+    z3_df.to_csv(z3_path, index=False)
+    
     _, _ = goodness_of_fit_1PL_plot(
-        theta=torch.tensor(theta_samples.mean(axis=0), dtype=torch.float32),
+        theta=torch.tensor(theta_hat, dtype=torch.float32),
         z3_samples=torch.tensor(z3_samples, dtype=torch.float32),
         y=torch.tensor(y, dtype=torch.float32),
         plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}",
     )
     
-    # np.save(theta_samples_path, theta_samples)
-    # np.save(z3_samples_path, z3_samples)
+    _, _ = theta_corr_ctt_plot(
+        theta=theta_hat.cpu().detach().numpy(),
+        y=y,
+        plot_path=f"{plot_dir}/theta_corr_ctt_{args.dataset}",
+    )
     
-    # theta_df = pd.DataFrame({'theta': theta_samples.mean(axis=0)})
-    # z3_df = pd.DataFrame({'z3': z3_samples.mean(axis=0)})
-    
-    # theta_df.to_csv(theta_path, index=False)
-    # z3_df.to_csv(z3_path, index=False)
+   
