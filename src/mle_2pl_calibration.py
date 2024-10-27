@@ -7,7 +7,7 @@ from tqdm import tqdm
 from utils import item_response_fn_2PL, set_seed, goodness_of_fit_2PL_plot, theta_corr_ctt_plot
 import torch.optim as optim
 
-def mle_2pl_calibration_norm(
+def mle_2pl_calibration(
     response_matrix: torch.Tensor,
     max_epoch: int=3000,
 ):
@@ -19,7 +19,7 @@ def mle_2pl_calibration_norm(
         requires_grad=True,
         device=device
     )
-    z2_hat = torch.distributions.LogNormal(0.0, 1.0).sample(
+    z2_hat = torch.distributions.LogNormal(0.0, 0.5).sample(
         (response_matrix.size(1),)
     ).to(device).requires_grad_(True)
     z3_hat = torch.normal(
@@ -32,9 +32,8 @@ def mle_2pl_calibration_norm(
     
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
-        z2_hat_norm = z2_hat / torch.mean(z2_hat)
         theta_hat_matrix = theta_hat.unsqueeze(1)
-        z2_hat_matrix = z2_hat_norm.unsqueeze(0)
+        z2_hat_matrix = z2_hat.unsqueeze(0)
         z3_hat_matrix = z3_hat.unsqueeze(0)
         prob_matrix = item_response_fn_2PL(z2_hat_matrix, z3_hat_matrix, theta_hat_matrix)
         assert prob_matrix.shape == response_matrix.shape
@@ -53,23 +52,23 @@ def mle_2pl_calibration_norm(
         pbar.set_postfix({'loss': loss.item()})
         # wandb.log({'loss': loss.item()})
         
-    return theta_hat, z2_hat_norm, z3_hat
+    return theta_hat, z2_hat, z3_hat
 
 if __name__ == "__main__":
-    # wandb.init(project="mle_2pl_calibration_norm")
+    # wandb.init(project="mle_2pl_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
     
     set_seed(42)
     input_dir = '../data/pre_calibration/'
-    output_dir = f'../data/mle_2pl_calibration_norm/{args.dataset}'
-    plot_dir = f'../plot/mle_2pl_calibration_norm/{args.dataset}'
+    output_dir = f'../data/mle_2pl_calibration/{args.dataset}'
+    plot_dir = f'../plot/mle_2pl_calibration/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
     y = pd.read_csv(f'{input_dir}/{args.dataset}/matrix.csv', index_col=0).values
-    theta_hat, z2_hat, z3_hat = mle_2pl_calibration_norm(torch.tensor(y, dtype=torch.float32))
+    theta_hat, z2_hat, z3_hat = mle_2pl_calibration(torch.tensor(y, dtype=torch.float64))
     
     z_df = pd.DataFrame({
         'z2': z2_hat.cpu().detach().numpy(),
@@ -80,10 +79,10 @@ if __name__ == "__main__":
     theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
 
     _, _ = goodness_of_fit_2PL_plot(
-        z2=z2_hat.cpu().detach(),        
-        z3=z3_hat.cpu().detach(),                        
-        theta=theta_hat.cpu().detach(),
-        y=torch.tensor(y, dtype=torch.float32),
+        z2=z2_hat.clone().detach(),        
+        z3=z3_hat.clone().detach(),                        
+        theta=theta_hat.clone().detach(),
+        y=torch.tensor(y, dtype=torch.float64),
         plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}.png"
     )
     

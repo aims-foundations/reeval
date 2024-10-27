@@ -76,7 +76,7 @@ def item_response_fn_1PL_multi_dim(z3, theta, a):
     return 1 / (1 + torch.exp(-(torch.matmul(theta, torch.transpose(a, 0, 1)) + z3)))
 
 def item_response_fn_2PL(z2, z3, theta):
-    return 1 / (1 + torch.exp(-z2 * (theta + z3)))
+    return 1 / (1 + torch.exp(-(z2 * theta + z3)))
 
 def item_response_fn_2PL_jnp(z2, z3, theta):
     return 1 / (1 + jnp.exp(-(z2 * theta + z3)))

@@ -22,12 +22,9 @@ def em_2pl_calibration(
     theta_matrix = theta_nodes[None, :].repeat(num_model, 1) # (num_model, num_node)
     weights = torch.tensor(weights, device=device)
     
-    z2_hat = torch.normal(
-        mean=0.0, std=1.0,
-        size=(num_item,),
-        requires_grad=True,
-        device=device
-    )
+    z2_hat = torch.distributions.LogNormal(0.0, 0.5).sample(
+        (num_item,)
+    ).to(device).requires_grad_(True)
     z3_hat = torch.normal(
         mean=0.0, std=1.0,
         size=(num_item,),
@@ -115,25 +112,31 @@ if __name__ == "__main__":
     plot_dir = f'../plot/em_2pl_calibration/{args.dataset}'
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
-    
     y = pd.read_csv(f'{input_dir}/{args.dataset}/matrix.csv', index_col=0).values
-    z2_hat, z3_hat = em_2pl_calibration(torch.tensor(y, dtype=torch.float32))
+    # z2_hat, z3_hat = em_2pl_calibration(torch.tensor(y, dtype=torch.float64))
     
-    z_df = pd.DataFrame({
-        "z2": z2_hat.cpu().detach().numpy(),
-        "z3": z3_hat.cpu().detach().numpy(),
-    })
-    z_df.to_csv(f"{output_dir}/z.csv", index=False)
-
-    theta_hat = fit_theta_mle(torch.tensor(y, dtype=torch.float32), z2_hat, z3_hat)
+    # z_df = pd.DataFrame({
+    #     "z2": z2_hat.cpu().detach().numpy(),
+    #     "z3": z3_hat.cpu().detach().numpy(),
+    # })
+    # z_df.to_csv(f"{output_dir}/z.csv", index=False)
+    
+    z2_hat = torch.tensor(pd.read_csv(f"{output_dir}/z.csv")['z2'].values)
+    z3_hat = torch.tensor(pd.read_csv(f"{output_dir}/z.csv")['z3'].values)
+    
+    theta_hat = fit_theta_mle(
+        response_matrix=torch.tensor(y, dtype=torch.float64),
+        z2=z2_hat,
+        z3=z3_hat,
+    )
     theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=["theta"])
     theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
     
     _, _ = goodness_of_fit_2PL_plot(
-        z2=z2_hat.cpu().detach(),        
-        z3=z3_hat.cpu().detach(),                        
-        theta=theta_hat.cpu().detach(),
-        y=torch.tensor(y, dtype=torch.float32),
+        z2=z2_hat.cpu().clone().detach(),
+        z3=z3_hat.cpu().clone().detach(),
+        theta=theta_hat.cpu().clone().detach(),
+        y=torch.tensor(y, dtype=torch.float64),
         plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}.png"
     )
     

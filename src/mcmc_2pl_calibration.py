@@ -17,7 +17,7 @@ plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
 
 def model(question_num, testtaker_num, response_matrix):
-    z2_hat = numpyro.sample("z2_hat", dist.Normal(0.0, 1.0).expand((question_num,)))
+    z2_hat = numpyro.sample("z2_hat", dist.LogNormal(0.0, 0.5).expand((question_num,)))
     z3_hat = numpyro.sample("z3_hat", dist.Normal(0.0, 1.0).expand((question_num,)))
     theta_hat = numpyro.sample("theta_hat", dist.Normal(0.0, 1.0).expand((testtaker_num,)))
     
@@ -128,7 +128,7 @@ def goodness_of_fit_2PL_plot(
     return mean_diff, std_diff
     
 if __name__ == "__main__":
-    # wandb.init(project="em_2pl_calibration_prior")
+    # wandb.init(project="em_2pl_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
@@ -137,8 +137,8 @@ if __name__ == "__main__":
     y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
     testtaker_num, question_num = y.shape
 
-    output_dir = f'../data/em_2pl_calibration_prior/{args.dataset}'
-    plot_dir = f'../plot/em_2pl_calibration_prior'
+    output_dir = f'../data/em_2pl_calibration/{args.dataset}'
+    plot_dir = f'../plot/em_2pl_calibration'
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
