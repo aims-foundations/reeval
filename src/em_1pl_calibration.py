@@ -120,8 +120,8 @@ if __name__ == "__main__":
     theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
     
     _, _ = goodness_of_fit_1PL_plot(
-        z=z_hat,                                
-        theta=theta_hat,
+        z=z_hat.cpu().detach(),                                
+        theta=theta_hat.cpu().detach(),
         y=torch.tensor(y, dtype=torch.float64),
         plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}.png"
     )
