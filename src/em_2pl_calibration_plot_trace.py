@@ -29,7 +29,7 @@ def em_2pl_calibration(
     true_2pl_z2: np.ndarray,
     true_2pl_z3: np.ndarray,
     max_epoch: int=3000,
-    num_sample: int=1000,
+    num_sample: int=100,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     response_matrix = response_matrix.to(device)
@@ -56,7 +56,18 @@ def em_2pl_calibration(
         requires_grad=True,
         device=device
     )
-    optimizer = optim.Adam([z2_hat, z3_hat], lr=0.01)
+    
+    # z2_hat = torch.tensor(
+    #     true_2pl_z2,
+    #     requires_grad=True,
+    #     device=device
+    # )
+    # z3_hat = torch.tensor(
+    #     true_2pl_z3,
+    #     requires_grad=True,
+    #     device=device
+    # )
+    optimizer = optim.Adam([z2_hat, z3_hat], lr=0.001)
     
     pbar = tqdm(range(max_epoch)) 
     for iter in pbar:
@@ -74,11 +85,11 @@ def em_2pl_calibration(
         # agg_prob_matrix = torch.mean(prob_matrixes, dim=-1)
         
         prob_matrixes = item_response_fn_2PL(
-            z2_hat_matrix.unsqueeze(2),  # Expand dimensions for broadcasting
-            z3_hat_matrix.unsqueeze(2),  # Expand dimensions for broadcasting
-            theta_matrix_expand  # Already expanded along the third dimension
+            z2_hat_matrix.unsqueeze(2), # (1, num_item, 1)
+            z3_hat_matrix.unsqueeze(2), # (1, num_item, 1)
+            theta_matrix_expand, # (num_model, 1, num_sample)
         )
-        agg_prob_matrix = torch.mean(prob_matrixes, dim=-1)
+        agg_prob_matrix = torch.mean(prob_matrixes, dim=-1) 
         assert agg_prob_matrix.shape == response_matrix.shape
         
         # prob_matrixes = torch.zeros(num_model, num_item, num_node)
@@ -155,7 +166,7 @@ if __name__ == "__main__":
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
     
-    set_seed(42)
+    set_seed(1)
     input_dir = '../data/pre_calibration'
     output_dir = f'../data/em_2pl_calibration/{args.dataset}'
     plot_dir = f'../plot/em_2pl_calibration/{args.dataset}'

@@ -55,7 +55,7 @@ def em_calibration(
         optimizer.zero_grad()
 
         pbar.set_postfix({'loss': loss.item()})
-        # wandb.log({'loss': loss.item()})
+        wandb.log({'loss': loss.item()})
 
     return z_hat_norm
 
@@ -97,7 +97,7 @@ def fit_theta_mle(
     return theta_hat_norm
 
 if __name__ == "__main__":
-    # wandb.init(project="em_1pl_calibration")
+    wandb.init(project="em_1pl_calibration")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
