@@ -41,10 +41,10 @@ def em_calibration(
             mult = torch.exp(theta_nodes[i]**2 / 2) / torch.sqrt(torch.tensor(2 * torch.pi))
             prob_matrixes[:, :, i] = prob_matrix * mult * weights[i]
             
-        agg_prob_matrix = torch.sum(prob_matrixes, dim=-1)
+        agg_prob_matrix = torch.sum(prob_matrixes, dim=-1).to(device)
         assert agg_prob_matrix.shape == response_matrix.shape
         
-        mask = (response_matrix != -1).to(device)
+        mask = (response_matrix != -1)
         masked_response_matrix = response_matrix.flatten()[mask.flatten()]
         masked_prob_matrix = agg_prob_matrix.flatten()[mask.flatten()]
 
