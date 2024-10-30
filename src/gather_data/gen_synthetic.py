@@ -31,8 +31,8 @@ if __name__ == "__main__":
             elif args.model == "2PL":
                 prob = item_response_fn_2PL(z2_true[j], z3_true[j], theta_true[i])
             response = torch.distributions.Bernoulli(prob).sample()
-            if np.random.rand() < 0.2:
-                response = 1 - response
+            # if np.random.rand() < 0.2:
+            #     response = 1 - response
             response_matrix[i, j] = response
 
     output_dir = f"../../data/pre_calibration/synthetic_{args.model}"

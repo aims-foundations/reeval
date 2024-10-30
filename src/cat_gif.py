@@ -6,7 +6,6 @@ from tqdm import tqdm
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
-from scipy.stats import norm
 from PIL import Image
 
 if __name__ == "__main__":

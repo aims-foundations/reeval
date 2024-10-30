@@ -33,7 +33,8 @@ def em_calibration(
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
         theta_matrix_expand = theta_matrix.unsqueeze(1) # (num_model, 1, num_node)
-        z_hat_matrix = z_hat.unsqueeze(0)
+        z_hat_norm = (z_hat - torch.mean(z_hat)) / torch.std(z_hat)
+        z_hat_matrix = z_hat_norm.unsqueeze(0)
         prob_matrixes = torch.zeros(num_model, num_item, num_node)
         for i in range(num_node):
             prob_matrix = item_response_fn_1PL(z_hat_matrix, theta_matrix_expand[:,:,i])
@@ -56,7 +57,7 @@ def em_calibration(
         pbar.set_postfix({'loss': loss.item()})
         # wandb.log({'loss': loss.item()})
 
-    return z_hat
+    return z_hat_norm
 
 def fit_theta_mle(
     response_matrix: torch.Tensor,
@@ -77,7 +78,8 @@ def fit_theta_mle(
     
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
-        theta_hat_matrix = theta_hat.unsqueeze(1)
+        theta_hat_norm = (theta_hat - torch.mean(theta_hat)) / torch.std(theta_hat)
+        theta_hat_matrix = theta_hat_norm.unsqueeze(1)
         z_matrix = z.unsqueeze(0)
         prob_matrix = item_response_fn_1PL(z_matrix, theta_hat_matrix)
         
@@ -92,7 +94,7 @@ def fit_theta_mle(
         optimizer.zero_grad()
         pbar.set_postfix({'loss': loss.item()})
         
-    return theta_hat
+    return theta_hat_norm
 
 if __name__ == "__main__":
     # wandb.init(project="em_1pl_calibration")
@@ -108,19 +110,19 @@ if __name__ == "__main__":
     os.makedirs(plot_dir, exist_ok=True)
     
     y = pd.read_csv(f'{input_dir}/{args.dataset}/matrix.csv', index_col=0).values
-    z_hat = em_calibration(torch.tensor(y, dtype=torch.float32))
+    z_hat = em_calibration(torch.tensor(y, dtype=torch.float64))
     
     z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
     z_df.to_csv(f"{output_dir}/z.csv", index=False)
 
-    theta_hat = fit_theta_mle(torch.tensor(y, dtype=torch.float32), z_hat)
+    theta_hat = fit_theta_mle(torch.tensor(y, dtype=torch.float64), z_hat.clone().detach())
     theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=["theta"])
     theta_df.to_csv(f"{output_dir}/theta.csv", index=False)
     
     _, _ = goodness_of_fit_1PL_plot(
         z=z_hat,                                
         theta=theta_hat,
-        y=torch.tensor(y, dtype=torch.float32),
+        y=torch.tensor(y, dtype=torch.float64),
         plot_path=f"{plot_dir}/goodness_of_fit_{args.dataset}.png"
     )
     
