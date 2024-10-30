@@ -44,7 +44,7 @@ def em_calibration(
         agg_prob_matrix = torch.sum(prob_matrixes, dim=-1)
         assert agg_prob_matrix.shape == response_matrix.shape
         
-        mask = response_matrix != -1
+        mask = (response_matrix != -1).to(device)
         masked_response_matrix = response_matrix.flatten()[mask.flatten()]
         masked_prob_matrix = agg_prob_matrix.flatten()[mask.flatten()]
 
