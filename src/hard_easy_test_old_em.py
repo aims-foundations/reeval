@@ -19,7 +19,7 @@ if __name__ == "__main__":
     selection_prob = 0.8
     subset_size = 100
     step_size = 4000
-    iterations = 100
+    iterations = 1000
     
     y = pd.read_csv(f'../data/pre_calibration/{args.dataset}/matrix.csv', index_col=0).values
     theta = pd.read_csv(f'../data/em_1pl_calibration/{args.dataset}/theta.csv')["theta"].values
