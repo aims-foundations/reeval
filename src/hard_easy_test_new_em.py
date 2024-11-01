@@ -44,48 +44,48 @@ if __name__ == "__main__":
     assert y.shape == z.shape, f"y.shape: {y.shape}, z.shape: {z.shape}"
     
     y = torch.tensor(y, dtype=torch.float32).to(device)
-    # z = torch.tensor(z, dtype=torch.float32).to(device)
+    z = torch.tensor(z, dtype=torch.float32).to(device)
     
-    # z_sort_index = torch.argsort(z)
+    z_sort_index = torch.argsort(z)
 
-    # theta_hats = []
-    # y_means = []
-    # for _ in tqdm(range(iterations)):
-    #     z_sort_index = torch.flip(z_sort_index, dims=[0])
+    theta_hats = []
+    y_means = []
+    for _ in tqdm(range(iterations)):
+        z_sort_index = torch.flip(z_sort_index, dims=[0])
         
-    #     count = 0
-    #     id = 0
-    #     subset_index = []
-    #     while count < subset_size:
-    #         if torch.rand(1) < selection_prob:
-    #             subset_index.append(z_sort_index[id].item())
-    #             count = count + 1
-    #         id = id + 1
+        count = 0
+        id = 0
+        subset_index = []
+        while count < subset_size:
+            if torch.rand(1) < selection_prob:
+                subset_index.append(z_sort_index[id].item())
+                count = count + 1
+            id = id + 1
             
-    #     z_sub = z[subset_index]
-    #     y_sub = y[subset_index]
+        z_sub = z[subset_index]
+        y_sub = y[subset_index]
 
-    #     theta_hat = torch.normal(0, 1, size=(1,), requires_grad=True, device=device)
-    #     optim = torch.optim.SGD([theta_hat], lr=0.01)
+        theta_hat = torch.normal(0, 1, size=(1,), requires_grad=True, device=device)
+        optim = torch.optim.SGD([theta_hat], lr=0.01)
         
-    #     for _ in range(step_size):
-    #         prob = item_response_fn_1PL(z_sub, theta_hat)
-    #         loss = -torch.distributions.Bernoulli(probs=prob).log_prob(y_sub).mean()
-    #         optim.zero_grad()
-    #         loss.backward()
-    #         optim.step()
+        for _ in range(step_size):
+            prob = item_response_fn_1PL(z_sub, theta_hat)
+            loss = -torch.distributions.Bernoulli(probs=prob).log_prob(y_sub).mean()
+            optim.zero_grad()
+            loss.backward()
+            optim.step()
             
-    #     wandb.log({'loss': loss.item()})
-    #     theta_hats.append(theta_hat.item())
-    #     y_means.append(inverse_sigmoid(y_sub.mean()).item())
+        wandb.log({'loss': loss.item()})
+        theta_hats.append(theta_hat.item())
+        y_means.append(inverse_sigmoid(y_sub.mean()).item())
     
-    # save_dir = f'../data/hard_easy_test_new_em/{args.dataset}'
-    # os.makedirs(save_dir, exist_ok=True)
-    # df = pd.DataFrame({
-    #     "theta_hat": theta_hats,
-    #     "y_mean": y_means,
-    # })
-    # df.to_csv(f'{save_dir}/hard_easy_test_new_em.csv', index=False)
+    save_dir = f'../data/hard_easy_test_new_em/{args.dataset}'
+    os.makedirs(save_dir, exist_ok=True)
+    df = pd.DataFrame({
+        "theta_hat": theta_hats,
+        "y_mean": y_means,
+    })
+    df.to_csv(f'{save_dir}/hard_easy_test_new_em.csv', index=False)
     
     theta_hats = pd.read_csv(f'../data/hard_easy_test_new_em/{args.dataset}/hard_easy_test_new_em.csv')["theta_hat"].values
     y_means = pd.read_csv(f'../data/hard_easy_test_new_em/{args.dataset}/hard_easy_test_new_em.csv')["y_mean"].values
