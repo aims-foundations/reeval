@@ -769,6 +769,7 @@ def plot_hard_easy(
     plt.axvline(x=y_mean, color='blue', linewidth=2)
     sns.kdeplot(theta_hats, color='red', linewidth=2, bw_adjust=2)
     plt.xlabel(r'Ability', fontsize=25)
+    plt.xlim(-6,6)
     plt.ylabel(r'Density', fontsize=25)
     plt.legend(fontsize=20)
     plt.tick_params(axis='both', labelsize=20)
