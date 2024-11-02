@@ -150,21 +150,23 @@ if __name__ == "__main__":
     combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
     # combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
     
-    W, b, a, z_hat = mle_multi_dim_amor_theta(
-        response_matrix=torch.tensor(combined_matrix.values, dtype=torch.float32),
-        constraint=args.constraint,
-        feat_matrix=torch.tensor(feat_matrix_train, dtype=torch.float32),
-    )
-    z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
-    z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
-    np.save(f"{output_dir}/W_con_{args.constraint}.npy", W.cpu().detach().numpy())
-    np.save(f"{output_dir}/b_con_{args.constraint}.npy", b.cpu().detach().numpy())
-    np.save(f"{output_dir}/a_con_{args.constraint}.npy", a.cpu().detach().numpy())
+    # W, b, a, z_hat = mle_multi_dim_amor_theta(
+    #     response_matrix=torch.tensor(combined_matrix.values, dtype=torch.float32),
+    #     constraint=args.constraint,
+    #     feat_matrix=torch.tensor(feat_matrix_train, dtype=torch.float32),
+    # )
+    # z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
+    # z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
+    # np.save(f"{output_dir}/W_con_{args.constraint}.npy", W.cpu().detach().numpy())
+    # np.save(f"{output_dir}/b_con_{args.constraint}.npy", b.cpu().detach().numpy())
+    # np.save(f"{output_dir}/a_con_{args.constraint}.npy", a.cpu().detach().numpy())
     
-    W = W.cpu().detach().numpy()
-    b = b.cpu().detach().numpy()
+    # W = W.cpu().detach().numpy()
+    # b = b.cpu().detach().numpy()
     
-    # z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv")
+    z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv")
+    W = np.load(f"{output_dir}/W_con_{args.constraint}.npy")
+    b = np.load(f"{output_dir}/b_con_{args.constraint}.npy")
     
     theta_corr_trains = []
     theta_corr_tests = []
@@ -186,7 +188,10 @@ if __name__ == "__main__":
         theta_corr_test, _, _ = theta_corr_ctt(theta_test, matrix_test.values)
         theta_corr_trains.append(theta_corr_train)
         theta_corr_tests.append(theta_corr_test)
-        
+    
+    print(theta_corr_trains)
+    print(theta_corr_tests)
+    
     error_bar_plot_double(
         datasets=valid_datasets, 
         means_train=theta_corr_trains, stds_train=[0] * len(theta_corr_trains), 
