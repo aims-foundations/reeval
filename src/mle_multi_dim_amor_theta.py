@@ -149,7 +149,8 @@ if __name__ == "__main__":
     # valid_datasets_df.to_csv(f"{output_dir}/valid_datasets.csv", index=False)
     
     combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
-    valid_datasets = pd.read_csv(f"{output_dir}/valid_datasets.csv").values
+    valid_datasets = pd.read_csv(f"{output_dir}/valid_datasets.csv").values.flatten()
+    print(valid_datasets)
     
     # W, b, a, z_hat = mle_multi_dim_amor_theta(
     #     response_matrix=torch.tensor(combined_matrix.values, dtype=torch.float32),
