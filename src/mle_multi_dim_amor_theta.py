@@ -195,7 +195,7 @@ if __name__ == "__main__":
             z=torch.tensor(z_hat_subset, dtype=torch.float32), 
             theta=torch.tensor(theta_train, dtype=torch.float32),
             a=torch.tensor(a_subset, dtype=torch.float32),
-            y=torch.tensor(matrix_train, dtype=torch.float32),
+            y=torch.tensor(matrix_train.values, dtype=torch.float32),
             plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}_train.png',
         )
         gof_mean_trains.append(gof_mean_train)
@@ -205,7 +205,7 @@ if __name__ == "__main__":
             z=torch.tensor(z_hat_subset, dtype=torch.float32), 
             theta=torch.tensor(theta_test, dtype=torch.float32), 
             a=torch.tensor(a_subset, dtype=torch.float32), 
-            y=torch.tensor(matrix_test, dtype=torch.float32),
+            y=torch.tensor(matrix_test.values, dtype=torch.float32),
             plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}_test.png',
         )
         gof_mean_tests.append(gof_mean_test)
