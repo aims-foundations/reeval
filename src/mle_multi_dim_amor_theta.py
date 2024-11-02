@@ -103,7 +103,7 @@ def mle_multi_dim_amor_theta(
     #     return last_theta_hat, last_a, last_z_hat
 
 if __name__ == "__main__":
-    # wandb.init(project="mle_multi_dim_amor_theta")
+    wandb.init(project="mle_multi_dim_amor_theta")
     parser = argparse.ArgumentParser()
     parser.add_argument('--constraint', type=str, default='True', choices=['True', 'False'])
     args = parser.parse_args()
