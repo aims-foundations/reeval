@@ -129,15 +129,15 @@ if __name__ == "__main__":
     valid_model_names_test = valid_model_names[split_index:]
     feat_matrix_test = feat_matrix[split_index:]
     
-    valid_datasets = []
-    combined_matrix = pd.DataFrame()
-    for dataset in DATASETS:
-        matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-        filtered_matrix = matrix[matrix.index.isin(valid_model_names_train)]
-        # print(f"Dataset: {dataset}, left model num: {filtered_matrix.shape[0]}, left models: {filtered_matrix.index.tolist()}")
-        print(f"Dataset: {dataset}, left model num: {filtered_matrix.shape[0]}")
-        if not filtered_matrix.empty:
-            valid_datasets.append(dataset)
+    # valid_datasets = []
+    # combined_matrix = pd.DataFrame()
+    # for dataset in DATASETS:
+    #     matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+    #     filtered_matrix = matrix[matrix.index.isin(valid_model_names_train)]
+    #     # print(f"Dataset: {dataset}, left model num: {filtered_matrix.shape[0]}, left models: {filtered_matrix.index.tolist()}")
+    #     print(f"Dataset: {dataset}, left model num: {filtered_matrix.shape[0]}")
+    #     if not filtered_matrix.empty:
+    #         valid_datasets.append(dataset)
     #         if combined_matrix.empty:
     #             combined_matrix = filtered_matrix
     #         else:
@@ -145,10 +145,11 @@ if __name__ == "__main__":
     # combined_matrix.fillna(-1, inplace=True)
     # print(combined_matrix.shape)
     # combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
-    valid_datasets_df = pd.DataFrame(valid_datasets, columns=["dataset"])
-    valid_datasets_df.to_csv(f"{output_dir}/valid_datasets.csv", index=False)
-    combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
+    # valid_datasets_df = pd.DataFrame(valid_datasets, columns=["dataset"])
+    # valid_datasets_df.to_csv(f"{output_dir}/valid_datasets.csv", index=False)
     
+    combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
+    valid_datasets = pd.read_csv(f"{output_dir}/valid_datasets.csv", index_col=0).values
     
     # W, b, a, z_hat = mle_multi_dim_amor_theta(
     #     response_matrix=torch.tensor(combined_matrix.values, dtype=torch.float32),
@@ -164,7 +165,7 @@ if __name__ == "__main__":
     # W = W.cpu().detach().numpy()
     # b = b.cpu().detach().numpy()
     
-    z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv")
+    z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv").values
     W = np.load(f"{output_dir}/W_con_{args.constraint}.npy")
     b = np.load(f"{output_dir}/b_con_{args.constraint}.npy")
     a = np.load(f"{output_dir}/a_con_{args.constraint}.npy")
@@ -174,9 +175,7 @@ if __name__ == "__main__":
     a_means = []
     for dataset in tqdm(valid_datasets):
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-        print(matrix.columns)   
         col_indices = [combined_matrix.columns.get_loc(i) for i in matrix.columns]
-        print(col_indices)
         z_hat_subset = z_hat[col_indices].cpu().detach()
         a_subset = a[col_indices].cpu().detach()
         
