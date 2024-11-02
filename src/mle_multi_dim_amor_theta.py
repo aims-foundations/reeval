@@ -79,7 +79,7 @@ def mle_multi_dim_amor_theta(
         optimizer.zero_grad()
 
         pbar.set_postfix({'loss': loss.item()})
-        # wandb.log({'loss': loss.item()})
+        wandb.log({'loss': loss.item()})
         
         if constraint:
             if not (torch.isnan(W).any() or torch.isnan(b).any() or torch.isnan(a_softmax).any() or torch.isnan(z_hat).any()):
@@ -152,19 +152,19 @@ if __name__ == "__main__":
     valid_datasets = pd.read_csv(f"{output_dir}/valid_datasets.csv").values.flatten()
     print(valid_datasets)
     
-    # W, b, a, z_hat = mle_multi_dim_amor_theta(
-    #     response_matrix=torch.tensor(combined_matrix.values, dtype=torch.float32),
-    #     constraint=args.constraint,
-    #     feat_matrix=torch.tensor(feat_matrix_train, dtype=torch.float32),
-    # )
-    # z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
-    # z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
-    # np.save(f"{output_dir}/W_con_{args.constraint}.npy", W.cpu().detach().numpy())
-    # np.save(f"{output_dir}/b_con_{args.constraint}.npy", b.cpu().detach().numpy())
-    # np.save(f"{output_dir}/a_con_{args.constraint}.npy", a.cpu().detach().numpy())
+    W, b, a, z_hat = mle_multi_dim_amor_theta(
+        response_matrix=torch.tensor(combined_matrix.values, dtype=torch.float32),
+        constraint=args.constraint,
+        feat_matrix=torch.tensor(feat_matrix_train, dtype=torch.float32),
+    )
+    z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
+    z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
+    np.save(f"{output_dir}/W_con_{args.constraint}.npy", W.cpu().detach().numpy())
+    np.save(f"{output_dir}/b_con_{args.constraint}.npy", b.cpu().detach().numpy())
+    np.save(f"{output_dir}/a_con_{args.constraint}.npy", a.cpu().detach().numpy())
     
-    # W = W.cpu().detach().numpy()
-    # b = b.cpu().detach().numpy()
+    W = W.cpu().detach().numpy()
+    b = b.cpu().detach().numpy()
     
     z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv").values
     W = np.load(f"{output_dir}/W_con_{args.constraint}.npy")
