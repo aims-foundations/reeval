@@ -182,6 +182,7 @@ if __name__ == "__main__":
         theta_test = feat_test @ W + b
         
         col_indices = [combined_matrix.columns.get_loc(i) for i in matrix.columns]
+        print(col_indices)
         z_hat_subset = z_hat[col_indices].cpu().detach()
         a_subset = a[col_indices].cpu().detach()
 
