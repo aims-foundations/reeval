@@ -137,6 +137,7 @@ if __name__ == "__main__":
     a_means = []
     for dataset in tqdm(DATASETS):
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+        print(matrix.columns)
         response_matrix = combined_matrix.loc[matrix.index, matrix.columns].values
         row_indices = [combined_matrix.index.get_loc(i) for i in matrix.index]
         col_indices = [combined_matrix.columns.get_loc(i) for i in matrix.columns]
