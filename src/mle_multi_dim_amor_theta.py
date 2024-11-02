@@ -177,8 +177,10 @@ if __name__ == "__main__":
     for dataset in tqdm(valid_datasets):
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
         col_indices = [combined_matrix.columns.get_loc(i) for i in matrix.columns]
-        z_hat_subset = z_hat[col_indices].cpu().detach()
-        a_subset = a[col_indices].cpu().detach()
+        # z_hat_subset = z_hat[col_indices].cpu().detach()
+        # a_subset = a[col_indices].cpu().detach()
+        z_hat_subset = z_hat[col_indices]
+        a_subset = a[col_indices]
         
         matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
         matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
