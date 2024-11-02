@@ -182,8 +182,8 @@ if __name__ == "__main__":
         theta_train = feat_train @ W + b
         theta_test = feat_test @ W + b
         
-        theta_corr_train = theta_corr_ctt(theta_train, matrix_train.values)
-        theta_corr_test = theta_corr_ctt(theta_test, matrix_test.values)
+        theta_corr_train, _, _ = theta_corr_ctt(theta_train, matrix_train.values)
+        theta_corr_test, _, _ = theta_corr_ctt(theta_test, matrix_test.values)
         theta_corr_trains.append(theta_corr_train)
         theta_corr_tests.append(theta_corr_test)
         
