@@ -106,7 +106,7 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
-    valid_model_names = pd.read_csv('configs/model_id.csv')['model_names_reeval'].values
+    valid_model_names = pd.read_csv('configs/model_id_ver1.csv')['model_names_reeval'].values
     combined_matrix = pd.DataFrame()
     for dataset in DATASETS:
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
