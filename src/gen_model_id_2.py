@@ -4,7 +4,7 @@ from utils import DATASETS
 
 if __name__ == "__main__":
     model_names = []
-    DATASETS = 
+    DATASETS = [d for d in DATASETS if d != 'airbench']
     for dataset in DATASETS:
         input_path = f'../data/pre_calibration/{dataset}/matrix.csv'
         model_name = pd.read_csv(input_path, index_col=0).index.tolist()
