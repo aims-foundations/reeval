@@ -13,8 +13,6 @@ from utils import (
     item_response_fn_1PL_multi_dim, 
     goodness_of_fit_1PL_multi_dim_plot, 
     error_bar_plot_single,
-    theta_corr_ctt,
-    error_bar_plot_double,
 )
 
 def mle_multi_dim_amor_theta(
@@ -167,100 +165,41 @@ if __name__ == "__main__":
     z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv")
     W = np.load(f"{output_dir}/W_con_{args.constraint}.npy")
     b = np.load(f"{output_dir}/b_con_{args.constraint}.npy")
+    a = np.load(f"{output_dir}/a_con_{args.constraint}.npy")
     
-    theta_corr_trains = []
-    theta_corr_tests = []
+    gof_means_train, gof_stds = [], []
+    a_means = []
     for dataset in tqdm(valid_datasets):
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+        
         matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
         matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
-        
         train_indices = [np.where(valid_model_names_train == name)[0][0] for name in matrix_train.index]
         test_indices = [np.where(valid_model_names_test == name)[0][0] for name in matrix_test.index]
-        
         feat_train = feat_matrix_train[train_indices]
         feat_test = feat_matrix_test[test_indices]
-        
         theta_train = feat_train @ W + b
         theta_test = feat_test @ W + b
         
-        theta_corr_train, _, _ = theta_corr_ctt(theta_train, matrix_train.values)
-        theta_corr_test, _, _ = theta_corr_ctt(theta_test, matrix_test.values)
-        theta_corr_trains.append(theta_corr_train)
-        theta_corr_tests.append(theta_corr_test)
-    
-    print(theta_corr_trains)
-    print(theta_corr_tests)
-    
-    error_bar_plot_double(
-        datasets=valid_datasets, 
-        means_train=theta_corr_trains, stds_train=[0] * len(theta_corr_trains), 
-        means_test=theta_corr_test, stds_test=[0] * len(theta_corr_tests),
-        plot_path=f"{plot_dir}/mle_multi_dim_amor_theta_summarize_theta_corr_ctt_con_{args.constraint}",
-        xlabel=r"Theta Correlation",
-        xlim_upper=1.1,
-        plot_std=False,
+        col_indices = [combined_matrix.columns.get_loc(i) for i in matrix.columns]
+        z_hat_subset = z_hat[col_indices].cpu().detach()
+        a_subset = a[col_indices].cpu().detach()
+
+        gof_mean, gof_std = goodness_of_fit_1PL_multi_dim_plot(
+            z=z_hat_subset, 
+            theta=theta_hat_subset,
+            a=a_subset,
+            y=torch.tensor(response_matrix, dtype=torch.float32),
+            plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}.png',
+        )
+        gof_means.append(gof_mean)
+        gof_stds.append(gof_std)
+        
+    error_bar_plot_single(
+        datasets=DATASETS,
+        means=gof_means,
+        stds=gof_stds,
+        plot_path=f"{plot_dir}/mle_multi_dim_amor_theta_summarize_gof_con_{args.constraint}",
+        xlabel=r"Goodness of Fit",
     )
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    # gof_means, gof_stds = [], []
-    # a_means = []
-    # for dataset in tqdm(DATASETS):
-    #     matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-    #     response_matrix = combined_matrix.loc[matrix.index, matrix.columns].values
-    #     row_indices = [combined_matrix.index.get_loc(i) for i in matrix.index]
-    #     col_indices = [combined_matrix.columns.get_loc(i) for i in matrix.columns]
-        
-    #     theta_hat_subset = theta_hat[row_indices].cpu().detach()
-    #     z_hat_subset = z_hat[col_indices].cpu().detach()
-    #     a_subset = a[col_indices].cpu().detach()
-        
-    #     gof_mean, gof_std = goodness_of_fit_1PL_multi_dim_plot(
-    #         z=z_hat_subset, 
-    #         theta=theta_hat_subset,
-    #         a=a_subset,
-    #         y=torch.tensor(response_matrix, dtype=torch.float32),
-    #         plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}.png',
-    #     )
-    #     gof_means.append(gof_mean)
-    #     gof_stds.append(gof_std)
-        
-    #     if args.constraint:
-    #         a_mean = a_subset[:, 0].numpy().mean()
-    #         a_means.append(a_mean)
-    #         # plot_hist(
-    #         #     data=a_subset[:, 0].numpy(),
-    #         #     plot_path=f'{plot_dir}/a_histogram_{dataset}.png',
-    #         #     ylabel='Histiogram of a',
-    #         # )
-        
-    # error_bar_plot_single(
-    #     datasets=DATASETS,
-    #     means=gof_means,
-    #     stds=gof_stds,
-    #     plot_path=f"{plot_dir}/mle_multi_dim_amor_theta_summarize_gof_con_{args.constraint}",
-    #     xlabel=r"Goodness of Fit",
-    # )
-    
-    # if args.constraint:
-    #     error_bar_plot_single(
-    #         datasets=DATASETS,
-    #         means=a_means,
-    #         stds=[0] * len(a_means),
-    #         plot_path=f"{plot_dir}/mle_multi_dim_amor_theta_summarize_a_con_{args.constraint}",
-    #         xlabel=r"Mean of $a$",
-    #     )
