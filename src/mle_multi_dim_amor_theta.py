@@ -171,7 +171,11 @@ if __name__ == "__main__":
     a_means = []
     for dataset in tqdm(valid_datasets):
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-        print(matrix.columns)
+        print(matrix.columns)   
+        col_indices = [combined_matrix.columns.get_loc(i) for i in matrix.columns]
+        print(col_indices)
+        z_hat_subset = z_hat[col_indices].cpu().detach()
+        a_subset = a[col_indices].cpu().detach()
         
         matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
         matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
@@ -182,11 +186,6 @@ if __name__ == "__main__":
         theta_train = feat_train @ W + b
         theta_test = feat_test @ W + b
         
-        col_indices = [combined_matrix.columns.get_loc(i) for i in matrix.columns]
-        print(col_indices)
-        z_hat_subset = z_hat[col_indices].cpu().detach()
-        a_subset = a[col_indices].cpu().detach()
-
         gof_mean_train, gof_std_train = goodness_of_fit_1PL_multi_dim_plot(
             z=torch.tensor(z_hat_subset, dtype=torch.float32), 
             theta=torch.tensor(theta_train, dtype=torch.float32),
