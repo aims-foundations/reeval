@@ -13,6 +13,8 @@ from utils import (
     item_response_fn_1PL_multi_dim, 
     goodness_of_fit_1PL_multi_dim_plot, 
     error_bar_plot_single,
+    theta_corr_ctt,
+    error_bar_plot_double,
 )
 
 def mle_multi_dim_amor_theta(
@@ -60,8 +62,9 @@ def mle_multi_dim_amor_theta(
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
         if constraint:
-            b_full = b[None, :].repeat(num_model, 1) # (num_model, dim=2)
-            theta_hat = torch.mm(feat_matrix, W) + b_full # (num_model, dim=2)
+            # b_full = b[None, :].repeat(num_model, 1) # (num_model, dim=2)
+            # theta_hat = torch.mm(feat_matrix, W) + b_full # (num_model, dim=2)
+            theta_hat = torch.mm(feat_matrix, W) + b # (num_model, dim=2)
             a_softmax = torch.nn.functional.softmax(a, dim=1)
             prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a_softmax)
         # else:   
@@ -129,6 +132,7 @@ if __name__ == "__main__":
     valid_model_names_test = valid_model_names[split_index:]
     feat_matrix_test = feat_matrix[split_index:]
     
+    valid_datasets = []
     combined_matrix = pd.DataFrame()
     for dataset in DATASETS:
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
@@ -136,6 +140,7 @@ if __name__ == "__main__":
         # print(f"Dataset: {dataset}, left model num: {filtered_matrix.shape[0]}, left models: {filtered_matrix.index.tolist()}")
         print(f"Dataset: {dataset}, left model num: {filtered_matrix.shape[0]}")
         if not filtered_matrix.empty:
+            valid_datasets.append(dataset)
             if combined_matrix.empty:
                 combined_matrix = filtered_matrix
             else:
@@ -156,7 +161,56 @@ if __name__ == "__main__":
     np.save(f"{output_dir}/b_con_{args.constraint}.npy", b.cpu().detach().numpy())
     np.save(f"{output_dir}/a_con_{args.constraint}.npy", a.cpu().detach().numpy())
     
-    # # z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv")
+    W = W.cpu().detach().numpy()
+    b = b.cpu().detach().numpy()
+    
+    # z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv")
+    
+    theta_corr_trains = []
+    theta_corr_tests = []
+    for dataset in tqdm(valid_datasets):
+        matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+        matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
+        matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
+        
+        train_indices = [np.where(valid_model_names_train == name)[0][0] for name in matrix_train.index]
+        test_indices = [np.where(valid_model_names_test == name)[0][0] for name in matrix_test.index]
+        
+        feat_train = feat_matrix_train[train_indices]
+        feat_test = feat_matrix_test[test_indices]
+        
+        theta_train = feat_train @ W + b
+        theta_test = feat_test @ W + b
+        
+        theta_corr_train = theta_corr_ctt(theta_train, matrix_train.values)
+        theta_corr_test = theta_corr_ctt(theta_test, matrix_test.values)
+        theta_corr_trains.append(theta_corr_train)
+        theta_corr_tests.append(theta_corr_test)
+        
+    error_bar_plot_double(
+        datasets=valid_datasets, 
+        means_train=theta_corr_trains, stds_train=[0] * len(theta_corr_trains), 
+        means_test=theta_corr_test, stds_test=[0] * len(theta_corr_tests),
+        plot_path=f"{plot_dir}/mle_multi_dim_amor_theta_summarize_theta_corr_ctt_con_{args.constraint}",
+        xlabel=r"Theta Correlation",
+        xlim_upper=1.1,
+        plot_std=False,
+    )
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     # gof_means, gof_stds = [], []
     # a_means = []
