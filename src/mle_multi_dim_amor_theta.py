@@ -138,14 +138,14 @@ if __name__ == "__main__":
         print(f"Dataset: {dataset}, left model num: {filtered_matrix.shape[0]}")
         if not filtered_matrix.empty:
             valid_datasets.append(dataset)
-            if combined_matrix.empty:
-                combined_matrix = filtered_matrix
-            else:
-                combined_matrix = combined_matrix.join(filtered_matrix, how='outer', rsuffix='_dup')
-    combined_matrix.fillna(-1, inplace=True)
-    print(combined_matrix.shape)
-    combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
-    # combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
+    #         if combined_matrix.empty:
+    #             combined_matrix = filtered_matrix
+    #         else:
+    #             combined_matrix = combined_matrix.join(filtered_matrix, how='outer', rsuffix='_dup')
+    # combined_matrix.fillna(-1, inplace=True)
+    # print(combined_matrix.shape)
+    # combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
+    combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
     
     # W, b, a, z_hat = mle_multi_dim_amor_theta(
     #     response_matrix=torch.tensor(combined_matrix.values, dtype=torch.float32),
@@ -171,6 +171,7 @@ if __name__ == "__main__":
     a_means = []
     for dataset in tqdm(valid_datasets):
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+        print(matrix.columns)
         
         matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
         matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
