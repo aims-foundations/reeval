@@ -103,7 +103,6 @@ def mle_multi_dim_amor_theta(
     #     return last_theta_hat, last_a, last_z_hat
 
 if __name__ == "__main__":
-    
     # wandb.init(project="mle_multi_dim_amor_theta")
     parser = argparse.ArgumentParser()
     parser.add_argument('--constraint', type=str, default='True', choices=['True', 'False'])
@@ -123,6 +122,7 @@ if __name__ == "__main__":
     model_id_df = pd.read_csv('configs/model_id_ver1.csv')
     valid_model_names = model_id_df['model_names_reeval'].values
     feat_matrix = model_id_df[['Model Size (B)', 'Pretraining Data Size (T)', 'FLOPs (1E21)']].values
+    feat_matrix = (feat_matrix - feat_matrix.mean(axis=0)) / feat_matrix.std(axis=0)
     split_index = int(len(valid_model_names) * 0.8)
     valid_model_names_train = valid_model_names[:split_index]
     feat_matrix_train = feat_matrix[:split_index]
