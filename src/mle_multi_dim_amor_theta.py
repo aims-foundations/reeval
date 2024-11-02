@@ -9,10 +9,9 @@ import torch.optim as optim
 from utils import (
     set_seed, 
     DATASETS,
-    plot_hist,
     item_response_fn_1PL_multi_dim, 
     goodness_of_fit_1PL_multi_dim_plot, 
-    error_bar_plot_single,
+    error_bar_plot_double,
 )
 
 def mle_multi_dim_amor_theta(
@@ -167,7 +166,8 @@ if __name__ == "__main__":
     b = np.load(f"{output_dir}/b_con_{args.constraint}.npy")
     a = np.load(f"{output_dir}/a_con_{args.constraint}.npy")
     
-    gof_means_train, gof_stds = [], []
+    gof_mean_trains, gof_std_trains = [], []
+    gof_mean_tests, gof_std_tests = [], []
     a_means = []
     for dataset in tqdm(valid_datasets):
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
@@ -185,21 +185,32 @@ if __name__ == "__main__":
         z_hat_subset = z_hat[col_indices].cpu().detach()
         a_subset = a[col_indices].cpu().detach()
 
-        gof_mean, gof_std = goodness_of_fit_1PL_multi_dim_plot(
-            z=z_hat_subset, 
-            theta=theta_hat_subset,
-            a=a_subset,
-            y=torch.tensor(response_matrix, dtype=torch.float32),
-            plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}.png',
+        gof_mean_train, gof_std_train = goodness_of_fit_1PL_multi_dim_plot(
+            z=torch.tensor(z_hat_subset, dtype=torch.float32), 
+            theta=torch.tensor(theta_train, dtype=torch.float32),
+            a=torch.tensor(a_subset, dtype=torch.float32),
+            y=torch.tensor(matrix_train, dtype=torch.float32),
+            plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}_train.png',
         )
-        gof_means.append(gof_mean)
-        gof_stds.append(gof_std)
+        gof_mean_trains.append(gof_mean_train)
+        gof_std_trains.append(gof_std_train)
         
-    error_bar_plot_single(
-        datasets=DATASETS,
-        means=gof_means,
-        stds=gof_stds,
+        gof_mean_test, gof_std_test = goodness_of_fit_1PL_multi_dim_plot(
+            z=torch.tensor(z_hat_subset, dtype=torch.float32), 
+            theta=torch.tensor(theta_test, dtype=torch.float32), 
+            a=torch.tensor(a_subset, dtype=torch.float32), 
+            y=torch.tensor(matrix_test, dtype=torch.float32),
+            plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}_test.png',
+        )
+        gof_mean_tests.append(gof_mean_test)
+        gof_std_tests.append(gof_std_test)
+        
+    error_bar_plot_double(
+        datasets=valid_datasets, 
+        means_train=gof_mean_trains, stds_train=gof_std_trains, 
+        means_test=gof_mean_tests, stds_test=gof_std_tests,
         plot_path=f"{plot_dir}/mle_multi_dim_amor_theta_summarize_gof_con_{args.constraint}",
         xlabel=r"Goodness of Fit",
+        plot_std=False,
     )
-    
+        
