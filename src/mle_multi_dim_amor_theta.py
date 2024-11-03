@@ -15,15 +15,16 @@ from utils import (
 )
 
 def mle_multi_dim_amor_theta(
-    response_matrix: torch.Tensor,
+    y_train: torch.Tensor,
+    y_test: torch.Tensor,
     constraint: bool,
     feat_matrix: torch.Tensor,
     dim: int=2,
     max_epoch: int=3000,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    response_matrix = response_matrix.to(device)
-    num_model, num_item = response_matrix.shape
+    y_train = y_train.to(device)
+    num_model, num_item = y_train.shape
     feat_matrix = feat_matrix.to(device)
 
     W = torch.normal(
@@ -58,29 +59,37 @@ def mle_multi_dim_amor_theta(
     last_z_hat = None
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
-        if constraint:
-            # b_full = b[None, :].repeat(num_model, 1) # (num_model, dim=2)
-            # theta_hat = torch.mm(feat_matrix, W) + b_full # (num_model, dim=2)
-            theta_hat = torch.mm(feat_matrix, W) + b # (num_model, dim=2)
-            theta_hat_norm = (theta_hat - torch.mean(theta_hat)) / torch.std(theta_hat)
-            a_softmax = torch.nn.functional.softmax(a, dim=1)
-            prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat_norm, a_softmax)
+        # if constraint:
         # else:   
-        #     prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a)
-        assert prob_matrix.shape == response_matrix.shape
+        #     prob_train = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_train, a)
+        theta_train = torch.mm(feat_matrix, W) + b # (num_model, dim=2)
+        theta_train_norm = (theta_train - torch.mean(theta_train)) / torch.std(theta_train)
+        a_softmax = torch.nn.functional.softmax(a, dim=1)
+        prob_train = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_train_norm, a_softmax)
+        assert prob_train.shape == y_train.shape
+        mask_train = y_train != -1
+        masked_y_train = y_train[mask_train]
+        masked_prob_train = prob_train[mask_train]
 
-        mask = response_matrix != -1
-        masked_response_matrix = response_matrix[mask]
-        masked_prob_matrix = prob_matrix[mask]
-
-        berns = torch.distributions.Bernoulli(masked_prob_matrix)
-        train_loss = -berns.log_prob(masked_response_matrix).mean()
+        train_loss = -torch.distributions.Bernoulli(masked_prob_train).log_prob(masked_y_train).mean()
         train_loss.backward()
         optimizer.step()
         optimizer.zero_grad()
+        
+        with torch.no_grad():
+            W_temp = W.clone().detach()
+            theta_test = torch.mm(feat_matrix, W_temp) + b
+            theta_test_norm = (theta_test - torch.mean(theta_test)) / torch.std(theta_test)
+            a_softmax_temp = a_softmax.clone().detach()
+            prob_test = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_test_norm, a_softmax_temp)
+            assert prob_test.shape == y_test.shape
+            mask_test = y_test != -1
+            masked_y_test = y_test[mask_test]
+            masked_prob_test = prob_test[mask_test]
+            test_loss = -torch.distributions.Bernoulli(masked_prob_test).log_prob(masked_y_test).mean()
 
-        pbar.set_postfix({'train_loss': train_loss.item()})
-        wandb.log({'train_loss': train_loss.item()})
+        pbar.set_postfix({'train_loss': train_loss.item(), 'test_loss': test_loss.item()})
+        wandb.log({'train_loss': train_loss.item(), 'test_loss': test_loss.item()})
         
         if constraint:
             if not (torch.isnan(W).any() or torch.isnan(b).any() or torch.isnan(a_softmax).any() or torch.isnan(z_hat).any()):
@@ -91,8 +100,8 @@ def mle_multi_dim_amor_theta(
             else:
                 break
         # else:
-        #     if not (torch.isnan(theta_hat).any() or torch.isnan(a).any() or torch.isnan(z_hat).any()):
-        #         last_theta_hat = theta_hat.cpu().detach().clone()
+        #     if not (torch.isnan(theta_train).any() or torch.isnan(a).any() or torch.isnan(z_hat).any()):
+        #         last_theta_train = theta_train.cpu().detach().clone()
         #         last_a = a.cpu().detach().clone()
         #         last_z_hat = z_hat.cpu().detach().clone()
         #     else:
@@ -101,7 +110,7 @@ def mle_multi_dim_amor_theta(
     if constraint:
         return last_W, last_b, last_a_softmax, last_z_hat
     # else:
-    #     return last_theta_hat, last_a, last_z_hat
+    #     return last_theta_train, last_a, last_z_hat
 
 if __name__ == "__main__":
     wandb.init(project="mle_multi_dim_amor_theta")
@@ -124,99 +133,110 @@ if __name__ == "__main__":
     valid_model_names = model_id_df['model_names_reeval'].values
     feat_matrix = model_id_df[['Model Size (B)', 'Pretraining Data Size (T)', 'FLOPs (1E21)']].values
     # feat_matrix = (feat_matrix - feat_matrix.mean(axis=0)) / feat_matrix.std(axis=0)
-    split_index = int(len(valid_model_names) * 0.8)
-    valid_model_names_train = valid_model_names[:split_index]
-    feat_matrix_train = feat_matrix[:split_index]
-    valid_model_names_test = valid_model_names[split_index:]
-    feat_matrix_test = feat_matrix[split_index:]
+    
+    valid_model_names_test = ['meta_llama-2-70b', 'meta_llama-2-7b', 'meta_llama-2-13b']
+    valid_model_indices = [np.where(valid_model_names == name)[0][0] for name in valid_model_names_test]
+    feat_matrix_test = feat_matrix[valid_model_indices]
+    valid_model_names_train = [name for name in valid_model_names if name not in valid_model_names_test]
+    valid_model_indices = [np.where(valid_model_names == name)[0][0] for name in valid_model_names_train]
+    feat_matrix_train = feat_matrix[valid_model_indices]
     
     valid_datasets = []
     combined_matrix_train = pd.DataFrame()
+    combined_matrix_test = pd.DataFrame()
     for dataset in DATASETS:
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-        filtered_matrix = matrix[matrix.index.isin(valid_model_names)]
-        print(f"Dataset: {dataset}, left model num: {filtered_matrix.shape[0]}, left models: {filtered_matrix.index.tolist()}")
-    #     if not filtered_matrix.empty:
-    #         valid_datasets.append(dataset)
-    #         if combined_matrix_train.empty:
-    #             combined_matrix_train = filtered_matrix
-    #         else:
-    #             combined_matrix_train = combined_matrix_train.join(filtered_matrix, how='outer', rsuffix='_dup')
-    # combined_matrix_train.fillna(-1, inplace=True)
-    # print(combined_matrix_train.shape)
-    # combined_matrix_train.to_csv(f"{output_dir}/combined_matrix_train.csv")
-    # valid_datasets_df = pd.DataFrame(valid_datasets, columns=["dataset"])
-    # valid_datasets_df.to_csv(f"{output_dir}/valid_datasets.csv", index=False)
+        
+        filtered_matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
+        # print(f"Dataset: {dataset}, left model num: {filtered_matrix_train.shape[0]}, left models: {filtered_matrix_train.index.tolist()}")
+        if not filtered_matrix_train.empty:
+            valid_datasets.append(dataset)
+            if combined_matrix_train.empty:
+                combined_matrix_train = filtered_matrix_train
+            else:
+                combined_matrix_train = combined_matrix_train.join(filtered_matrix_train, how='outer', rsuffix='_dup')
+                
+        filtered_matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
+        if not filtered_matrix_test.empty:
+            if combined_matrix_test.empty:
+                combined_matrix_test = filtered_matrix_test
+            else:
+                combined_matrix_test = combined_matrix_test.join(filtered_matrix_test, how='outer', rsuffix='_dup')
     
-    # combined_matrix_train = pd.read_csv(f"{output_dir}/combined_matrix_train.csv", index_col=0)
+    valid_datasets_df = pd.DataFrame(valid_datasets, columns=["dataset"])
+    valid_datasets_df.to_csv(f"{output_dir}/valid_datasets.csv", index=False)
+    
+    filtered_matrix_train.fillna(-1, inplace=True)
+    print(combined_matrix_train.shape)
+    combined_matrix_train.to_csv(f"{output_dir}/combined_matrix_train.csv")
+    
+    filtered_matrix_test.fillna(-1, inplace=True)
+    print(combined_matrix_test.shape)
+    combined_matrix_test.to_csv(f"{output_dir}/combined_matrix_test.csv")
+    
     # valid_datasets = pd.read_csv(f"{output_dir}/valid_datasets.csv").values.flatten()
-    # # print(valid_datasets)
     
-    # W, b, a, z_hat = mle_multi_dim_amor_theta(
-    #     response_matrix=torch.tensor(combined_matrix_train.values, dtype=torch.float32),
-    #     constraint=args.constraint,
-    #     feat_matrix=torch.tensor(feat_matrix_train, dtype=torch.float32),
-    # )
-    # z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
-    # z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
-    # np.save(f"{output_dir}/W_con_{args.constraint}.npy", W.cpu().detach().numpy())
-    # np.save(f"{output_dir}/b_con_{args.constraint}.npy", b.cpu().detach().numpy())
-    # np.save(f"{output_dir}/a_con_{args.constraint}.npy", a.cpu().detach().numpy())
+    W, b, a, z_hat = mle_multi_dim_amor_theta(
+        y_train=torch.tensor(combined_matrix_train.values, dtype=torch.float32),
+        y_test=torch.tensor(combined_matrix_test.values, dtype=torch.float32),
+        constraint=args.constraint,
+        feat_matrix=torch.tensor(feat_matrix_train, dtype=torch.float32),
+    )
+    z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
+    z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
+    np.save(f"{output_dir}/W_con_{args.constraint}.npy", W.cpu().detach().numpy())
+    np.save(f"{output_dir}/b_con_{args.constraint}.npy", b.cpu().detach().numpy())
+    np.save(f"{output_dir}/a_con_{args.constraint}.npy", a.cpu().detach().numpy())
     
-    # W = W.cpu().detach().numpy()
-    # b = b.cpu().detach().numpy()
+    z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv").values
+    W = np.load(f"{output_dir}/W_con_{args.constraint}.npy")
+    b = np.load(f"{output_dir}/b_con_{args.constraint}.npy")
+    a = np.load(f"{output_dir}/a_con_{args.constraint}.npy")
     
-    # z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv").values
-    # W = np.load(f"{output_dir}/W_con_{args.constraint}.npy")
-    # b = np.load(f"{output_dir}/b_con_{args.constraint}.npy")
-    # a = np.load(f"{output_dir}/a_con_{args.constraint}.npy")
-    
-    # gof_mean_trains, gof_std_trains = [], []
-    # gof_mean_tests, gof_std_tests = [], []
-    # a_means = []
-    # for dataset in tqdm(valid_datasets):
-    #     matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
-    #     col_indices = [combined_matrix_train.columns.get_loc(i) for i in matrix.columns]
-    #     # z_hat_subset = z_hat[col_indices].cpu().detach()
-    #     # a_subset = a[col_indices].cpu().detach()
-    #     z_hat_subset = z_hat[col_indices]
-    #     a_subset = a[col_indices]
+    gof_mean_trains, gof_std_trains = [], []
+    gof_mean_tests, gof_std_tests = [], []
+    a_means = []
+    for dataset in tqdm(valid_datasets):
+        matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+        col_indices = [combined_matrix_train.columns.get_loc(i) for i in matrix.columns]
+        z_hat_subset = z_hat[col_indices]
+        a_subset = a[col_indices]
         
-    #     matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
-    #     matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
-    #     train_indices = [np.where(valid_model_names_train == name)[0][0] for name in matrix_train.index]
-    #     test_indices = [np.where(valid_model_names_test == name)[0][0] for name in matrix_test.index]
-    #     feat_train = feat_matrix_train[train_indices]
-    #     feat_test = feat_matrix_test[test_indices]
-    #     theta_train = feat_train @ W + b
-    #     theta_test = feat_test @ W + b
+        matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
+        matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
+        train_indices = [np.where(valid_model_names_train == name)[0][0] for name in matrix_train.index]
+        test_indices = [np.where(valid_model_names_test == name)[0][0] for name in matrix_test.index]
+        feat_train = feat_matrix_train[train_indices]
+        feat_test = feat_matrix_test[test_indices]
+        theta_train = feat_train @ W + b
+        theta_test = feat_test @ W + b
         
-    #     gof_mean_train, gof_std_train = goodness_of_fit_1PL_multi_dim_plot(
-    #         z=torch.tensor(z_hat_subset, dtype=torch.float32), 
-    #         theta=torch.tensor(theta_train, dtype=torch.float32),
-    #         a=torch.tensor(a_subset, dtype=torch.float32),
-    #         y=torch.tensor(matrix_train.values, dtype=torch.float32),
-    #         plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}_train.png',
-    #     )
-    #     gof_mean_trains.append(gof_mean_train)
-    #     gof_std_trains.append(gof_std_train)
+        gof_mean_train, gof_std_train = goodness_of_fit_1PL_multi_dim_plot(
+            z=torch.tensor(z_hat_subset, dtype=torch.float32), 
+            theta=torch.tensor(theta_train, dtype=torch.float32),
+            a=torch.tensor(a_subset, dtype=torch.float32),
+            y=torch.tensor(matrix_train.values, dtype=torch.float32),
+            plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}_train.png',
+        )
+        gof_mean_trains.append(gof_mean_train)
+        gof_std_trains.append(gof_std_train)
         
-    #     gof_mean_test, gof_std_test = goodness_of_fit_1PL_multi_dim_plot(
-    #         z=torch.tensor(z_hat_subset, dtype=torch.float32), 
-    #         theta=torch.tensor(theta_test, dtype=torch.float32), 
-    #         a=torch.tensor(a_subset, dtype=torch.float32), 
-    #         y=torch.tensor(matrix_test.values, dtype=torch.float32),
-    #         plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}_test.png',
-    #     )
-    #     gof_mean_tests.append(gof_mean_test)
-    #     gof_std_tests.append(gof_std_test)
+        gof_mean_test, gof_std_test = goodness_of_fit_1PL_multi_dim_plot(
+            z=torch.tensor(z_hat_subset, dtype=torch.float32), 
+            theta=torch.tensor(theta_test, dtype=torch.float32), 
+            a=torch.tensor(a_subset, dtype=torch.float32), 
+            y=torch.tensor(matrix_test.values, dtype=torch.float32),
+            plot_path=f'{plot_dir}/goodness_of_fit_con_{args.constraint}_{dataset}_test.png',
+        )
+        gof_mean_tests.append(gof_mean_test)
+        gof_std_tests.append(gof_std_test)
         
-    # error_bar_plot_double(
-    #     datasets=valid_datasets, 
-    #     means_train=gof_mean_trains, stds_train=gof_std_trains, 
-    #     means_test=gof_mean_tests, stds_test=gof_std_tests,
-    #     plot_path=f"{plot_dir}/mle_multi_dim_amor_theta_summarize_gof_con_{args.constraint}",
-    #     xlabel=r"Goodness of Fit",
-    #     plot_std=False,
-    # )
+    error_bar_plot_double(
+        datasets=valid_datasets, 
+        means_train=gof_mean_trains, stds_train=gof_std_trains, 
+        means_test=gof_mean_tests, stds_test=gof_std_tests,
+        plot_path=f"{plot_dir}/mle_multi_dim_amor_theta_summarize_gof_con_{args.constraint}",
+        xlabel=r"Goodness of Fit",
+        plot_std=False,
+    )
         
