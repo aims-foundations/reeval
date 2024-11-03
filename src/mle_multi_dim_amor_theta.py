@@ -163,11 +163,13 @@ if __name__ == "__main__":
     valid_datasets_df.to_csv(f"{output_dir}/valid_datasets.csv", index=False)
     
     combined_matrix_train.fillna(-1, inplace=True)
+    combined_matrix_train = combined_matrix_train.reindex(valid_model_names_train)
     print(combined_matrix_train.shape)
     assert combined_matrix_train.index.tolist() == valid_model_names_train
     combined_matrix_train.to_csv(f"{output_dir}/combined_matrix_train.csv")
     
     combined_matrix_test.fillna(-1, inplace=True)
+    combined_matrix_test = combined_matrix_test.reindex(valid_model_names_test)
     print(combined_matrix_test.shape)
     assert combined_matrix_test.index.tolist() == valid_model_names_test, f"{combined_matrix_test.index.tolist()} != {valid_model_names_test}"
     combined_matrix_test.to_csv(f"{output_dir}/combined_matrix_test.csv")
@@ -203,7 +205,7 @@ if __name__ == "__main__":
         
         matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
         matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
-        train_indices = []
+        train_indices = [i for i, name in enumerate(valid_model_names_train) if name in matrix_train.index]
         test_indices = [np.where(valid_model_names_test == name)[0][0] for name in matrix_test.index]
         feat_train = feat_matrix_train[train_indices]
         feat_test = feat_matrix_test[test_indices]
