@@ -169,7 +169,7 @@ if __name__ == "__main__":
     
     combined_matrix_test.fillna(-1, inplace=True)
     print(combined_matrix_test.shape)
-    assert combined_matrix_test.index.tolist() == valid_model_names_test
+    assert combined_matrix_test.index.tolist() == valid_model_names_test, f"{combined_matrix_test.index.tolist()} != {valid_model_names_test}"
     combined_matrix_test.to_csv(f"{output_dir}/combined_matrix_test.csv")
     
     # valid_datasets = pd.read_csv(f"{output_dir}/valid_datasets.csv").values.flatten()
@@ -203,7 +203,7 @@ if __name__ == "__main__":
         
         matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
         matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
-        train_indices = [np.where(valid_model_names_train == name)[0][0] for name in matrix_train.index]
+        train_indices = []
         test_indices = [np.where(valid_model_names_test == name)[0][0] for name in matrix_test.index]
         feat_train = feat_matrix_train[train_indices]
         feat_test = feat_matrix_test[test_indices]
