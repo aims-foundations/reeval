@@ -62,8 +62,9 @@ def mle_multi_dim_amor_theta(
             # b_full = b[None, :].repeat(num_model, 1) # (num_model, dim=2)
             # theta_hat = torch.mm(feat_matrix, W) + b_full # (num_model, dim=2)
             theta_hat = torch.mm(feat_matrix, W) + b # (num_model, dim=2)
+            theta_hat_norm = (theta_hat - torch.mean(theta_hat)) / torch.std(theta_hat)
             a_softmax = torch.nn.functional.softmax(a, dim=1)
-            prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a_softmax)
+            prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat_norm, a_softmax)
         # else:   
         #     prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a)
         assert prob_matrix.shape == response_matrix.shape
@@ -73,13 +74,13 @@ def mle_multi_dim_amor_theta(
         masked_prob_matrix = prob_matrix[mask]
 
         berns = torch.distributions.Bernoulli(masked_prob_matrix)
-        loss = -berns.log_prob(masked_response_matrix).mean()
-        loss.backward()
+        train_loss = -berns.log_prob(masked_response_matrix).mean()
+        train_loss.backward()
         optimizer.step()
         optimizer.zero_grad()
 
-        pbar.set_postfix({'loss': loss.item()})
-        wandb.log({'loss': loss.item()})
+        pbar.set_postfix({'train_loss': train_loss.item()})
+        wandb.log({'train_loss': train_loss.item()})
         
         if constraint:
             if not (torch.isnan(W).any() or torch.isnan(b).any() or torch.isnan(a_softmax).any() or torch.isnan(z_hat).any()):
@@ -122,7 +123,7 @@ if __name__ == "__main__":
     model_id_df = pd.read_csv('configs/model_id_ver1.csv')
     valid_model_names = model_id_df['model_names_reeval'].values
     feat_matrix = model_id_df[['Model Size (B)', 'Pretraining Data Size (T)', 'FLOPs (1E21)']].values
-    feat_matrix = (feat_matrix - feat_matrix.mean(axis=0)) / feat_matrix.std(axis=0)
+    # feat_matrix = (feat_matrix - feat_matrix.mean(axis=0)) / feat_matrix.std(axis=0)
     split_index = int(len(valid_model_names) * 0.8)
     valid_model_names_train = valid_model_names[:split_index]
     feat_matrix_train = feat_matrix[:split_index]
