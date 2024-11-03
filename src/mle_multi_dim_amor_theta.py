@@ -25,6 +25,7 @@ def mle_multi_dim_amor_theta(
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     y_train = y_train.to(device)
+    y_test = y_test.to(device)
     num_model, num_item = y_train.shape
     feat_train = feat_train.to(device)
     feat_test = feat_test.to(device)
