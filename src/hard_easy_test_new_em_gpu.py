@@ -8,13 +8,13 @@ import wandb
 from utils import item_response_fn_1PL, set_seed, inverse_sigmoid, plot_hard_easy
 
 if __name__ == "__main__":
-    wandb.init(project="hard_easy_test_new_em_cpu")
+    wandb.init(project="hard_easy_test_new_em_gpu")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     args = parser.parse_args()
     
     set_seed(42)
-    device = torch.device('cpu')
+    device = torch.device('cuda')
     
     selection_prob = 0.8
     subset_size = 100
@@ -79,18 +79,18 @@ if __name__ == "__main__":
         theta_hats.append(theta_hat.item())
         y_means.append(inverse_sigmoid(y_sub.mean()).item())
     
-    save_dir = f'../data/hard_easy_test_new_em_cpu/{args.dataset}'
+    save_dir = f'../data/hard_easy_test_new_em_gpu/{args.dataset}'
     os.makedirs(save_dir, exist_ok=True)
     df = pd.DataFrame({
         "theta_hat": theta_hats,
         "y_mean": y_means,
     })
-    df.to_csv(f'{save_dir}/hard_easy_test_new_em_cpu.csv', index=False)
+    df.to_csv(f'{save_dir}/hard_easy_test_new_em_gpu.csv', index=False)
     
-    theta_hats = pd.read_csv(f'../data/hard_easy_test_new_em_cpu/{args.dataset}/hard_easy_test_new_em_cpu.csv')["theta_hat"].values
-    y_means = pd.read_csv(f'../data/hard_easy_test_new_em_cpu/{args.dataset}/hard_easy_test_new_em_cpu.csv')["y_mean"].values
+    theta_hats = pd.read_csv(f'../data/hard_easy_test_new_em_gpu/{args.dataset}/hard_easy_test_new_em_gpu.csv')["theta_hat"].values
+    y_means = pd.read_csv(f'../data/hard_easy_test_new_em_gpu/{args.dataset}/hard_easy_test_new_em_gpu.csv')["y_mean"].values
     
-    plot_dir = f'../plot/hard_easy_test_new_em_cpu'
+    plot_dir = f'../plot/hard_easy_test_new_em_gpu'
     os.makedirs(plot_dir, exist_ok=True)
     plot_hard_easy(
         theta_hats,
