@@ -82,7 +82,7 @@ def mle_multi_dim_amor_theta(
             theta_test_norm = (theta_test - torch.mean(theta_test)) / torch.std(theta_test)
             a_softmax_temp = a_softmax.clone().detach()
             prob_test = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_test_norm, a_softmax_temp)
-            assert prob_test.shape == y_test.shape
+            assert prob_test.shape == y_test.shape, f"prob_test.shape: {prob_test.shape}, y_test.shape: {y_test.shape}"
             mask_test = y_test != -1
             masked_y_test = y_test[mask_test]
             masked_prob_test = prob_test[mask_test]
