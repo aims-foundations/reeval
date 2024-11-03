@@ -138,33 +138,29 @@ if __name__ == "__main__":
     # feat_matrix = (feat_matrix - feat_matrix.mean(axis=0)) / feat_matrix.std(axis=0)
     
     valid_model_names_test = ['meta_llama-2-70b', 'meta_llama-2-7b', 'meta_llama-2-13b']
-    valid_model_indices = [np.where(valid_model_names == name)[0][0] for name in valid_model_names_test]
-    feat_matrix_test = feat_matrix[valid_model_indices]
+    valid_model_indices_test = [i for i, name in enumerate(valid_model_names) if name in valid_model_names_test]
+    feat_matrix_test = feat_matrix[valid_model_indices_test]
     valid_model_names_train = [name for name in valid_model_names if name not in valid_model_names_test]
-    valid_model_indices = [np.where(valid_model_names == name)[0][0] for name in valid_model_names_train]
-    feat_matrix_train = feat_matrix[valid_model_indices]
+    valid_model_indices_train = [i for i, name in enumerate(valid_model_names) if name in valid_model_names_train]
+    feat_matrix_train = feat_matrix[valid_model_indices_train]
     
     valid_datasets = []
-    combined_matrix_train = pd.DataFrame()
-    combined_matrix_test = pd.DataFrame()
+    combined_matrix_train = pd.DataFrame(index=valid_model_names_train)
+    combined_matrix_test = pd.DataFrame(index=valid_model_names_test)
     for dataset in DATASETS:
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
         
         filtered_matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
-        # print(f"Dataset: {dataset}, left model num: {filtered_matrix_train.shape[0]}, left models: {filtered_matrix_train.index.tolist()}")
         if not filtered_matrix_train.empty:
             valid_datasets.append(dataset)
-            if combined_matrix_train.empty:
-                combined_matrix_train = filtered_matrix_train
-            else:
-                combined_matrix_train = combined_matrix_train.join(filtered_matrix_train, how='outer', rsuffix='_dup')
-                
-        filtered_matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
-        if not filtered_matrix_test.empty:
-            if combined_matrix_test.empty:
-                combined_matrix_test = filtered_matrix_test
-            else:
-                combined_matrix_test = combined_matrix_test.join(filtered_matrix_test, how='outer', rsuffix='_dup')
+            combined_matrix_train = combined_matrix_train.join(filtered_matrix_train, how='outer', rsuffix='_dup')
+        # print(f"Dataset: {dataset}, left model num: {filtered_matrix_train.shape[0]}, left models: {filtered_matrix_train.index.tolist()}")
+        
+            filtered_matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
+            combined_matrix_test = combined_matrix_test.join(filtered_matrix_test, how='outer', rsuffix='_dup')
+            
+    assert combined_matrix_train.index.tolist() == valid_model_names_train
+    assert combined_matrix_test.index.tolist() == valid_model_names_test
     
     valid_datasets_df = pd.DataFrame(valid_datasets, columns=["dataset"])
     valid_datasets_df.to_csv(f"{output_dir}/valid_datasets.csv", index=False)
