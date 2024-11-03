@@ -166,11 +166,11 @@ if __name__ == "__main__":
     valid_datasets_df = pd.DataFrame(valid_datasets, columns=["dataset"])
     valid_datasets_df.to_csv(f"{output_dir}/valid_datasets.csv", index=False)
     
-    filtered_matrix_train.fillna(-1, inplace=True)
+    combined_matrix_train.fillna(-1, inplace=True)
     print(combined_matrix_train.shape)
     combined_matrix_train.to_csv(f"{output_dir}/combined_matrix_train.csv")
     
-    filtered_matrix_test.fillna(-1, inplace=True)
+    combined_matrix_test.fillna(-1, inplace=True)
     print(combined_matrix_test.shape)
     combined_matrix_test.to_csv(f"{output_dir}/combined_matrix_test.csv")
     
