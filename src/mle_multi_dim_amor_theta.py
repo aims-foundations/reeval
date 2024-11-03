@@ -18,18 +18,19 @@ def mle_multi_dim_amor_theta(
     y_train: torch.Tensor,
     y_test: torch.Tensor,
     constraint: bool,
-    feat_matrix: torch.Tensor,
+    feat_train: torch.Tensor,
+    feat_test: torch.Tensor,
     dim: int=2,
     max_epoch: int=3000,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     y_train = y_train.to(device)
     num_model, num_item = y_train.shape
-    feat_matrix = feat_matrix.to(device)
+    feat_train = feat_train.to(device)
 
     W = torch.normal(
         mean=0.0, std=1.0,
-        size=(feat_matrix.shape[1], dim),
+        size=(feat_train.shape[1], dim),
         requires_grad=True, device=device
     )
     b = torch.normal(
@@ -62,7 +63,7 @@ def mle_multi_dim_amor_theta(
         # if constraint:
         # else:   
         #     prob_train = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_train, a)
-        theta_train = torch.mm(feat_matrix, W) + b # (num_model, dim=2)
+        theta_train = torch.mm(feat_train, W) + b # (num_model, dim=2)
         theta_train_norm = (theta_train - torch.mean(theta_train)) / torch.std(theta_train)
         a_softmax = torch.nn.functional.softmax(a, dim=1)
         prob_train = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_train_norm, a_softmax)
@@ -78,11 +79,11 @@ def mle_multi_dim_amor_theta(
         
         with torch.no_grad():
             W_temp = W.clone().detach()
-            theta_test = torch.mm(feat_matrix, W_temp) + b
+            theta_test = torch.mm(feat_test, W_temp) + b
             theta_test_norm = (theta_test - torch.mean(theta_test)) / torch.std(theta_test)
             a_softmax_temp = a_softmax.clone().detach()
             prob_test = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_test_norm, a_softmax_temp)
-            assert prob_test.shape == y_test.shape, f"prob_test.shape: {prob_test.shape}, y_test.shape: {y_test.shape}"
+            assert prob_test.shape == y_test.shape
             mask_test = y_test != -1
             masked_y_test = y_test[mask_test]
             masked_prob_test = prob_test[mask_test]
@@ -180,7 +181,8 @@ if __name__ == "__main__":
         y_train=torch.tensor(combined_matrix_train.values, dtype=torch.float32),
         y_test=torch.tensor(combined_matrix_test.values, dtype=torch.float32),
         constraint=args.constraint,
-        feat_matrix=torch.tensor(feat_matrix_train, dtype=torch.float32),
+        feat_train=torch.tensor(feat_matrix_train, dtype=torch.float32),
+        feat_test=torch.tensor(feat_matrix_test, dtype=torch.float32),
     )
     z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
     z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
