@@ -27,6 +27,7 @@ def mle_multi_dim_amor_theta(
     y_train = y_train.to(device)
     num_model, num_item = y_train.shape
     feat_train = feat_train.to(device)
+    feat_test = feat_test.to(device)
 
     W = torch.normal(
         mean=0.0, std=1.0,
