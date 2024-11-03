@@ -206,7 +206,7 @@ if __name__ == "__main__":
         matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
         matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
         train_indices = [i for i, name in enumerate(valid_model_names_train) if name in matrix_train.index]
-        test_indices = [np.where(valid_model_names_test == name)[0][0] for name in matrix_test.index]
+        test_indices = [i for i, name in enumerate(valid_model_names_test) if name in matrix_test.index]
         feat_train = feat_matrix_train[train_indices]
         feat_test = feat_matrix_test[test_indices]
         theta_train = feat_train @ W + b
@@ -232,6 +232,7 @@ if __name__ == "__main__":
         gof_mean_tests.append(gof_mean_test)
         gof_std_tests.append(gof_std_test)
         
+        theta_
     error_bar_plot_double(
         datasets=valid_datasets, 
         means_train=gof_mean_trains, stds_train=gof_std_trains, 
