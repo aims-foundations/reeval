@@ -154,23 +154,22 @@ if __name__ == "__main__":
         if not filtered_matrix_train.empty:
             valid_datasets.append(dataset)
             combined_matrix_train = combined_matrix_train.join(filtered_matrix_train, how='outer', rsuffix='_dup')
-        # print(f"Dataset: {dataset}, left model num: {filtered_matrix_train.shape[0]}, left models: {filtered_matrix_train.index.tolist()}")
+            # print(f"Dataset: {dataset}, left model num: {filtered_matrix_train.shape[0]}, left models: {filtered_matrix_train.index.tolist()}")
         
             filtered_matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
             combined_matrix_test = combined_matrix_test.join(filtered_matrix_test, how='outer', rsuffix='_dup')
             
-    assert combined_matrix_train.index.tolist() == valid_model_names_train
-    assert combined_matrix_test.index.tolist() == valid_model_names_test
-    
     valid_datasets_df = pd.DataFrame(valid_datasets, columns=["dataset"])
     valid_datasets_df.to_csv(f"{output_dir}/valid_datasets.csv", index=False)
     
     combined_matrix_train.fillna(-1, inplace=True)
     print(combined_matrix_train.shape)
+    assert combined_matrix_train.index.tolist() == valid_model_names_train
     combined_matrix_train.to_csv(f"{output_dir}/combined_matrix_train.csv")
     
     combined_matrix_test.fillna(-1, inplace=True)
     print(combined_matrix_test.shape)
+    assert combined_matrix_test.index.tolist() == valid_model_names_test
     combined_matrix_test.to_csv(f"{output_dir}/combined_matrix_test.csv")
     
     # valid_datasets = pd.read_csv(f"{output_dir}/valid_datasets.csv").values.flatten()
