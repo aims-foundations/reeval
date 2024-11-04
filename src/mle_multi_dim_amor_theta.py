@@ -218,20 +218,20 @@ if __name__ == "__main__":
     assert feat_matrix_train.shape[0] == theta_train_gt.shape[0]
     assert feat_matrix_test.shape[0] == theta_test_gt.shape[0]
     
-    # feat_matrix_df = pd.DataFrame(feat_matrix, index=valid_model_names, columns=['feat'])
-    # feat_matrix_df.to_csv(f"{output_dir}/feat_matrix.csv")
-    # feat_matrix_train_df = pd.DataFrame(feat_matrix_train, index=valid_model_names_train, columns=['feat'])
-    # feat_matrix_train_df.to_csv(f"{output_dir}/feat_matrix_train.csv")
-    # feat_matrix_test_df = pd.DataFrame(feat_matrix_test, index=valid_model_names_test, columns=['feat'])
-    # feat_matrix_test_df.to_csv(f"{output_dir}/feat_matrix_test.csv")
-    # theta_train_gt_df = pd.DataFrame(theta_train_gt, index=valid_model_names_train, columns=['theta_0', 'theta_1'])
-    # theta_train_gt_df.to_csv(f"{output_dir}/theta_train_gt.csv")
-    # theta_test_gt_df = pd.DataFrame(theta_test_gt, index=valid_model_names_test, columns=['theta_0', 'theta_1'])
-    # theta_test_gt_df.to_csv(f"{output_dir}/theta_test_gt.csv")
-    # theta_train_pred_df = pd.DataFrame(theta_train_pred, index=valid_model_names_train, columns=['theta_0', 'theta_1'])
-    # theta_train_pred_df.to_csv(f"{output_dir}/theta_train_pred.csv")
-    # theta_test_pred_df = pd.DataFrame(theta_test_pred, index=valid_model_names_test, columns=['theta_0', 'theta_1'])
-    # theta_test_pred_df.to_csv(f"{output_dir}/theta_test_pred.csv")
+    feat_matrix_df = pd.DataFrame(feat_matrix, index=valid_model_names, columns=['feat'])
+    feat_matrix_df.to_csv(f"{output_dir}/feat_matrix.csv")
+    feat_matrix_train_df = pd.DataFrame(feat_matrix_train, index=valid_model_names_train, columns=['feat'])
+    feat_matrix_train_df.to_csv(f"{output_dir}/feat_matrix_train.csv")
+    feat_matrix_test_df = pd.DataFrame(feat_matrix_test, index=valid_model_names_test, columns=['feat'])
+    feat_matrix_test_df.to_csv(f"{output_dir}/feat_matrix_test.csv")
+    theta_train_gt_df = pd.DataFrame(theta_train_gt, index=valid_model_names_train, columns=['theta_0', 'theta_1'])
+    theta_train_gt_df.to_csv(f"{output_dir}/theta_train_gt.csv")
+    theta_test_gt_df = pd.DataFrame(theta_test_gt, index=valid_model_names_test, columns=['theta_0', 'theta_1'])
+    theta_test_gt_df.to_csv(f"{output_dir}/theta_test_gt.csv")
+    theta_train_pred_df = pd.DataFrame(theta_train_pred, index=valid_model_names_train, columns=['theta_0', 'theta_1'])
+    theta_train_pred_df.to_csv(f"{output_dir}/theta_train_pred.csv")
+    theta_test_pred_df = pd.DataFrame(theta_test_pred, index=valid_model_names_test, columns=['theta_0', 'theta_1'])
+    theta_test_pred_df.to_csv(f"{output_dir}/theta_test_pred.csv")
     
     x = np.linspace(0, feat_matrix.max()+5, 100)
     y = x[:, None] @ W + b
@@ -242,16 +242,18 @@ if __name__ == "__main__":
     ax1.scatter(feat_matrix_train, theta_train_pred[:, 0], label='Amortized train', color='blue', alpha=0.5)
     ax1.scatter(feat_matrix_test, theta_test_pred[:, 0], label='Amortized test', color='red', alpha=0.5)
     ax1.plot(x, y[:, 0], color='blue', alpha=0.5)
-    ax1.set_title(r'$\theta_0$')
-
+    ax1.set_title(r'$\theta_0$', fontsize=25)
+    ax1.tick_params(axis='both', labelsize=25)
+    ax1.legend(fontsize=10)
+    
     ax2.scatter(feat_matrix, theta_gt[:, 1], label='Non-amortized', color='black', alpha=0.5)
     ax2.scatter(feat_matrix_train, theta_train_pred[:, 1], label='Amortized train', color='blue', alpha=0.5)
     ax2.scatter(feat_matrix_test, theta_test_pred[:, 1], label='Amortized test', color='red', alpha=0.5)
     ax2.plot(x, y[:, 1], color='blue', alpha=0.5)
-    ax2.set_title(r'$\theta_1$')
-    
-    plt.legend(fontsize=25)
-    plt.tick_params(axis='both', labelsize=25)
+    ax2.set_title(r'$\theta_1$', fontsize=25)
+    ax2.tick_params(axis='both', labelsize=25)
+    ax2.legend(fontsize=10)
+
     plt.savefig(f"{plot_dir}/theta_to_feat.png", dpi=300, bbox_inches='tight')
     plt.close()
     
