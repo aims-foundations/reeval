@@ -211,20 +211,35 @@ if __name__ == "__main__":
     theta_train_pred = feat_matrix_train[:, None] @ W + b
     theta_test_pred = feat_matrix_test[:, None] @ W + b
     
+    feat_matrix_df = pd.DataFrame(feat_matrix, index=valid_model_names, columns=['feat'])
+    feat_matrix_df.to_csv(f"{output_dir}/feat_matrix.csv")
+    feat_matrix_train_df = pd.DataFrame(feat_matrix_train, index=valid_model_names_train, columns=['feat'])
+    feat_matrix_train_df.to_csv(f"{output_dir}/feat_matrix_train.csv")
+    feat_matrix_test_df = pd.DataFrame(feat_matrix_test, index=valid_model_names_test, columns=['feat'])
+    feat_matrix_test_df.to_csv(f"{output_dir}/feat_matrix_test.csv")
+    theta_train_gt_df = pd.DataFrame(theta_train_gt, index=valid_model_names_train, columns=['theta_0', 'theta_1'])
+    theta_train_gt_df.to_csv(f"{output_dir}/theta_train_gt.csv")
+    theta_test_gt_df = pd.DataFrame(theta_test_gt, index=valid_model_names_test, columns=['theta_0', 'theta_1'])
+    theta_test_gt_df.to_csv(f"{output_dir}/theta_test_gt.csv")
+    theta_train_pred_df = pd.DataFrame(theta_train_pred, index=valid_model_names_train, columns=['theta_0', 'theta_1'])
+    theta_train_pred_df.to_csv(f"{output_dir}/theta_train_pred.csv")
+    theta_test_pred_df = pd.DataFrame(theta_test_pred, index=valid_model_names_test, columns=['theta_0', 'theta_1'])
+    theta_test_pred_df.to_csv(f"{output_dir}/theta_test_pred.csv")
+    
     x = np.linspace(0, feat_matrix.max()+5, 1000)
     y = x[:, None] @ W + b
-    y_theta0, y_theta1 = y[0], y[1]
+    y_theta0, y_theta1 = y[:, 0], y[:, 1]
     
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
-    ax1.scatter(feat_matrix_train, theta_train_gt[0], label='Non-amortized', color='black', alpha=0.5)
-    ax1.scatter(feat_matrix_train, theta_train_pred[0], label='Amortized train', color='blue', alpha=0.5)
-    ax1.scatter(feat_matrix_train, theta_test_pred[0], label='Amortized test', color='red', alpha=0.5)
+    ax1.scatter(feat_matrix, theta_train_gt[:, 0], label='Non-amortized', color='black', alpha=0.5)
+    ax1.scatter(feat_matrix_train, theta_train_pred[:, 0], label='Amortized train', color='blue', alpha=0.5)
+    ax1.scatter(feat_matrix_test, theta_test_pred[:, 0], label='Amortized test', color='red', alpha=0.5)
     ax1.plot(x, y_theta0, color='blue', alpha=0.5)
     ax1.set_title(r'$\theta_0$')
 
-    ax2.scatter(feat_matrix_train, theta_train_gt[1], label='Non-amortized', color='black', alpha=0.5)
+    ax2.scatter(feat_matrix, theta_train_gt[1], label='Non-amortized', color='black', alpha=0.5)
     ax2.scatter(feat_matrix_train, theta_train_pred[1], label='Amortized train', color='blue', alpha=0.5)
-    ax2.scatter(feat_matrix_train, theta_test_pred[1], label='Amortized test', color='red', alpha=0.5)
+    ax2.scatter(feat_matrix_test, theta_test_pred[1], label='Amortized test', color='red', alpha=0.5)
     ax2.plot(x, y_theta1, color='blue', alpha=0.5)
     ax2.set_title(r'$\theta_1$')
     
