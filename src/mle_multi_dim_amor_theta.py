@@ -269,8 +269,8 @@ if __name__ == "__main__":
         test_indices = [i for i, name in enumerate(valid_model_names_test) if name in matrix_test.index]
         feat_train = feat_matrix_train[train_indices]
         feat_test = feat_matrix_test[test_indices]
-        theta_train = feat_train @ W + b
-        theta_test = feat_test @ W + b
+        theta_train = feat_train[:, None] @ W + b
+        theta_test = feat_test[:, None] @ W + b
         
         gof_mean_train, gof_std_train = goodness_of_fit_1PL_multi_dim_plot(
             z=torch.tensor(z_hat_subset, dtype=torch.float32), 
