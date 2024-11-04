@@ -6,6 +6,10 @@ import wandb
 import pandas as pd
 from tqdm import tqdm
 import torch.optim as optim
+import matplotlib.pyplot as plt
+from tueplots import bundles
+plt.rcParams.update(bundles.icml2022())
+plt.style.use('seaborn-v0_8-paper')
 from utils import (
     set_seed, 
     DATASETS,
@@ -195,7 +199,37 @@ if __name__ == "__main__":
     b = np.load(f"{output_dir}/b_con_{args.constraint}.npy")
     a = np.load(f"{output_dir}/a_con_{args.constraint}.npy")
     
-    theta_gt = pd.read_csv('configs/theta.csv').values
+    theta_gt_names = pd.read_csv('../data/mle_multi_dim_calibration/combined_matrix.csv').index.to_list()
+    theta_gt = pd.read_csv('../data/mle_multi_dim_calibration/theta.csv').values
+    theta_train_gt_indices = [i for i, name in enumerate(theta_gt_names) if name in valid_model_names]
+    theta_train_gt = theta_gt[theta_train_gt_indices]
+    theta_test_gt_indices = [i for i, name in enumerate(theta_gt_names) if name in valid_model_names_test]
+    theta_test_gt = theta_gt[theta_test_gt_indices]
+    
+    theta_train_pred = feat_matrix_train @ W + b
+    theta_test_pred = feat_matrix_test @ W + b
+    
+    x = np.linspace(0, feat_matrix.max()+5, 1000)
+    y = x @ W + b
+    y_theta0, y_theta1 = y[0], y[1]
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+    ax1.scatter(feat_matrix_train, theta_train_gt[0], label='Non-amortized', color='black', alpha=0.5)
+    ax1.scatter(feat_matrix_train, theta_train_pred[0], label='Amortized train', color='blue', alpha=0.5)
+    ax1.scatter(feat_matrix_train, theta_test_pred[0], label='Amortized test', color='red', alpha=0.5)
+    ax1.plot(x, y_theta0, color='blue', alpha=0.5)
+    ax1.set_title(r'$\theta_0$')
+
+    ax2.scatter(feat_matrix_train, theta_train_gt[1], label='Non-amortized', color='black', alpha=0.5)
+    ax2.scatter(feat_matrix_train, theta_train_pred[1], label='Amortized train', color='blue', alpha=0.5)
+    ax2.scatter(feat_matrix_train, theta_test_pred[1], label='Amortized test', color='red', alpha=0.5)
+    ax2.plot(x, y_theta1, color='blue', alpha=0.5)
+    ax2.set_title(r'$\theta_1$')
+    
+    plt.legend(fontsize=25)
+    plt.tick_params(axis='both', labelsize=25)
+    plt.savefig(f"{plot_dir}/theta_to_feat.png", dpi=300, bbox_inches='tight')
+    plt.close()
     
     gof_mean_trains, gof_std_trains = [], []
     gof_mean_tests, gof_std_tests = [], []
