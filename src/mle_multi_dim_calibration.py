@@ -16,7 +16,7 @@ from utils import (
 
 def mle_multi_dim_calibration(
     response_matrix: torch.Tensor,
-    constraint: bool,
+    constraint: bool=True,
     dim: int=2,
     max_epoch: int=3000,
 ):
