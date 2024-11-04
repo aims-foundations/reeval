@@ -202,11 +202,13 @@ if __name__ == "__main__":
     a = np.load(f"{output_dir}/a_con_{args.constraint}.npy")
     
     theta_gt_names = pd.read_csv('../data/mle_multi_dim_calibration/combined_matrix.csv', index_col=0).index.to_list()
-    theta_gt = pd.read_csv('../data/mle_multi_dim_calibration/theta.csv').values
+    theta_gt_all = pd.read_csv('../data/mle_multi_dim_calibration/theta.csv').values
     theta_train_gt_indices = [i for i, name in enumerate(theta_gt_names) if name in valid_model_names_train]
-    theta_train_gt = theta_gt[theta_train_gt_indices]
+    theta_train_gt = theta_gt_all[theta_train_gt_indices]
     theta_test_gt_indices = [i for i, name in enumerate(theta_gt_names) if name in valid_model_names_test]
-    theta_test_gt = theta_gt[theta_test_gt_indices]
+    theta_test_gt = theta_gt_all[theta_test_gt_indices]
+    theta_gt_indices = [i for i, name in enumerate(theta_gt_names) if name in valid_model_names]
+    theta_gt = theta_gt_all[theta_gt_indices]
     
     theta_train_pred = feat_matrix_train[:, None] @ W + b
     theta_test_pred = feat_matrix_test[:, None] @ W + b
@@ -236,13 +238,13 @@ if __name__ == "__main__":
     assert x.shape[0] == y.shape[0]
     
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
-    ax1.scatter(feat_matrix, theta_train_gt[:, 0], label='Non-amortized', color='black', alpha=0.5)
+    ax1.scatter(feat_matrix, theta_gt[:, 0], label='Non-amortized', color='black', alpha=0.5)
     ax1.scatter(feat_matrix_train, theta_train_pred[:, 0], label='Amortized train', color='blue', alpha=0.5)
     ax1.scatter(feat_matrix_test, theta_test_pred[:, 0], label='Amortized test', color='red', alpha=0.5)
     ax1.plot(x, y[:, 0], color='blue', alpha=0.5)
     ax1.set_title(r'$\theta_0$')
 
-    ax2.scatter(feat_matrix, theta_train_gt[:, 1], label='Non-amortized', color='black', alpha=0.5)
+    ax2.scatter(feat_matrix, theta_gt[:, 1], label='Non-amortized', color='black', alpha=0.5)
     ax2.scatter(feat_matrix_train, theta_train_pred[:, 1], label='Amortized train', color='blue', alpha=0.5)
     ax2.scatter(feat_matrix_test, theta_test_pred[:, 1], label='Amortized test', color='red', alpha=0.5)
     ax2.plot(x, y[:, 1], color='blue', alpha=0.5)
@@ -289,7 +291,20 @@ if __name__ == "__main__":
         )
         gof_mean_tests.append(gof_mean_test)
         gof_std_tests.append(gof_std_test)
-        
+    
+    gof_train_df = pd.DataFrame({
+        'datasets': valid_datasets,
+        'gof_means': gof_mean_trains,
+        'gof_stds': gof_std_trains,
+    })
+    gof_train_df.to_csv(f"{plot_dir}/mle_multi_dim_amor_theta_gof_con_{args.constraint}_train.csv", index=False)
+    gof_test_df = pd.DataFrame({
+        'datasets': valid_datasets,
+        'gof_means': gof_mean_tests,
+        'gof_stds': gof_std_tests,
+    })
+    gof_test_df.to_csv(f"{plot_dir}/mle_multi_dim_amor_theta_gof_con_{args.constraint}_test.csv", index=False)
+    
     error_bar_plot_double(
         datasets=valid_datasets, 
         means_train=gof_mean_trains, stds_train=gof_std_trains, 

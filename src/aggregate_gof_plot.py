@@ -6,4 +6,5 @@ if __name__ == "__main__":
     plugin_gof_test = pd.read_csv(f'../plot/plugin_regression/plugin_regression_gof_test.csv')['gof_means'].values
     joint_gof_train = pd.read_csv(f'../plot/amor_calibration/amor_calibration_gof_train.csv')['gof_means'].values
     joint_gof_test = pd.read_csv(f'../plot/amor_calibration/amor_calibration_gof_test.csv')['gof_means'].values
-    dim2_1pl_trad_gof = pd.read_csv(f'../plot/dim2_1pl/dim2_1pl_gof_con_True.csv')['gof_means'].values
+    dim2_1pl_trad_gof = pd.read_csv(f'../plot/mle_multi_dim_calibration/dim2_1pl_gof_con_True.csv')['gof_means'].values
+    dim2_1pl_amor_gof = pd.read_csv(f'../plot/mle_multi_dim_calibration/dim2_1pl_gof_con_False.csv')['gof_means'].values
