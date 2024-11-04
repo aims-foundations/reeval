@@ -212,7 +212,7 @@ if __name__ == "__main__":
     theta_test_pred = feat_matrix_test[:, None] @ W + b
     
     x = np.linspace(0, feat_matrix.max()+5, 1000)
-    y = x @ W + b
+    y = x[:, None] @ W + b
     y_theta0, y_theta1 = y[0], y[1]
     
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
