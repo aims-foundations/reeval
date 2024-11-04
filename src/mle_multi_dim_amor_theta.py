@@ -201,7 +201,7 @@ if __name__ == "__main__":
     b = np.load(f"{output_dir}/b_con_{args.constraint}.npy")
     a = np.load(f"{output_dir}/a_con_{args.constraint}.npy")
     
-    theta_gt_names = pd.read_csv('../data/mle_multi_dim_calibration/combined_matrix.csv').index.to_list()
+    theta_gt_names = pd.read_csv('data/mle_multi_dim_calibration/combined_matrix.csv', index_col=0).index.to_list()
     theta_gt = pd.read_csv('../data/mle_multi_dim_calibration/theta.csv').values
     theta_train_gt_indices = [i for i, name in enumerate(theta_gt_names) if name in valid_model_names]
     theta_train_gt = theta_gt[theta_train_gt_indices]
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     
     theta_train_pred = feat_matrix_train[:, None] @ W + b
     theta_test_pred = feat_matrix_test[:, None] @ W + b
-    assert theta_train_gt.shape == theta_train_pred.shape
+    assert theta_train_gt.shape == theta_train_pred.shape, f"{theta_train_gt.shape} != {theta_train_pred.shape}"
     assert theta_test_gt.shape == theta_test_pred.shape
     assert feat_matrix.shape[0] == theta_gt.shape[0]
     assert feat_matrix_train.shape[0] == theta_train_gt.shape[0]
