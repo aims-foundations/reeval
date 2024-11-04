@@ -210,7 +210,7 @@ if __name__ == "__main__":
     
     theta_train_pred = feat_matrix_train[:, None] @ W + b
     theta_test_pred = feat_matrix_test[:, None] @ W + b
-    assert theta_train_gt.shape == theta_train_pred.shape, f"{theta_train_gt.shape} != {theta_train_pred.shape}"
+    assert theta_train_gt.shape == theta_train_pred.shape
     assert theta_test_gt.shape == theta_test_pred.shape
     assert feat_matrix.shape[0] == theta_gt.shape[0]
     assert feat_matrix_train.shape[0] == theta_train_gt.shape[0]

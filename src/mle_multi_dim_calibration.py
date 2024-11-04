@@ -167,9 +167,9 @@ if __name__ == "__main__":
             # )
     
     gof_df = pd.DataFrame({
-        'dataset': DATASETS,
-        'gof_mean': gof_means,
-        'gof_std': gof_stds,
+        'datasets': DATASETS,
+        'gof_means': gof_means,
+        'gof_stds': gof_stds,
     })
     gof_df.to_csv(f"{plot_dir}/dim2_1pl_gof_con_{args.constraint}.csv", index=False)
     
