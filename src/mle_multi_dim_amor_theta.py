@@ -94,14 +94,14 @@ def mle_multi_dim_amor_theta(
         pbar.set_postfix({'train_loss': train_loss.item(), 'test_loss': test_loss.item()})
         wandb.log({'train_loss': train_loss.item(), 'test_loss': test_loss.item()})
         
-        if constraint:
-            if not (torch.isnan(W).any() or torch.isnan(b).any() or torch.isnan(a_softmax).any() or torch.isnan(z_hat).any()):
-                last_W = W.cpu().detach().clone()
-                last_b = b.cpu().detach().clone()
-                last_a_softmax = a_softmax.cpu().detach().clone()
-                last_z_hat = z_hat.cpu().detach().clone()
-            else:
-                break
+        if not (torch.isnan(W).any() or torch.isnan(b).any() or torch.isnan(a_softmax).any() or torch.isnan(z_hat).any()):
+            last_W = W.cpu().detach().clone()
+            last_b = b.cpu().detach().clone()
+            last_a_softmax = a_softmax.cpu().detach().clone()
+            last_z_hat = z_hat.cpu().detach().clone()
+        else:
+            break
+        # if constraint:
         # else:
         #     if not (torch.isnan(theta_train).any() or torch.isnan(a).any() or torch.isnan(z_hat).any()):
         #         last_theta_train = theta_train.cpu().detach().clone()
@@ -110,8 +110,8 @@ def mle_multi_dim_amor_theta(
         #     else:
         #         break
     
-    if constraint:
-        return last_W, last_b, last_a_softmax, last_z_hat
+    return last_W, last_b, last_a_softmax, last_z_hat
+    # if constraint:
     # else:
     #     return last_theta_train, last_a, last_z_hat
 
@@ -134,7 +134,8 @@ if __name__ == "__main__":
     
     model_id_df = pd.read_csv('configs/model_id_ver1.csv')
     valid_model_names = model_id_df['model_names_reeval'].values
-    feat_matrix = model_id_df[['Model Size (B)', 'Pretraining Data Size (T)', 'FLOPs (1E21)']].values
+    feat_matrix = model_id_df['FLOPs (1E21)'].values
+    feat_matrix = np.log(feat_matrix)
     # feat_matrix = (feat_matrix - feat_matrix.mean(axis=0)) / feat_matrix.std(axis=0)
     
     valid_model_names_test = ['meta_llama-2-70b', 'meta_llama-2-7b', 'meta_llama-2-13b']
@@ -194,9 +195,10 @@ if __name__ == "__main__":
     b = np.load(f"{output_dir}/b_con_{args.constraint}.npy")
     a = np.load(f"{output_dir}/a_con_{args.constraint}.npy")
     
+    theta_gt = pd.read_csv('configs/theta.csv').values
+    
     gof_mean_trains, gof_std_trains = [], []
     gof_mean_tests, gof_std_tests = [], []
-    a_means = []
     for dataset in tqdm(valid_datasets):
         matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
         col_indices = [combined_matrix_train.columns.get_loc(i) for i in matrix.columns]
@@ -232,7 +234,6 @@ if __name__ == "__main__":
         gof_mean_tests.append(gof_mean_test)
         gof_std_tests.append(gof_std_test)
         
-        theta_
     error_bar_plot_double(
         datasets=valid_datasets, 
         means_train=gof_mean_trains, stds_train=gof_std_trains, 
@@ -241,4 +242,5 @@ if __name__ == "__main__":
         xlabel=r"Goodness of Fit",
         plot_std=False,
     )
-        
+    
+    

@@ -50,9 +50,11 @@ def mle_multi_dim_calibration(
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
         if constraint:
+            theta_hat = (theta_hat - torch.mean(theta_hat)) / torch.std(theta_hat)
             a_softmax = torch.nn.functional.softmax(a, dim=1)
             prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a_softmax)
         else:   
+            theta_hat = (theta_hat - torch.mean(theta_hat)) / torch.std(theta_hat)
             prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a)
         assert prob_matrix.shape == response_matrix.shape
 
