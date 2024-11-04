@@ -120,20 +120,20 @@ if __name__ == "__main__":
     # combined_matrix.to_csv(f"{output_dir}/combined_matrix.csv")
     combined_matrix = pd.read_csv(f"{output_dir}/combined_matrix.csv", index_col=0)
     
-    theta_hat, a, z_hat = mle_multi_dim_calibration(
-        response_matrix=torch.tensor(combined_matrix.values, dtype=torch.float32),
-        constraint=args.constraint,
-    )
-    z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
-    z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
-    a_df = pd.DataFrame(a.cpu().detach().numpy(), columns=[f"a_{i}" for i in range(a.size(1))])
-    a_df.to_csv(f"{output_dir}/a_con_{args.constraint}.csv", index=False)
-    theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=[f"theta_{i}" for i in range(theta_hat.size(1))])
-    theta_df.to_csv(f"{output_dir}/theta_con_{args.constraint}.csv", index=False)
+    # theta_hat, a, z_hat = mle_multi_dim_calibration(
+    #     response_matrix=torch.tensor(combined_matrix.values, dtype=torch.float32),
+    #     constraint=args.constraint,
+    # )
+    # z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
+    # z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
+    # a_df = pd.DataFrame(a.cpu().detach().numpy(), columns=[f"a_{i}" for i in range(a.size(1))])
+    # a_df.to_csv(f"{output_dir}/a_con_{args.constraint}.csv", index=False)
+    # theta_df = pd.DataFrame(theta_hat.cpu().detach().numpy(), columns=[f"theta_{i}" for i in range(theta_hat.size(1))])
+    # theta_df.to_csv(f"{output_dir}/theta_con_{args.constraint}.csv", index=False)
     
-    # theta_hat = pd.read_csv(f"{output_dir}/theta_con_{args.constraint}.csv")
-    # a = pd.read_csv(f"{output_dir}/a_con_{args.constraint}.csv")
-    # z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv")
+    theta_hat = pd.read_csv(f"{output_dir}/theta_con_{args.constraint}.csv")
+    a = pd.read_csv(f"{output_dir}/a_con_{args.constraint}.csv")
+    z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv")
     
     gof_means, gof_stds = [], []
     a_means = []

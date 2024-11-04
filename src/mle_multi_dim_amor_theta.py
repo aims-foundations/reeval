@@ -203,7 +203,7 @@ if __name__ == "__main__":
     
     theta_gt_names = pd.read_csv('../data/mle_multi_dim_calibration/combined_matrix.csv', index_col=0).index.to_list()
     theta_gt = pd.read_csv('../data/mle_multi_dim_calibration/theta.csv').values
-    theta_train_gt_indices = [i for i, name in enumerate(theta_gt_names) if name in valid_model_names]
+    theta_train_gt_indices = [i for i, name in enumerate(theta_gt_names) if name in valid_model_names_train]
     theta_train_gt = theta_gt[theta_train_gt_indices]
     theta_test_gt_indices = [i for i, name in enumerate(theta_gt_names) if name in valid_model_names_test]
     theta_test_gt = theta_gt[theta_test_gt_indices]
