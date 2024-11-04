@@ -31,12 +31,12 @@ def mle_multi_dim_amor_theta(
     y_train = y_train.to(device)
     y_test = y_test.to(device)
     num_model, num_item = y_train.shape
-    feat_train = feat_train.to(device)
-    feat_test = feat_test.to(device)
+    feat_train = feat_train[:, None].to(device)
+    feat_test = feat_test[:, None].to(device)
 
     W = torch.normal(
         mean=0.0, std=1.0,
-        size=(1, dim),
+        size=(feat_train.shape[1], dim),
         requires_grad=True, device=device
     )
     b = torch.normal(
