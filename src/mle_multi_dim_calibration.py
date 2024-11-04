@@ -41,7 +41,7 @@ def mle_multi_dim_calibration(
 
     optimizer = optim.Adam([theta_hat, a, z_hat], lr=0.01)
     
-    last_theta_hat = None
+    last_theta_hat_norm = None
     if constraint:
         last_a_softmax = None
     else:
@@ -50,12 +50,12 @@ def mle_multi_dim_calibration(
     pbar = tqdm(range(max_epoch))
     for _ in pbar:
         if constraint:
-            theta_hat = (theta_hat - torch.mean(theta_hat)) / torch.std(theta_hat)
+            theta_hat_norm = (theta_hat - torch.mean(theta_hat)) / torch.std(theta_hat)
             a_softmax = torch.nn.functional.softmax(a, dim=1)
-            prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a_softmax)
-        else:   
-            theta_hat = (theta_hat - torch.mean(theta_hat)) / torch.std(theta_hat)
-            prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a)
+            prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat_norm, a_softmax)
+        # else:   
+        #     theta_hat = (theta_hat - torch.mean(theta_hat)) / torch.std(theta_hat)
+        #     prob_matrix = item_response_fn_1PL_multi_dim(z_hat[None, :], theta_hat, a)
         assert prob_matrix.shape == response_matrix.shape
 
         mask = response_matrix != -1
@@ -72,24 +72,24 @@ def mle_multi_dim_calibration(
         # wandb.log({'loss': loss.item()})
         
         if constraint:
-            if not (torch.isnan(theta_hat).any() or torch.isnan(a_softmax).any() or torch.isnan(z_hat).any()):
-                last_theta_hat = theta_hat.cpu().detach().clone()
+            if not (torch.isnan(theta_hat_norm).any() or torch.isnan(a_softmax).any() or torch.isnan(z_hat).any()):
+                last_theta_hat_norm = theta_hat_norm.cpu().detach().clone()
                 last_a_softmax = a_softmax.cpu().detach().clone()
                 last_z_hat = z_hat.cpu().detach().clone()
             else:
                 break
-        else:
-            if not (torch.isnan(theta_hat).any() or torch.isnan(a).any() or torch.isnan(z_hat).any()):
-                last_theta_hat = theta_hat.cpu().detach().clone()
-                last_a = a.cpu().detach().clone()
-                last_z_hat = z_hat.cpu().detach().clone()
-            else:
-                break
+        # else:
+        #     if not (torch.isnan(theta_hat).any() or torch.isnan(a).any() or torch.isnan(z_hat).any()):
+        #         last_theta_hat = theta_hat.cpu().detach().clone()
+        #         last_a = a.cpu().detach().clone()
+        #         last_z_hat = z_hat.cpu().detach().clone()
+        #     else:
+        #         break
     
     if constraint:
-        return last_theta_hat, last_a_softmax, last_z_hat
-    else:
-        return last_theta_hat, last_a, last_z_hat
+        return last_theta_hat_norm, last_a_softmax, last_z_hat
+    # else:
+    #     return last_theta_hat, last_a, last_z_hat
 
 if __name__ == "__main__":
     # wandb.init(project="mle_multi_dim_calibration")
