@@ -252,8 +252,8 @@ if __name__ == "__main__":
     ax2.plot(x, y[:, 1], color='blue', alpha=0.5)
     ax2.set_title(r'$\theta_1$', fontsize=25)
     ax2.tick_params(axis='both', labelsize=25)
-    ax2.legend(fontsize=10)
-
+    
+    plt.legend(fontsize=10)
     plt.savefig(f"{plot_dir}/theta_to_feat.png", dpi=300, bbox_inches='tight')
     plt.close()
     
