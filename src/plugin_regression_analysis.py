@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error
 
 if __name__ == "__main__":
     input_dir = '../data/plugin_regression'
-    plot_dir = f'../plot/plugin_regression'
+    plot_dir = '../plot/plugin_regression'
     os.makedirs(plot_dir, exist_ok=True)
     
     dataset_gof_train_means, dataset_gof_train_stds = [], []
@@ -84,7 +84,6 @@ if __name__ == "__main__":
         dataset_test_mse_stds.append(np.std(test_mses))
         dataset_baseline_train_mse_stds.append(np.std(baseline_train_mses))
         dataset_baseline_test_mse_stds.append(np.std(baseline_test_mses))
-    
     
     single_df_gof_train = pd.DataFrame({
         'datasets': DATASETS,

@@ -165,7 +165,14 @@ if __name__ == "__main__":
             #     plot_path=f'{plot_dir}/a_histogram_{dataset}.png',
             #     ylabel='Histiogram of a',
             # )
-        
+    
+    gof_df = pd.DataFrame({
+        'dataset': DATASETS,
+        'gof_mean': gof_means,
+        'gof_std': gof_stds,
+    })
+    gof_df.to_csv(f"{plot_dir}/dim2_1pl_gof_con_{args.constraint}.csv", index=False)
+    
     error_bar_plot_single(
         datasets=DATASETS,
         means=gof_means,
