@@ -36,7 +36,7 @@ def mle_multi_dim_amor_theta(
 
     W = torch.normal(
         mean=0.0, std=1.0,
-        size=(feat_train.shape[0], dim),
+        size=(1, dim),
         requires_grad=True, device=device
     )
     b = torch.normal(
