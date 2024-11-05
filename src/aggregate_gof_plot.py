@@ -57,4 +57,4 @@ if __name__ == "__main__":
     plt.xlabel('Datasets', fontsize=25)
     plt.ylabel('Goodness of Fit', fontsize=25)
     plt.legend(fontsize=10)
-    plt.savefig(f'../{plot_dir}/agg_GOF.png', bbox_inches='tight', dpi=300)
+    plt.savefig(f'{plot_dir}/agg_GOF.png', bbox_inches='tight', dpi=300)
