@@ -43,7 +43,7 @@ if __name__ == "__main__":
     plt.figure(figsize=(10, 6))
     x = np.arange(len(datasets))
 
-    # plt.plot(x, trad_gof, 'k-', marker='o', label='Traditional')
+    plt.plot(x, trad_gof, 'k-', marker='o', label='Traditional')
     # plt.plot(x, plugin_gof_train, 'b-', marker='o', label='Plug-in (Train)')
     # plt.plot(x, plugin_gof_test, 'b--', marker='o', label='Plug-in (Test)')
     # plt.plot(x, joint_gof_train, 'r-', marker='o', label='Joint (Train)')
