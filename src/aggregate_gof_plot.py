@@ -56,5 +56,6 @@ if __name__ == "__main__":
     plt.xticks(x, datasets, rotation=45, ha='right', fontsize=20)
     plt.xlabel('Datasets', fontsize=25)
     plt.ylabel('Goodness of Fit', fontsize=25)
+    plt.ylim(0, 1.1)
     plt.legend(fontsize=10)
     plt.savefig(f'{plot_dir}/agg_GOF.png', bbox_inches='tight', dpi=300)
