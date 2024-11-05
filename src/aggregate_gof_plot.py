@@ -32,7 +32,6 @@ if __name__ == "__main__":
         idx = DATASETS.index(dataset)
         dim2_1pl_amor_gof_test_aligned[idx] = gof
         
-    
     datasets = [PLOT_NAME_MAP[dataset] for dataset in DATASETS]
     sorted_data = sorted(
         zip(datasets, trad_gof, plugin_gof_train, plugin_gof_test, joint_gof_train, joint_gof_test),
@@ -44,10 +43,10 @@ if __name__ == "__main__":
     x = np.arange(len(datasets))
 
     plt.plot(x, trad_gof, 'k-', marker='o', label='Traditional')
-    # plt.plot(x, plugin_gof_train, 'b-', marker='o', label='Plug-in (Train)')
-    # plt.plot(x, plugin_gof_test, 'b--', marker='o', label='Plug-in (Test)')
-    # plt.plot(x, joint_gof_train, 'r-', marker='o', label='Joint (Train)')
-    # plt.plot(x, joint_gof_test, 'r--', marker='o', label='Joint (Test)')
+    plt.plot(x, plugin_gof_train, 'b-', marker='o', label='Plug-in (Train)')
+    plt.plot(x, plugin_gof_test, 'b--', marker='o', label='Plug-in (Test)')
+    plt.plot(x, joint_gof_train, 'r-', marker='o', label='Joint (Train)')
+    plt.plot(x, joint_gof_test, 'r--', marker='o', label='Joint (Test)')
     plt.plot(x, dim2_1pl_trad_gof, 'g-', marker='o', label='2D 1PL Traditional')
     plt.plot(x, dim2_1pl_amor_gof_train_aligned, 'purple', linestyle='-', marker='o', label='2D 1PL Amortized Train')
     plt.plot(x, dim2_1pl_amor_gof_test_aligned, 'purple', linestyle='--', marker='o', label='2D 1PL Amortized Test')
