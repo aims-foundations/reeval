@@ -51,7 +51,8 @@ if __name__ == "__main__":
     plt.plot(x, dim2_1pl_trad_gof, 'g-', marker='o', label='2D 1PL Traditional')
     plt.plot(x, dim2_1pl_amor_gof_train_aligned, 'purple', linestyle='-', marker='o', label='2D 1PL Amortized Train')
     plt.plot(x, dim2_1pl_amor_gof_test_aligned, 'purple', linestyle='--', marker='o', label='2D 1PL Amortized Test')
-
+    plt.axhline(y=1, color='black', linestyle='--', linewidth=2)
+    
     plt.tick_params(axis='both', labelsize=25)
     plt.xticks(x, datasets, rotation=45, ha='right', fontsize=20)
     plt.xlabel('Datasets', fontsize=25)
