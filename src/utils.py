@@ -8,8 +8,8 @@ from embed_text_package.embed_text import Embedder
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from scipy.stats import spearmanr
-import matplotlib.pyplot as plt
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
