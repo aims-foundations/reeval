@@ -25,7 +25,7 @@ def train_mlp(
     
     input_dim = emb_train.shape[1]
     model = MLP(input_dim).to(device)
-        
+
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
     
@@ -97,7 +97,7 @@ def main(
         z_train=torch.tensor(z_train, dtype=torch.float32).view(-1, 1),
         z_test = torch.tensor(z_test, dtype=torch.float32).view(-1, 1),
     )
-    
+
     df_train = pd.DataFrame({
         'index': train_indices,
         'z_true': z_train,

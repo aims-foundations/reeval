@@ -18,4 +18,5 @@ wandb/
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 **/*.ipynb_checkpoints/
+a.py
 plot.zip
