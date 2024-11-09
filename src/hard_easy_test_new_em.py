@@ -43,8 +43,8 @@ if __name__ == "__main__":
     z = z[valid_cols_mask]
     assert y.shape == z.shape, f"y.shape: {y.shape}, z.shape: {z.shape}"
     
-    y = torch.tensor(y, dtype=torch.float32).to(device)
-    z = torch.tensor(z, dtype=torch.float32).to(device)
+    y = torch.tensor(y, dtype=torch.float64).to(device)
+    z = torch.tensor(z, dtype=torch.float64).to(device)
     
     z_sort_index = torch.argsort(z)
 
@@ -52,18 +52,17 @@ if __name__ == "__main__":
     y_means = []
     for _ in tqdm(range(iterations)):
         z_sort_index = torch.flip(z_sort_index, dims=[0])
+        z_sorted = z[z_sort_index]
         
-        count = 0
-        id = 0
-        subset_index = []
-        while count < subset_size:
-            if torch.rand(1) < selection_prob:
-                subset_index.append(z_sort_index[id].item())
-                count = count + 1
-            id = id + 1
-            
-        z_sub = z[subset_index]
-        y_sub = y[subset_index]
+        mean = z_sorted[0]
+        std = abs(z_sorted[-1] - z_sorted[0]) / 10
+        idx_prob = (1 / (std * torch.sqrt(torch.tensor(2 * torch.pi)))) * torch.exp(-((z_sorted - mean) ** 2) / (2 * std ** 2))
+        idx_prob = torch.clamp(idx_prob, min=1 / (z.shape[0] * 5))
+        idx_prob = idx_prob / idx_prob.sum()
+        subset_index = torch.multinomial(idx_prob, num_samples=100, replacement=False)
+        
+        z_sub = z_sorted[subset_index]
+        y_sub = y[z_sort_index[subset_index]]
 
         theta_hat = torch.normal(0, 1, size=(1,), requires_grad=True, device=device)
         optim = torch.optim.SGD([theta_hat], lr=0.01)
