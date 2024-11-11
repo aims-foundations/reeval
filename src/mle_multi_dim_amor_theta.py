@@ -152,57 +152,57 @@ if __name__ == "__main__":
     valid_model_indices_train = [i for i, name in enumerate(valid_model_names) if name in valid_model_names_train]
     feat_matrix_train = feat_matrix[valid_model_indices_train]
     
-    valid_datasets = []
-    combined_matrix_train = pd.DataFrame(index=valid_model_names_train)
-    combined_matrix_test = pd.DataFrame(index=valid_model_names_test)
-    for dataset in DATASETS:
-        matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
+    # valid_datasets = []
+    # combined_matrix_train = pd.DataFrame(index=valid_model_names_train)
+    # combined_matrix_test = pd.DataFrame(index=valid_model_names_test)
+    # for dataset in DATASETS:
+    #     matrix = pd.read_csv(f'../data/pre_calibration/{dataset}/matrix.csv', index_col=0)
         
-        filtered_matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
-        if not filtered_matrix_train.empty:
-            valid_datasets.append(dataset)
-            combined_matrix_train = combined_matrix_train.join(filtered_matrix_train, how='outer', rsuffix='_dup')
-            # print(f"Dataset: {dataset}, left model num: {filtered_matrix_train.shape[0]}, left models: {filtered_matrix_train.index.tolist()}")
+    #     filtered_matrix_train = matrix[matrix.index.isin(valid_model_names_train)]
+    #     if not filtered_matrix_train.empty:
+    #         valid_datasets.append(dataset)
+    #         combined_matrix_train = combined_matrix_train.join(filtered_matrix_train, how='outer', rsuffix='_dup')
+    #         # print(f"Dataset: {dataset}, left model num: {filtered_matrix_train.shape[0]}, left models: {filtered_matrix_train.index.tolist()}")
         
-            filtered_matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
-            combined_matrix_test = combined_matrix_test.join(filtered_matrix_test, how='outer', rsuffix='_dup')
+    #         filtered_matrix_test = matrix[matrix.index.isin(valid_model_names_test)]
+    #         combined_matrix_test = combined_matrix_test.join(filtered_matrix_test, how='outer', rsuffix='_dup')
             
-    valid_datasets_df = pd.DataFrame(valid_datasets, columns=["dataset"])
-    valid_datasets_df.to_csv(f"{output_dir}/valid_datasets.csv", index=False)
+    # valid_datasets_df = pd.DataFrame(valid_datasets, columns=["dataset"])
+    # valid_datasets_df.to_csv(f"{output_dir}/valid_datasets.csv", index=False)
     
-    combined_matrix_train.fillna(-1, inplace=True)
-    combined_matrix_train = combined_matrix_train.reindex(valid_model_names_train)
-    print(combined_matrix_train.shape)
-    assert combined_matrix_train.index.tolist() == valid_model_names_train
-    combined_matrix_train.to_csv(f"{output_dir}/combined_matrix_train.csv")
+    # combined_matrix_train.fillna(-1, inplace=True)
+    # combined_matrix_train = combined_matrix_train.reindex(valid_model_names_train)
+    # print(combined_matrix_train.shape)
+    # assert combined_matrix_train.index.tolist() == valid_model_names_train
+    # combined_matrix_train.to_csv(f"{output_dir}/combined_matrix_train.csv")
     
-    combined_matrix_test.fillna(-1, inplace=True)
-    combined_matrix_test = combined_matrix_test.reindex(valid_model_names_test)
-    print(combined_matrix_test.shape)
-    assert combined_matrix_test.index.tolist() == valid_model_names_test, f"{combined_matrix_test.index.tolist()} != {valid_model_names_test}"
-    combined_matrix_test.to_csv(f"{output_dir}/combined_matrix_test.csv")
+    # combined_matrix_test.fillna(-1, inplace=True)
+    # combined_matrix_test = combined_matrix_test.reindex(valid_model_names_test)
+    # print(combined_matrix_test.shape)
+    # assert combined_matrix_test.index.tolist() == valid_model_names_test, f"{combined_matrix_test.index.tolist()} != {valid_model_names_test}"
+    # combined_matrix_test.to_csv(f"{output_dir}/combined_matrix_test.csv")
     
-    # valid_datasets = pd.read_csv(f"{output_dir}/valid_datasets.csv").values.flatten()
-    # combined_matrix_train = pd.read_csv(f"{output_dir}/combined_matrix_train.csv", index_col=0)
-    # combined_matrix_test = pd.read_csv(f"{output_dir}/combined_matrix_test.csv", index_col=0)
+    valid_datasets = pd.read_csv(f"{output_dir}/valid_datasets.csv").values.flatten()
+    combined_matrix_train = pd.read_csv(f"{output_dir}/combined_matrix_train.csv", index_col=0)
+    combined_matrix_test = pd.read_csv(f"{output_dir}/combined_matrix_test.csv", index_col=0)
     
-    W, b, a, z_hat = mle_multi_dim_amor_theta(
-        y_train=torch.tensor(combined_matrix_train.values, dtype=torch.float32),
-        y_test=torch.tensor(combined_matrix_test.values, dtype=torch.float32),
-        constraint=args.constraint,
-        feat_train=torch.tensor(feat_matrix_train, dtype=torch.float32),
-        feat_test=torch.tensor(feat_matrix_test, dtype=torch.float32),
-    )
-    z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
-    z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
-    np.save(f"{output_dir}/W_con_{args.constraint}.npy", W.cpu().detach().numpy())
-    np.save(f"{output_dir}/b_con_{args.constraint}.npy", b.cpu().detach().numpy())
-    np.save(f"{output_dir}/a_con_{args.constraint}.npy", a.cpu().detach().numpy())
+    # W, b, a, z_hat = mle_multi_dim_amor_theta(
+    #     y_train=torch.tensor(combined_matrix_train.values, dtype=torch.float32),
+    #     y_test=torch.tensor(combined_matrix_test.values, dtype=torch.float32),
+    #     constraint=args.constraint,
+    #     feat_train=torch.tensor(feat_matrix_train, dtype=torch.float32),
+    #     feat_test=torch.tensor(feat_matrix_test, dtype=torch.float32),
+    # )
+    # z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
+    # z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
+    # np.save(f"{output_dir}/W_con_{args.constraint}.npy", W.cpu().detach().numpy())
+    # np.save(f"{output_dir}/b_con_{args.constraint}.npy", b.cpu().detach().numpy())
+    # np.save(f"{output_dir}/a_con_{args.constraint}.npy", a.cpu().detach().numpy())
     
-    # z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv").values
-    # W = np.load(f"{output_dir}/W_con_{args.constraint}.npy")
-    # b = np.load(f"{output_dir}/b_con_{args.constraint}.npy")
-    # a = np.load(f"{output_dir}/a_con_{args.constraint}.npy")
+    z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv").values
+    W = np.load(f"{output_dir}/W_con_{args.constraint}.npy")
+    b = np.load(f"{output_dir}/b_con_{args.constraint}.npy")
+    a = np.load(f"{output_dir}/a_con_{args.constraint}.npy")
     
     theta_gt_names = pd.read_csv('../data/mle_multi_dim_calibration/combined_matrix.csv', index_col=0).index.to_list()
     theta_gt_all = pd.read_csv('../data/mle_multi_dim_calibration/theta.csv').values
