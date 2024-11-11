@@ -137,7 +137,7 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plot_dir, exist_ok=True)
     
-    model_id_df = pd.read_csv('configs/model_id.csv')
+    model_id_df = pd.read_csv('configs/model_id_final.csv')
     valid_model_names = model_id_df['model_names_reeval'].values
     feat_matrix = model_id_df['FLOPs (1E21)'].values
     feat_matrix = np.log(feat_matrix)
