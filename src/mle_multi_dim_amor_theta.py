@@ -6,7 +6,6 @@ import wandb
 import pandas as pd
 from tqdm import tqdm
 import torch.optim as optim
-import random
 import matplotlib.pyplot as plt
 from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
@@ -145,8 +144,7 @@ if __name__ == "__main__":
     
     # valid_model_names_test = ['meta_llama-2-70b', 'meta_llama-2-7b', 'meta_llama-2-13b']
     test_size = int(len(valid_model_names) * 0.2)
-    print(type(valid_model_names))
-    valid_model_names_test = random.sample(valid_model_names, test_size)
+    valid_model_names_test = np.random.choice(valid_model_names, size=test_size, replace=False)
     print(valid_model_names_test)
     valid_model_indices_test = [i for i, name in enumerate(valid_model_names) if name in valid_model_names_test]
     feat_matrix_test = feat_matrix[valid_model_indices_test]
