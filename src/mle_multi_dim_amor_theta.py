@@ -144,7 +144,7 @@ if __name__ == "__main__":
     
     # valid_model_names_test = ['meta_llama-2-70b', 'meta_llama-2-7b', 'meta_llama-2-13b']
     test_size = int(len(valid_model_names) * 0.2)
-    valid_model_names_test = np.random.choice(valid_model_names, size=test_size, replace=False)
+    valid_model_names_test = list(np.random.choice(valid_model_names, size=test_size, replace=False))
     print(valid_model_names_test)
     valid_model_indices_test = [i for i, name in enumerate(valid_model_names) if name in valid_model_names_test]
     feat_matrix_test = feat_matrix[valid_model_indices_test]
