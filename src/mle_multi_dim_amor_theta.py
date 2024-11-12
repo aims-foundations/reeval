@@ -195,9 +195,12 @@ if __name__ == "__main__":
     # )
     # z_df = pd.DataFrame(z_hat.cpu().detach().numpy(), columns=["z"])
     # z_df.to_csv(f"{output_dir}/z_con_{args.constraint}.csv", index=False)
-    # np.save(f"{output_dir}/W_con_{args.constraint}.npy", W.cpu().detach().numpy())
-    # np.save(f"{output_dir}/b_con_{args.constraint}.npy", b.cpu().detach().numpy())
-    # np.save(f"{output_dir}/a_con_{args.constraint}.npy", a.cpu().detach().numpy())
+    # W = W.cpu().detach().numpy()
+    # b = b.cpu().detach().numpy()
+    # a = a.cpu().detach().numpy()
+    # np.save(f"{output_dir}/W_con_{args.constraint}.npy", W)
+    # np.save(f"{output_dir}/b_con_{args.constraint}.npy", b)
+    # np.save(f"{output_dir}/a_con_{args.constraint}.npy", a)
     
     z_hat = pd.read_csv(f"{output_dir}/z_con_{args.constraint}.csv").values
     W = np.load(f"{output_dir}/W_con_{args.constraint}.npy")
