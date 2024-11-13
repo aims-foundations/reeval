@@ -1,0 +1,30 @@
+method: grid
+parameters:
+  dataset:
+    values:
+    - airbench
+    - math
+    - mmlu
+    - wikifact
+    - entity_data_imputation
+    - commonsense
+    - quac
+    - imdb
+    - bbq
+    - twitter_aae
+    - truthful_qa
+    - legal_support
+    - boolq
+    - narrative_qa
+    - real_toxicity_prompts
+    - bold
+    - babi_qa
+    - synthetic_reasoning_natural
+    - dyck_language_np3
+    - civil_comments
+    - lsat_qa
+    - raft
+    - entity_matching
+    - synthetic_reasoning
+program: mcmc_3pl_calibration.py
+project: mcmc_3pl_calibration.py
