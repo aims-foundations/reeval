@@ -5,3 +5,7 @@ plot/
 wandb
 .env
 .ipynb_checkpoints
+*/.ipynb_checkpoints/*
+**/*.ipynb_checkpoints/
+a.py
+plot.zip
