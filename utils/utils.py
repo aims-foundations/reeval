@@ -81,6 +81,47 @@ def item_response_fn_2PL(z2, z3, theta):
 def item_response_fn_2PL_jnp(z2, z3, theta):
     return 1 / (1 + jnp.exp(-(z2 * theta + z3)))
 
+class IRT(nn.Module):
+    def __init__(self, n_questions, n_testtaker, D=1, PL=1):
+        super(IRT, self).__init__()
+        self.D = D
+        self.PL = PL
+        self.ability = nn.Parameter(torch.randn(n_testtaker, D), requires_grad=True)
+        self.difficulty = nn.Parameter(torch.randn(n_questions), requires_grad=True)
+        
+        if D == 1:
+            self.register_buffer('loading_factor', torch.ones(n_questions, D))
+        elif D > 1:
+            self.loading_factor = torch.randn(n_questions, D)
+            self.loading_factor = nn.Parameter(self.loading_factor, requires_grad=True)
+        else:
+            raise ValueError(f'D={D} is not supported')
+        
+        if PL == 1:
+            self.register_buffer('disciminatory', torch.ones(n_questions))
+        elif PL == 2:
+            self.disciminatory = nn.Parameter(torch.exp(torch.randn(n_questions)), requires_grad=True)
+        else:
+            raise ValueError(f'PL={PL} is not supported')
+            
+    def forward(self):
+        ability = self.ability[:, None, :]
+        difficulty = self.difficulty[None, :]
+        loading_factor = torch.softmax(self.loading_factor, dim=1)
+        disciminatory = torch.relu(self.disciminatory)
+        return torch.sigmoid(disciminatory * (ability * loading_factor).sum(-1) + difficulty)
+
+    def normalize(self):
+        mean_difficulty = torch.mean(self.difficulty.data)
+        std_difficulty = torch.std(self.difficulty.data)
+        self.difficulty.data = (self.difficulty.data - mean_difficulty) / std_difficulty
+        
+    def get_ability(self):
+        return self.ability.data
+    
+    def get_difficulty(self):
+        return self.difficulty.data
+
 def set_seed(seed):
     random.seed(seed)
     # torch.backends.cudnn.deterministic=True
