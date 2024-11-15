@@ -11,6 +11,7 @@ from utils.utils import (
     error_bar_plot_single,
     goodness_of_fit,
     goodness_of_fit_plot,
+    str2bool,
     theta_corr_plot,
 )
 
@@ -20,10 +21,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--fitting_method", type=str, default="mle", choices=["mle", "mcmc", "em"]
     )
+    parser.add_argument("--amortized", type=str2bool, default=False)
     args = parser.parse_args()
 
-    input_dir = f"../../data/{args.fitting_method}_{args.PL}pl_calibration"
-    plot_dir = f"../../plot/{args.fitting_method}_{args.PL}pl_calibration"
+    input_dir = f"../../data/{args.fitting_method}_{args.PL}pl{'_amortized' if args.amortized else ''}_calibration"
+    plot_dir = f"../../plot/{args.fitting_method}_{args.PL}pl{'_amortized' if args.amortized else ''}_calibration"
     os.makedirs(plot_dir, exist_ok=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

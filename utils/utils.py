@@ -20,22 +20,8 @@ import seaborn as sns
 from .constants import HELM_MODEL_MAP, PLOT_NAME_MAP
 from .irt import IRT
 
-class MLP(nn.Module):
-    def __init__(self, input_dim):
-        super(MLP, self).__init__()
-        self.model = nn.Sequential(
-            nn.Linear(input_dim, input_dim),
-            nn.ELU(),
-            nn.Linear(input_dim, input_dim),
-            nn.ELU(),
-            nn.Linear(input_dim, 2048),
-            nn.ELU(),
-            nn.Linear(2048, 1024),
-            nn.ELU(),
-            nn.Linear(1024, 1)
-        )
-    def forward(self, x):
-        return self.model(x)
+def str2bool(v):
+  return v.lower() in ("yes", "true", "t", "1")
 
 def set_seed(seed):
     random.seed(seed)

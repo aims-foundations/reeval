@@ -4,8 +4,9 @@ import pickle
 
 import pandas as pd
 import torch
+from datasets import concatenate_datasets, load_dataset
 from utils.irt import IRT
-from utils.utils import set_seed
+from utils.utils import set_seed, str2bool
 
 
 if __name__ == "__main__":
@@ -18,26 +19,52 @@ if __name__ == "__main__":
         "--fitting_method", type=str, default="mle", choices=["mle", "mcmc", "em"]
     )
     parser.add_argument("--max_epoch", type=int, default=3000)
+    parser.add_argument("--amortized", type=str2bool, default=False)
     args = parser.parse_args()
 
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     input_dir = "../../data/pre_calibration"
-    output_dir = (
-        f"../../data/{args.fitting_method}_{args.PL}pl_calibration/{args.dataset}"
-    )
+    output_dir = f"../../data/{args.fitting_method}_{args.PL}pl{'_amortized' if args.amortized else ''}_calibration/{args.dataset}"
     os.makedirs(output_dir, exist_ok=True)
+
+    # Loading data for amortized calibration
+    if args.amortized:
+        hf_repo = f"stair-lab/reeval_{args.dataset}-embed"
+        dataset_info = load_dataset(hf_repo, split=None)
+        splits = dataset_info.keys()
+        datasets = [load_dataset(hf_repo, split=split) for split in splits]
+        dataset = concatenate_datasets(datasets)
+        item_embeddings = torch.tensor(
+            dataset["embed"], dtype=torch.float32, device=device
+        )
+
+        amortized_model_hyperparams = {
+            "input_dim": item_embeddings.shape[1],
+            "n_layers": 1,
+            "hidden_dim": None,
+        }
+    else:
+        amortized_model_hyperparams = None
 
     y = pd.read_csv(f"{input_dir}/{args.dataset}/matrix.csv", index_col=0).values
     response_matrix = torch.tensor(y, dtype=torch.float32, device=device)
     n_models, n_questions = response_matrix.shape
 
-    irt_model = IRT(n_questions, n_models, args.D, args.PL)
+    irt_model = IRT(
+        n_questions=n_questions,
+        n_testtaker=n_models,
+        D=args.D,
+        PL=args.PL,
+        amortize_item=args.amortized,
+        amortized_model_hyperparams=amortized_model_hyperparams,
+    )
     irt_model = irt_model.to(device)
     irt_model.fit(
         max_epoch=args.max_epoch,
         response_matrix=response_matrix,
         method=args.fitting_method,
+        embedding=item_embeddings if args.amortized else None,
     )
     abilities = irt_model.get_abilities().cpu().detach().tolist()
     item_parms = irt_model.get_item_parameters().cpu().detach().tolist()
