@@ -30,14 +30,6 @@ datasets=(
 
 # Loop through each dataset and run the Python command
 for dataset in "${datasets[@]}"; do
-    echo "Calibrating $dataset 1PL"
-    python calibrate.py --dataset $dataset --PL 1 & 
+    echo "Run TAE on $dataset 1PL"
+    python hard_easy_test.py --dataset $dataset --PL 1 --fitting_method mle& 
 done
-
-for dataset in "${datasets[@]}"; do
-    echo "Calibrating $dataset 2PL"
-    python calibrate.py --dataset $dataset --PL 2 & 
-done
-
-python calibrate_analysis.py --PL 1
-python calibrate_analysis.py --PL 1

@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from torch import nn
 from tqdm import tqdm
 from torch import optim
@@ -56,6 +57,9 @@ class IRT(nn.Module):
     def fit(self, method="mle", max_epoch=3000, response_matrix=None):
         if method == "mle":
             self.mle(max_epoch, response_matrix)
+        elif method == "em":
+            self.em(max_epoch, response_matrix)
+            
         else:
             raise ValueError(f'{method} is not supported')
         
@@ -68,7 +72,11 @@ class IRT(nn.Module):
         
         return self.compute_prob(ability, difficulty, disciminatory, guessing, loading_factor)
 
-    def mle(self, max_epoch, response_matrix):
+    def mle(
+        self,
+        max_epoch: int,
+        response_matrix: torch.Tensor
+    ):
         optimizer = optim.Adam(self.parameters(), lr=0.01)
 
         pbar = tqdm(range(max_epoch))
@@ -79,13 +87,99 @@ class IRT(nn.Module):
             masked_response_matrix = response_matrix.flatten()[mask.flatten()]
             masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
 
-            berns = torch.distributions.Bernoulli(masked_prob_matrix)
+            berns = torch.distributions.Bernoulli(probs=masked_prob_matrix)
             loss = -berns.log_prob(masked_response_matrix).mean()
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
             pbar.set_postfix({"loss": loss.item()})
     
+    def em(
+        self,
+        max_epoch: int,
+        response_matrix: torch.Tensor,
+        num_node: int = 64,
+    ):
+        self.em_item(max_epoch, response_matrix, num_node)
+        self.em_ability(max_epoch, response_matrix)
+
+    def em_item(
+        self,
+        max_epoch: int,
+        response_matrix: torch.Tensor,
+        n_mc_samples: int = 64,
+    ):
+        n_testtaker, num_item = response_matrix.shape
+        
+        theta_nodes, weights = np.polynomial.hermite.hermgauss(n_mc_samples)
+        theta_nodes = torch.tensor(theta_nodes, device=response_matrix.device)
+        
+        theta_matrices = theta_nodes[:, None, None].repeat(1, n_testtaker, self.D)
+        # >>> n_mc_samples x n_testtaker x D
+        
+        weights = torch.tensor(weights, device=response_matrix.device)
+        weights = weights / torch.sum(weights)
+        # >>> n_mc_samples
+
+        parameters = [self.difficulty]
+        if self.PL > 1:
+            parameters.append(self.disciminatory)
+        if self.PL > 2:
+            parameters.append(self.guessing)
+        if self.D > 1:
+            parameters.append(self.loading_factor)
+        optimizer = optim.Adam(parameters, lr=0.01)
+
+        pbar = tqdm(range(max_epoch))
+        for _ in pbar:
+            difficulty = self.get_difficulty()
+            disciminatory = self.get_disciminatory()
+            guessing = self.get_guessing()
+            loading_factor = self.get_loading_factor()
+            
+            prob_matrices = self.compute_prob(
+                theta_matrices,
+                difficulty,
+                disciminatory,
+                guessing,
+                loading_factor
+            )
+
+            mask = response_matrix != -1
+            masked_response_matrix = response_matrix[mask]
+            masked_prob_matrix = prob_matrices[:, mask]
+
+            berns = torch.distributions.Bernoulli(
+                probs=(masked_prob_matrix * weights[:,None]).sum(0)
+            )
+            loss = -berns.log_prob(masked_response_matrix).mean()
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+
+            pbar.set_postfix({"loss": loss.item()})
+
+    def em_ability(
+        self,
+        max_epoch: int,
+        response_matrix: torch.Tensor,
+    ):
+        optimizer = optim.Adam([self.ability], lr=0.01)
+        pbar = tqdm(range(max_epoch))
+        for _ in pbar:
+            prob_matrix = self.forward()
+
+            mask = response_matrix != -1
+            masked_response_matrix = response_matrix.flatten()[mask.flatten()]
+            masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
+
+            berns = torch.distributions.Bernoulli(probs=masked_prob_matrix)
+            loss = -berns.log_prob(masked_response_matrix).mean()
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+            pbar.set_postfix({"loss": loss.item()})
+
     def get_abilities(self):
         mean_ability = torch.mean(self.ability, dim=0)
         std_ability = torch.std(self.ability, dim=0)

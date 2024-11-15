@@ -1,28 +1,31 @@
-import os
 import argparse
+import os
+import pickle
+
 import pandas as pd
 import torch
-import pickle
 from tqdm import tqdm
 from utils.constants import DATASETS
 from utils.utils import (
+    accuracy_plot,
     error_bar_plot_single,
     goodness_of_fit,
     goodness_of_fit_plot,
     theta_corr_plot,
-    accuracy_plot
 )
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--PL", type=int, default=1)
-    parser.add_argument("--fitting_method", type=str, default="mle", choices=["mle", "mcmc", "em"])
+    parser.add_argument(
+        "--fitting_method", type=str, default="mle", choices=["mle", "mcmc", "em"]
+    )
     args = parser.parse_args()
-    
+
     input_dir = f"../../data/{args.fitting_method}_{args.PL}pl_calibration"
     plot_dir = f"../../plot/{args.fitting_method}_{args.PL}pl_calibration"
     os.makedirs(plot_dir, exist_ok=True)
-    
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     gof_means, gof_stds = [], []
@@ -30,7 +33,7 @@ if __name__ == "__main__":
     corr_helm_means, corr_helm_stds = [], []
     plugin_gof_train_means, plugin_gof_test_means = [], []
     amor_gof_train_means, amor_gof_test_means = [], []
-    
+
     for dataset in tqdm(DATASETS):
         print(f"Processing {dataset}")
         y = pd.read_csv(
@@ -40,7 +43,7 @@ if __name__ == "__main__":
 
         abilities = pickle.load(open(f"{input_dir}/{dataset}/abilities.pkl", "rb"))
         abilities = torch.tensor(abilities, device=device)
-        
+
         item_parms = pickle.load(open(f"{input_dir}/{dataset}/item_parms.pkl", "rb"))
         item_parms = torch.tensor(item_parms, device=device)
 
@@ -82,7 +85,6 @@ if __name__ == "__main__":
             y=y,
             plot_path=f"{plot_dir}/accuracy_{dataset}",
         )
-        
 
     #     plugin_train_indices = pd.read_csv(
     #         f"../../data/plugin_regression/{dataset}/train_0.csv"

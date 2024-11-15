@@ -4,7 +4,6 @@ import torch
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import wandb
 import pickle
 from tqdm import tqdm
 from utils.irt import IRT
@@ -34,7 +33,6 @@ def plot_hard_easy(
     
 
 if __name__ == "__main__":
-    wandb.init(project="hard_easy_test")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     parser.add_argument("--D", type=int, default=1)
@@ -121,7 +119,6 @@ if __name__ == "__main__":
             loss.backward()
             optim.step()
 
-        wandb.log({'loss': loss.item()})
         theta_hats.extend(theta_hat.flatten().tolist())
         y_means.extend(inverse_sigmoid(y_sub.mean(-1)).tolist())
     
