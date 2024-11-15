@@ -1,3 +1,4 @@
+from typing import List
 import pandas as pd
 import torch
 import numpy as np
@@ -11,9 +12,13 @@ from scipy.stats import spearmanr
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from tueplots import bundles
+from torchmetrics import SpearmanCorrCoef
+
 plt.rcParams.update(bundles.icml2022())
 plt.style.use('seaborn-v0_8-paper')
 import seaborn as sns
+from .constants import HELM_MODEL_MAP, PLOT_NAME_MAP
+from .irt import IRT
 
 class MLP(nn.Module):
     def __init__(self, input_dim):
@@ -31,96 +36,6 @@ class MLP(nn.Module):
         )
     def forward(self, x):
         return self.model(x)
-    
-DESCRIPTION_MAP = {
-    'airbench': '### DATASET: AirBench, ### PUBLISH TIME: 2024, ### CONTENT: AI safety benchmark that aligns with emerging government regulations and company policies',
-    'twitter_aae': '### DATASET: TwitterAAE, ### PUBLISH TIME: 2016, ### CONTENT: for measuring language model performance in tweets as a function of speaker dialect, on African-American-aligned Tweets, on White-aligned Tweets',
-    'math': '### DATASET: MATH, ### PUBLISH TIME: 2021, ### CONTENT: for measuring mathematical problem solving on competition math problems with or without with chain-of-thought style reasoning',
-    'entity_data_imputation': '### DATASET: Data imputation, ### PUBLISH TIME: 2021, ### CONTENT: tests the ability to impute missing entities in a data table',
-    'real_toxicity_prompts': '### DATASET: RealToxicityPrompts, ### PUBLISH TIME: 2020, ### CONTENT: for measuring toxicity in prompted model generations',
-    'civil_comments': '### DATASET: CivilComments, ### PUBLISH TIME: 2019, ### CONTENT: for toxicity detection',
-    'imdb': '### DATASET: IMDB, ### PUBLISH TIME: 2011, ### CONTENT: sentiment analysis in movie review',
-    'boolq': '### DATASET: boolq, ### PUBLISH TIME: 2019, ### CONTENT: binary (yes/no) question answering, passages from Wikipedia, questions from search queries',
-    'wikifact': '### DATASET: WikiFact, ### PUBLISH TIME: 2019, ### CONTENT: knowledge base completion, entity-relation-entity triples in natural language form, to more extensively test factual knowledge',
-    'babi_qa': '### DATASET: bAbI, ### PUBLISH TIME: 2015, ### CONTENT: for measuring understanding and reasoning',
-    'mmlu': '### DATASET: MMLU (Massive Multitask Language Understanding), ### PUBLISH TIME: 2021, ### CONTENT: for knowledge-intensive question answering across 57 domains',
-    'truthful_qa': '### DATASET: TruthfulQA, ### PUBLISH TIME: 2022, ### CONTENT: for measuring model truthfulness and commonsense knowledge in question answering',
-    'legal_support': '### DATASET: LegalSupport, ### PUBLISH TIME: unknown, ### CONTENT: measure fine-grained legal reasoning through reverse entailment.',
-    'synthetic_reasoning': '### DATASET: Synthetic reasoning, ### PUBLISH TIME: 2021, ### CONTENT: defined using abstract symbols based on LIME and simple natural language based on LIME',
-    'quac': '### DATASET: QuAC (Question Answering in Context), ### PUBLISH TIME: 2018, ### CONTENT: question answering in the context of dialogues',
-    'entity_matching': '### DATASET: Entity matching, ### PUBLISH TIME: 2016, ### CONTENT: tests the ability to determine if two entities match',
-    'synthetic_reasoning_natural': '### DATASET: Synthetic reasoning (natural language), ### PUBLISH TIME: 2021, ### CONTENT: Synthetic reasoning tasks defined using simple natural language based on LIME',
-    'bbq': '### DATASET: BBQ (Bias Benchmark for Question Answering), ### PUBLISH TIME: 2022, ### CONTENT: for measuring social bias in question answering in ambiguous and unambigous context',
-    'raft': '### DATASET: RAFT (Real-world Annotated Few-Shot), ### PUBLISH TIME: 2021, ### CONTENT: meta-benchmark of 11 real-world text classification tasks',
-    'narrative_qa': '### DATASET: NarrativeQA, ### PUBLISH TIME: 2017, ### CONTENT: for reading comprehension over narratives, passages are books and movie scripts',
-    'commonsense': '### DATASET: HellaSwag, ### PUBLISH TIME: 2019, ### CONTENT: commonsense reasoning in question answering',
-    'lsat_qa': '### DATASET: LSAT, ### PUBLISH TIME: 2021, ### CONTENT: for measuring analytical reasoning on the Law School Admission Test',
-    'bold': '### DATASET: BOLD (Bias in Open-Ended Language Generation Dataset), ### PUBLISH TIME: 2021, ### CONTENT: for measuring biases and toxicity in open-ended language generation',
-    'dyck_language_np3': '### DATASET: Dyck, ### PUBLISH TIME: 2019, ### CONTENT: Scenario testing hierarchical reasoning through the Dyck formal languages',
-    # 'synthetic_efficiency': '### DATASET: Synthetic efficiency, ### PUBLISH TIME: unknown, ### CONTENT: to better understand inference runtime performance of various models',
-    # 'gsm': '### DATASET: GSM8K (Grade school math word problems), ### PUBLISH TIME: 2021, ### CONTENT: for testing mathematical reasoning on grade-school math problems',
-    # 'summarization_xsum': '### DATASET: XSUM, ### PUBLISH TIME: 2018, ### CONTENT: for text summarization of BBC news articles',
-    # 'code': '### DATASET: Code, ### PUBLISH TIME: 2021, ### CONTENT: for measuring competence on code challenges, for measuring functional correctness for synthesizing programs from docstrings',
-    # 'msmarco': '### DATASET: MSMARCO, ### PUBLISH TIME: 2016, ### CONTENT: for passage retrieval in information retrieval',
-}
-DATASETS = list(DESCRIPTION_MAP.keys())
-
-# overleaf/R_library: z1/g, z2/a1, z3/d
-def item_response_fn_1PL(z3, theta):
-    return 1 / (1 + torch.exp(-(theta + z3)))
-
-def item_response_fn_1PL_jnp(z3, theta):
-    return 1 / (1 + jnp.exp(-(theta + z3)))
-
-def item_response_fn_1PL_multi_dim(z3, theta, a):
-    return 1 / (1 + torch.exp(-(torch.matmul(theta, torch.transpose(a, 0, 1)) + z3)))
-
-def item_response_fn_2PL(z2, z3, theta):
-    return 1 / (1 + torch.exp(-(z2 * theta + z3)))
-
-def item_response_fn_2PL_jnp(z2, z3, theta):
-    return 1 / (1 + jnp.exp(-(z2 * theta + z3)))
-
-class IRT(nn.Module):
-    def __init__(self, n_questions, n_testtaker, D=1, PL=1):
-        super(IRT, self).__init__()
-        self.D = D
-        self.PL = PL
-        self.ability = nn.Parameter(torch.randn(n_testtaker, D), requires_grad=True)
-        self.difficulty = nn.Parameter(torch.randn(n_questions), requires_grad=True)
-        
-        if D == 1:
-            self.register_buffer('loading_factor', torch.ones(n_questions, D))
-        elif D > 1:
-            self.loading_factor = torch.randn(n_questions, D)
-            self.loading_factor = nn.Parameter(self.loading_factor, requires_grad=True)
-        else:
-            raise ValueError(f'D={D} is not supported')
-        
-        if PL == 1:
-            self.register_buffer('disciminatory', torch.ones(n_questions))
-        elif PL == 2:
-            self.disciminatory = nn.Parameter(torch.exp(torch.randn(n_questions)), requires_grad=True)
-        else:
-            raise ValueError(f'PL={PL} is not supported')
-            
-    def forward(self):
-        ability = self.ability[:, None, :]
-        difficulty = self.difficulty[None, :]
-        loading_factor = torch.softmax(self.loading_factor, dim=1)
-        disciminatory = torch.relu(self.disciminatory)
-        return torch.sigmoid(disciminatory * (ability * loading_factor).sum(-1) + difficulty)
-
-    def normalize(self):
-        mean_difficulty = torch.mean(self.difficulty.data)
-        std_difficulty = torch.std(self.difficulty.data)
-        self.difficulty.data = (self.difficulty.data - mean_difficulty) / std_difficulty
-        
-    def get_ability(self):
-        return self.ability.data
-    
-    def get_difficulty(self):
-        return self.difficulty.data
 
 def set_seed(seed):
     random.seed(seed)
@@ -157,47 +72,62 @@ def get_embed(
     )
     return emb['text']
     
-def goodness_of_fit_1PL(
-    z: torch.Tensor,
-    theta: torch.Tensor,
+def goodness_of_fit(
+    item_parms: torch.Tensor, # n_items x n_item_parameters
+    theta: torch.Tensor, # n_testtakers x n_testtaker_parameters
     y: torch.Tensor,
-    bin_size: int=6,
+    num_bins: int=6,
 ):
-    assert y.shape[1] == z.shape[0], f'{y.shape[1]} != {z.shape[0]}'
-    assert y.shape[0] == theta.shape[0], f'{y.shape[0]} != {theta.shape[0]}'
+    n_items = item_parms.shape[0]
+    n_testtakers = theta.shape[0]
 
-    bin_start, bin_end = torch.min(theta), torch.max(theta)
-    bins = torch.linspace(bin_start, bin_end, bin_size+1)
-    # print(bins) # [-3. -2. -1.  0.  1.  2.  3.]
+    assert y.shape[0] == n_testtakers, f'{y.shape[0]} != {n_testtakers}'    
+    assert y.shape[1] == n_items, f'{y.shape[1]} != {n_items}'
 
-    diff_list = []
-    for i in range(z.shape[0]):
-        single_z = z[i]
-        y_col = y[:, i]
+    bins_start, bins_end = torch.min(theta, dim=0).values, torch.max(theta, dim=0).values
+    bins = torch.stack([
+        torch.linspace(bin_start, bin_end, num_bins+1).to(theta)
+        for bin_start, bin_end in zip(bins_start, bins_end)
+    ], dim=-1)
+    # >>> n_bins x D
+    
+    diffs = []
+    thetas_mid = (bins[:-1] + bins[1:]) / 2
+    item_parms_list = [*(item_parms[..., 0:3].T), item_parms[..., 3:]]
+    probs_theoretical = IRT.compute_prob(thetas_mid, *item_parms_list)
+                
+    bin_masks = (theta[:, None] >= bins[:-1]) & (theta[:, None] < bins[1:])
+    D = theta.shape[1]
+    
+    for d in range(D):
+        diff_D = []
+        for bi in range(num_bins):
+            bin_mask = bin_masks[:, bi, d]
+            if bin_mask.sum() <= 0:
+                continue
+            
+            y_bins = y[bin_mask]
+            y_bins[y_bins == -1] = torch.nan
+            prob_empirical = y_bins.nanmean(dim=0)
+            
+            nan_mask = torch.isnan(prob_empirical)
+            prob_theoretical = probs_theoretical[bi]
+            
+            diff = 1 - torch.abs(prob_empirical - prob_theoretical)[~nan_mask]
+            diff_D.extend(diff.tolist())
+            
+        diffs.append(np.array(diff_D))
+    return np.concatenate(diffs)
 
-        for j in range(bins.shape[0] - 1):
-            bin_mask = (theta >= bins[j]) & (theta < bins[j + 1]) & (y_col != -1)
-            if bin_mask.sum() > 0: # bin not empty
-                y_empirical = y_col[bin_mask].mean()
-
-                theta_mid = (bins[j] + bins[j + 1]) / 2
-                y_theoretical = item_response_fn_1PL(theta_mid, single_z).item()
-
-                diff = 1 - abs(y_empirical - y_theoretical)
-                diff_list.append(diff)
-
-    diff_array = np.array(diff_list)
-    mean_diff = np.mean(diff_array)
-    return mean_diff, diff_array
-
-def goodness_of_fit_1PL_plot(
+def goodness_of_fit_plot(
     z: torch.Tensor,
     theta: torch.Tensor,
     y: torch.Tensor,
     plot_path: str,
     bin_size: int=6,
 ):
-    mean_diff, diff_array = goodness_of_fit_1PL(z, theta, y, bin_size)
+    diff_array = goodness_of_fit(z, theta, y, bin_size)
+    mean_diff = np.mean(diff_array)
     
     sample_means = []
     for _ in range(100):
@@ -311,223 +241,40 @@ def goodness_of_fit_1PL_multi_dim_plot(
     
     return mean_diff, std_diff
 
-def goodness_of_fit_2PL(
-    theta: torch.Tensor,
-    z2: torch.Tensor,
-    z3: torch.Tensor,
-    y: torch.Tensor,
-    bin_size: int=6,
-):
-    bin_start, bin_end = torch.min(theta), torch.max(theta)
-    bins = torch.linspace(bin_start, bin_end, bin_size+1)
-    print(bins)
-
-    diff_list = []
-    for i in tqdm(range(y.shape[1])):
-        single_z2 = z2[i]
-        single_z3 = z3[i]
-        y_col = y[:, i]
-
-        for j in range(len(bins) - 1):
-            bin_mask = (theta >= bins[j]) & (theta < bins[j + 1]) & (y_col != -1)
-            if bin_mask.sum() > 0:  # Bin not empty
-                y_empirical = y_col[bin_mask].mean()
-
-                theta_mid = (bins[j] + bins[j + 1]) / 2
-                y_theoretical = item_response_fn_2PL(
-                    single_z2,
-                    single_z3,
-                    theta_mid
-                )
-                
-                diff = 1 - abs(y_empirical - y_theoretical)
-                diff_list.append(diff)
-
-    diff_array = np.array(diff_list)
-    mean_diff = diff_array.mean()
-    return mean_diff, diff_array
-
-def goodness_of_fit_2PL_plot(
-    theta: torch.Tensor,
-    z2: torch.Tensor,
-    z3: torch.Tensor,
-    y: torch.Tensor,
-    plot_path: str,
-    bin_size: int=6,
-):
-    mean_diff, diff_array = goodness_of_fit_2PL(
-        theta, z2, z3, y, bin_size
-    )
-    sample_means = []
-    for _ in range(100):
-        indices = np.random.choice(
-            len(diff_array), int(0.8 * len(diff_array)), replace=False
-        )
-        sample_mean = np.mean(diff_array[indices])
-        sample_means.append(sample_mean)
-    std_diff = np.std(sample_means)
-    
-    plt.figure(figsize=(10, 6))
-    plt.hist(diff_array, bins=40, density=True, alpha=0.4)
-    plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
-    plt.ylabel(r'Goodness of fit', fontsize=30)
-    plt.tick_params(axis='both', labelsize=25)
-    plt.xlim(0, 1)
-    plt.axvline(mean_diff, linestyle='--')
-    plt.text(
-        mean_diff, 
-        plt.gca().get_ylim()[1], 
-        f'{mean_diff:.2f} $\\pm$ {3 * std_diff:.2f}', 
-        ha='center', 
-        va='bottom', 
-        fontsize=25
-    )
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    return mean_diff, std_diff
-
-def goodness_of_fit_3PL(
-    theta: torch.Tensor,
-    z1: torch.Tensor,
-    z2: torch.Tensor,
-    z3: torch.Tensor,
-    y: torch.Tensor,
-    bin_size: int=6,
-):
-    bin_start, bin_end = torch.min(theta), torch.max(theta)
-    bins = torch.linspace(bin_start, bin_end, bin_size+1)
-    print(bins)
-
-    diff_list = []
-    for i in tqdm(range(y.shape[1])):
-        single_z1 = z1[i]
-        single_z2 = z2[i]
-        single_z3 = z3[i]
-        y_col = y[:, i]
-
-        for j in range(len(bins) - 1):
-            bin_mask = (theta >= bins[j]) & (theta < bins[j + 1]) & (y_col != -1)
-            if bin_mask.sum() > 0:  # Bin not empty
-                y_empirical = y_col[bin_mask].mean()
-
-                theta_mid = (bins[j] + bins[j + 1]) / 2
-                y_theoretical = item_response_fn_3PL(
-                    single_z1,
-                    single_z2,
-                    single_z3,
-                    theta_mid
-                )
-                
-                diff = 1 - abs(y_empirical - y_theoretical)
-                diff_list.append(diff)
-                
-    diff_array = np.array(diff_list)
-    mean_diff = diff_array.mean()
-    return mean_diff, diff_array
-
-def goodness_of_fit_3PL_plot(
-    theta: torch.Tensor,
-    z1: torch.Tensor,
-    z2: torch.Tensor,
-    z3: torch.Tensor,
-    y: torch.Tensor,
-    plot_path: str,
-    bin_size: int=6,
-):
-    mean_diff, diff_array = goodness_of_fit_3PL(
-        theta, z1, z2, z3, y, bin_size
-    )
-    sample_means = []
-    for _ in range(100):
-        indices = np.random.choice(
-            len(diff_array), int(0.8 * len(diff_array)), replace=False
-        )
-        sample_mean = np.mean(diff_array[indices])
-        sample_means.append(sample_mean)
-    std_diff = np.std(sample_means)
-    
-    plt.figure(figsize=(10, 6))
-    plt.hist(diff_array, bins=40, density=True, alpha=0.4)
-    plt.xlabel(r'Difference between empirical and theoretical $P(y=1)$', fontsize=30)
-    plt.ylabel(r'Goodness of fit', fontsize=30)
-    plt.tick_params(axis='both', labelsize=25)
-    plt.xlim(0, 1)
-    plt.axvline(mean_diff, linestyle='--')
-    plt.text(
-        mean_diff, 
-        plt.gca().get_ylim()[1], 
-        f'{mean_diff:.2f} $\\pm$ {3 * std_diff:.2f}', 
-        ha='center', 
-        va='bottom', 
-        fontsize=25
-    )
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    return mean_diff, std_diff
-
-def theta_corr_ctt(
+def load_ctt_corr_scores(
     theta: np.array,
     y: np.array,
 ):
-    assert y.shape[0] == theta.shape[0], f'{y.shape[1]} != {theta.shape[0]}'
+    assert y.shape[0] == theta.shape[0], f'{y.shape[0]} != {theta.shape[0]}'
+    
     ctt_scores = []
-    for row in y:
+    irt_scores =  []
+    
+    for row, th in zip(y, theta):
         valid_values = row[row != -1]
         if len(valid_values) > 0:
-            ctt_scores.append(np.mean(valid_values))
-        else:
-            ctt_scores.append(np.nan)
-    ctt_scores = np.array(ctt_scores)
-    
-    if np.isnan(ctt_scores).any():
-        warnings.warn("ctt_scores contains nan", UserWarning)
-    mask = ~np.isnan(ctt_scores)
-    theta_masked, ctt_scores_masked = theta[mask], ctt_scores[mask]
-    
-    if np.unique(ctt_scores_masked).size <= 3:
-        warnings.warn(f"ctt_scores_masked has little value: {ctt_scores_masked}", UserWarning)
-    # corr = np.corrcoef(theta_masked, ctt_scores_masked)[0, 1]
-    corr, _ = spearmanr(theta_masked, ctt_scores_masked)
-    return corr, theta_masked, ctt_scores_masked
+            ctt_scores.append(valid_values.mean())
+            irt_scores.append(th[0])
 
-def theta_corr_ctt_plot(
-    theta: np.array,
-    y: np.array,
-    plot_path: str,
-):
-    corr, theta_masked, ctt_scores_masked = theta_corr_ctt(theta, y)
-    
-    sample_corrs = []
-    for _ in range(100):
-        indices = np.random.choice(
-            len(theta_masked), int(0.8 * len(theta_masked)), replace=False
-        )
-        # sample_corr = np.corrcoef(theta_masked[indices], ctt_scores_masked[indices])[0, 1]
-        sample_corr, _ = spearmanr(theta_masked[indices], ctt_scores_masked[indices])
-        sample_corrs.append(sample_corr)
-    sample_std = np.std(sample_corrs)
-    
-    plt.figure(figsize=(18, 10))
-    plt.scatter(theta_masked, ctt_scores_masked)
-    plt.xlabel(r'$\theta$ from calibration', fontsize=45)
-    plt.ylabel(r'CTT score', fontsize=45)
-    plt.title(f'Correlation: {corr:.2f} $\\pm$ {3 * sample_std:.2f}', fontsize=45)
-    plt.tick_params(axis='both', labelsize=35)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    
-    return corr, sample_std
-    
-def theta_corr_helm(
+    ctt_scores = torch.stack(ctt_scores)
+    irt_scores = torch.stack(irt_scores)
+        
+    if len(ctt_scores.unique()) <= 3:
+        warnings.warn(f"ctt_scores has little value: {ctt_scores.tolist()}", UserWarning)
+
+    return irt_scores, ctt_scores
+
+def load_theta_corr_scores(
+    data_folder: str,
     theta: np.array,
     dataset: str,
-):
+):  
     y_model_names = pd.read_csv(
-        f'../data/pre_calibration/{dataset}/matrix.csv', 
+        f'{data_folder}/pre_calibration/{dataset}/matrix.csv', 
         index_col=0
     ).index.tolist()
     
-    helm_df = pd.read_csv(f'../data/gather_data/crawl_real/helm_score/{dataset}.csv')
+    helm_df = pd.read_csv(f'{data_folder}/gather_data/crawl_real/helm_score/{dataset}.csv')
     helm_models = helm_df['model_name'].tolist()
     helm_models = [HELM_MODEL_MAP[m] if m in HELM_MODEL_MAP else m for m in helm_models]
     helm_scores = helm_df['score'].values
@@ -536,43 +283,110 @@ def theta_corr_helm(
     assert set(helm_models) == set(y_model_names)
     
     helm_df_aligned = pd.DataFrame({'model_name': helm_models, 'score': helm_scores})
-    theta_df_aligned = pd.DataFrame({'model_name': y_model_names, 'theta': theta})
+    theta_df_aligned = pd.DataFrame({'model_name': y_model_names, 'theta': theta.squeeze(-1).tolist()})
     merged_df = pd.merge(helm_df_aligned, theta_df_aligned, on='model_name', how='inner')
 
     aligned_helm_scores = merged_df['score'].values
     aligned_theta = merged_df['theta'].values
     
-    # corr = np.corrcoef(aligned_theta, aligned_helm_scores)[0, 1]
-    corr, _ = spearmanr(aligned_theta, aligned_helm_scores)
-    return corr, aligned_theta, aligned_helm_scores
+    aligned_helm_scores = torch.tensor(aligned_helm_scores).to(theta)
+    aligned_theta = torch.tensor(aligned_theta).to(theta)
 
-def theta_corr_helm_plot(
+    return aligned_theta, aligned_helm_scores
+
+def theta_corr_plot(
+    mode: str,
     theta: np.array,
-    dataset: np.array,
     plot_path: str,
+    data_folder: str = None,
+    y: np.array = None,
+    dataset: np.array=None,
 ):
-    corr, theta, helm_scores = theta_corr_helm(theta, dataset)
+    if dataset == "airbench" and mode == "helm":
+        print("airbench dataset does not have HELM scores.")
+        return None, None
+    
+    if theta.shape[-1] > 1:
+        print("Theta correlation is only supported for 1D.")
+        return None, None
+
+    sm_fn = SpearmanCorrCoef()
+    if mode == "ctt":
+        theta, external_scores = load_ctt_corr_scores(theta, y)
+    elif mode == "helm":
+        theta, external_scores = load_theta_corr_scores(data_folder, theta, dataset)
+    corr = sm_fn(theta, external_scores)
     
     sample_corrs = []
-    for _ in range(100):
+    n_bootstrap_samples = 100
+    
+    for _ in range(n_bootstrap_samples):
         indices = np.random.choice(
             len(theta), int(0.8 * len(theta)), replace=False
         )
-        # sample_corr = np.corrcoef(theta[indices], helm_scores[indices])[0, 1]
-        sample_corr, _ = spearmanr(theta[indices], helm_scores[indices])
+        
+        sample_corr = sm_fn(theta[indices], external_scores[indices])
         sample_corrs.append(sample_corr)
-    sample_std = np.std(sample_corrs)
+    sample_std = torch.std(torch.stack(sample_corrs)).item()
     
     plt.figure(figsize=(18, 10))
-    plt.scatter(theta, helm_scores)
+    plt.scatter(theta.cpu(), external_scores.cpu())
     plt.xlabel(r'$\theta$ from calibration', fontsize=45)
-    plt.ylabel(r'HELM score', fontsize=45)
+    plt.ylabel(f'{mode.upper()} score', fontsize=45)
     plt.title(f'Correlation: {corr:.2f} $\\pm$ {3 * sample_std:.2f}', fontsize=45)
     plt.tick_params(axis='both', labelsize=35)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     
     return corr, sample_std
+
+def accuracy_plot(
+    item_parms: torch.Tensor,
+    theta: torch.Tensor,
+    y: torch.Tensor,
+    plot_path: str,
+):
+    n_items = item_parms.shape[0]
+    n_testtakers = theta.shape[0]
+
+    assert y.shape[0] == n_testtakers, f'{y.shape[0]} != {n_testtakers}'    
+    assert y.shape[1] == n_items, f'{y.shape[1]} != {n_items}'
+    
+    item_parms_list = [*(item_parms[..., 0:3].T), item_parms[..., 3:]]
+    probs_theoretical = IRT.compute_prob(theta, *item_parms_list)
+    y_theoretical = (probs_theoretical > 0.5).float()
+    
+    accuracy = (y_theoretical == y).float().mean(dim=0)
+
+    sample_accs = []
+    for _ in range(100):
+        indices = np.random.choice(
+            len(accuracy), int(0.8 * len(accuracy)), replace=False
+        )
+        sample_acc = accuracy[indices].mean()
+        sample_accs.append(sample_acc)
+    std_acc = torch.std(torch.stack(sample_accs)).item()
+    
+    plt.figure(figsize=(10, 6))
+    plt.hist(accuracy.cpu(), bins=40, density=True, alpha=0.4)
+    plt.xlabel(r'Accuracy', fontsize=30)
+    plt.ylabel(r'Frequency', fontsize=30)
+    plt.tick_params(axis='both', labelsize=25)
+    plt.xlim(0, 1)
+    plt.axvline(accuracy.mean().item(), linestyle='--')
+    plt.text(
+        accuracy.mean().item(), 
+        plt.gca().get_ylim()[1], 
+        f'{accuracy.mean().item():.2f} $\\pm$ {3 * std_acc:.2f}', 
+        ha='center', 
+        va='bottom', 
+        fontsize=25
+    )
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    return accuracy.mean(), std_acc
+
 
 def error_bar_plot_single(
     datasets, 
@@ -795,66 +609,3 @@ def plot_cat(
     plt.legend(fontsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
-
-def plot_hard_easy(
-    theta_hats: list,
-    y_means: list,
-    theta: float,
-    y_mean: float, 
-    plot_path: str,
-):
-    plt.figure(figsize=(8, 6))
-    plt.hist(theta_hats, bins=40, color='red', alpha=0.2, label='IRT Estimation', density=True)
-    plt.hist(y_means, bins=40, color='blue', alpha=0.2, label='CTT Estimation', density=True)
-    plt.axvline(x=theta, color='red', linestyle='-', linewidth=2)
-    plt.axvline(x=y_mean, color='blue', linewidth=2)
-    sns.kdeplot(theta_hats, color='red', linewidth=2, bw_adjust=2)
-    plt.xlabel(r'Ability', fontsize=25)
-    plt.xlim(-6,6)
-    plt.ylabel(r'Density', fontsize=25)
-    plt.legend(fontsize=20)
-    plt.tick_params(axis='both', labelsize=20)
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    
-PLOT_NAME_MAP = {
-    'wikifact': 'wikifact',
-    'entity_data_imputation': 'ent_data_imp',
-    'commonsense': 'commonsense',
-    'quac': 'quac',
-    'imdb': 'imdb',
-    'bbq': 'bbq',
-    'math': 'math',
-    'twitter_aae': 'twitter_aae',
-    'truthful_qa': 'truthful_qa',
-    'legal_support': 'legal_support',
-    'boolq': 'boolq',
-    'narrative_qa': 'narrative_qa',
-    'real_toxicity_prompts': 'real_toxicity',
-    'bold': 'bold',
-    'babi_qa': 'babi_qa',
-    'synthetic_reasoning_natural': 'syn_reason_nat',
-    'dyck_language_np3': 'dyck',
-    'civil_comments': 'civil_comments',
-    'lsat_qa': 'lsat_qa',
-    'raft': 'raft',
-    'entity_matching': 'entity_match',
-    'synthetic_reasoning': 'syn_reason',
-    'mmlu': 'mmlu',
-    'airbench': 'airbench',
-}
-
-HELM_MODEL_MAP = {
-    'text-davinci-002': 'openai_text-davinci-002',
-    'text-babbage-001': 'openai_text-babbage-001',
-    'ada (350M)': 'openai_ada',
-    'text-ada-001': 'openai_text-ada-001',
-    'babbage (1.3B)': 'openai_babbage',
-    'T0pp (11B)☠': 'together_t0pp',
-    'text-davinci-003': 'openai_text-davinci-003',
-    'text-curie-001': 'openai_text-curie-001',
-    'davinci (175B)': 'openai_davinci',
-    'curie (6.7B)': 'openai_curie',
-}
-
-
