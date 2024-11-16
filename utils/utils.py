@@ -8,9 +8,6 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from embed_text_package.embed_text import Embedder
-from scipy.stats import spearmanr
-from torch.utils.data import DataLoader
 from torchmetrics import SpearmanCorrCoef
 from tqdm import tqdm
 from tueplots import bundles
@@ -49,19 +46,6 @@ def inverse_sigmoid(x):
     epsilon = 1e-7
     x = torch.clamp(x, min=epsilon, max=1 - epsilon)  # Clip the input to (0, 1)
     return torch.log(x / (1 - x))
-
-
-def get_embed(
-    dataset,
-    cols_to_be_embded=["text"],
-    bs=1024,
-    model_name="meta-llama/Meta-Llama-3-8B",
-):
-    embdr = Embedder()
-    embdr.load(model_name)
-    dataloader = DataLoader(dataset, batch_size=bs)
-    emb = embdr.get_embeddings(dataloader, model_name, cols_to_be_embded)
-    return emb["text"]
 
 
 def goodness_of_fit(

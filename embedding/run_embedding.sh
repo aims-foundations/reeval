@@ -30,7 +30,6 @@ datasets=(
 
 # Loop through each dataset and run the Python command
 for dataset in "${datasets[@]}"; do
-    echo "Run TAE on $dataset 1PL"
-    # python hard_easy_test.py --dataset $dataset --PL 1 --fitting_method mle& 
-    python tae_eval.py
+    echo "Embedding $dataset 1PL"
+    python embed.py --dataset $dataset --PL 1 --fitting_method mle 
 done

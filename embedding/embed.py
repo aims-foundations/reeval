@@ -1,55 +1,60 @@
 import argparse
-import json
-import os
+import pickle
 
+import numpy as np
 import pandas as pd
-import wandb
 from datasets import Dataset
-from utils import DESCRIPTION_MAP, get_embed
+from embed_text_package.embed_text_v2 import Embedder
+from huggingface_hub import snapshot_download
+from torch.utils.data import DataLoader
+from utils.constants import DESCRIPTION_MAP
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--model_name", type=str, default="meta-llama/Meta-Llama-3-8B")
+    parser.add_argument("--PL", type=int, default=1)
+    parser.add_argument("--fitting_method", type=str, default="mle")
+    parser.add_argument("--batch_size", type=int, default=1024)
+    args = parser.parse_args()
 
-def main(agg_tag, description, search_path, z_path, save_path, bs=1024):
-    search_df = pd.read_csv(search_path)
+    description = DESCRIPTION_MAP[args.dataset]
+
+    data_folder = snapshot_download(
+        repo_id="stair-lab/reeval_responses", repo_type="dataset"
+    )
+    search_df = pd.read_csv(f"{data_folder}/{args.dataset}/search.csv")
+
     text_df = search_df.loc[search_df["is_deleted"] != 1, ["text"]].reset_index(
         drop=True
     )
-    z_df = pd.read_csv(z_path, usecols=["z"])
-    assert len(text_df) == len(z_df)
 
-    if agg_tag:
-        text_df["text"] = description + ", ### PROMPT: " + text_df["text"]
-    text_dataset = Dataset.from_pandas(text_df)
-    embed = get_embed(text_dataset, bs=bs)  # list of list
-    assert len(embed) == len(text_df) == len(z_df)
-
-    save_list = [
-        {"text": text, "z": z, "embed": emb}
-        for text, z, emb in zip(text_df["text"], z_df["z"], embed)
-    ]
-    with open(save_path, "w", encoding="utf-8") as f:
-        json.dump(save_list, f, indent=4)
-
-
-if __name__ == "__main__":
-    wandb.init(project="embed")
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, required=True)
-    parser.add_argument("--bs", type=int, default=1024)
-    parser.add_argument("--agg_tag", type=bool, default=False)
-    args = parser.parse_args()
-
-    if args.agg_tag:
-        output_dir = f"../data/embed_agg/{args.dataset}"
-    else:
-        output_dir = f"../data/embed_individual/{args.dataset}"
-    os.makedirs(output_dir, exist_ok=True)
-
-    description = DESCRIPTION_MAP[args.dataset]
-    main(
-        agg_tag=args.agg_tag,
-        description=description,
-        search_path=f"../data/pre_calibration/{args.dataset}/search.csv",
-        z_path=f"../data/nonamor_calibration/{args.dataset}/nonamor_z.csv",
-        save_path=f"{output_dir}/embed.json",
-        bs=args.bs,
+    item_parms_folder = snapshot_download(
+        repo_id=f"stair-lab/reeval_{args.fitting_method}_calibration",
+        repo_type="dataset",
     )
+    item_parms = pickle.load(
+        open(f"{item_parms_folder}/{args.PL}pl/{args.dataset}/item_parms.pkl", "rb")
+    )
+    # >>> n_questions x (3 + D)
+
+    difficulty = np.array(item_parms)[:, 0].tolist()
+    assert len(text_df) == len(difficulty)
+
+    text_df["text"] = description + ", ### PROMPT: " + text_df["text"]
+    text_dataset = Dataset.from_pandas(text_df)
+
+    embdr = Embedder()
+    embdr.load(args.model_name)
+    dataloader = DataLoader(text_dataset, batch_size=args.batch_size)
+    embed = embdr.get_embeddings(dataloader, args.model_name, ["text"])
+    assert len(embed["text"]) == len(text_df) == len(difficulty)
+
+    ds_embed = Dataset.from_dict(
+        {
+            "text": text_df["text"],
+            "difficulty": difficulty,
+            "embed": embed["text"],
+        }
+    )
+    ds_embed.push_to_hub("stair-lab/reeval_all_embeddings", args.dataset)

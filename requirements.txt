@@ -14,4 +14,4 @@ seaborn
 python-dotenv
 webdriver_manager
 flash-attn @ https://github.com/Dao-AILab/flash-attention/releases/download/v2.5.8/flash_attn-2.5.8+cu122torch2.3cxx11abiFALSE-cp310-cp310-linux_x86_64.whl#sha256=13454dd3d37cf173649bd389b84614b8072fb283f8f2fd23a65ab66caafc304b
-vllm
+vllm==0.6.3.post1

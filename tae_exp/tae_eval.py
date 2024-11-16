@@ -1,5 +1,6 @@
 import argparse
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,44 +8,15 @@ import pandas as pd
 import seaborn as sns
 import torch
 from calibration.nonamortized_calibration.calibrate import calibrate
+from huggingface_hub import snapshot_download
+from scipy.stats import spearmanr
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 from utils.irt import IRT
 from utils.utils import inverse_sigmoid, set_seed, str2bool
 
 
-def plot_hard_easy(
-    theta_hats: list,
-    y_means: list,
-    theta: float,
-    y_mean: float,
-    plot_path: str,
-):
-    plt.figure(figsize=(8, 6))
-    plt.hist(
-        theta_hats,
-        bins=40,
-        color="red",
-        alpha=0.2,
-        label="IRT Estimation",
-        density=True,
-    )
-    plt.hist(
-        y_means, bins=40, color="blue", alpha=0.2, label="CTT Estimation", density=True
-    )
-    plt.axvline(x=theta, color="red", linestyle="-", linewidth=2)
-    plt.axvline(x=y_mean, color="blue", linewidth=2)
-    sns.kdeplot(theta_hats, color="red", linewidth=2, bw_adjust=2)
-    plt.xlabel(r"Ability", fontsize=25)
-    plt.xlim(-6, 6)
-    plt.ylabel(r"Density", fontsize=25)
-    plt.legend(fontsize=20)
-    plt.tick_params(axis="both", labelsize=20)
-    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
-    plt.close()
-
-
-def run_mle(y, z, max_epoch=1000):
+def run_mle(y, z, max_epoch=200):
     ability = torch.zeros((1, 1), device=y.device, requires_grad=True)
 
     optimizer = torch.optim.Adam([ability], lr=0.01)
@@ -73,14 +45,22 @@ def run_mle(y, z, max_epoch=1000):
     return ability.detach()
 
 
-def bootstrap_z(z, single_y, subset_size, n_bootstrap=10):
-    n_questions = z.size(0)
+def bootstrap_z(z, single_y, subset_size, n_question_bootstrap):
+    single_y_valid = single_y[single_y != -1]
+    z_valid = z[single_y != -1]
+    n_questions = z_valid.size(0)
 
     auc_ctts = []
     auc_irts = []
     auc_inv_sigmoids = []
 
-    for _ in range(n_bootstrap):
+    score_irt = []
+    score_ctt = []
+    score_inv_sigmoid = []
+
+    mean_difficulty_subset1 = []
+
+    for _ in range(n_question_bootstrap):
         # Step 2: Sample 2 subset of questions (and corresponding z) with size = 100
         subset1 = torch.randperm(n_questions)[:subset_size]
         subset2 = torch.randperm(n_questions)[:subset_size]
@@ -88,15 +68,20 @@ def bootstrap_z(z, single_y, subset_size, n_bootstrap=10):
         # Step 3: On the first subset:
         #      - Compute CTT scores for X via averaging all scores on this subset
         #      - Compute IRT scores (theta) for X via MLE
-        avg_ctt_score = single_y[subset1].mean()
-        theta = run_mle(single_y[subset1].unsqueeze(0), z[subset1])
+        mean_difficulty_subset1.append(z_valid[subset1].mean().item())
+
+        avg_ctt_score = single_y_valid[subset1].mean()
+        score_ctt.append(avg_ctt_score.item())
+
+        theta = run_mle(single_y_valid[subset1].unsqueeze(0), z_valid[subset1])
+        score_irt.append(theta.item())
 
         # Step 4: On the second subset: Compute AUC-ROC for binary classifier whose
         #      - probability is CTT score, applying uniformly for all questions (disregard z)
         #      - probability is IRT score + difficulty
         #      - probability is inverse sigmoid of CTT score + difficulty
-        ground_truth = single_y[subset2]
-        z_subset2 = z[subset2]
+        ground_truth = single_y_valid[subset2]
+        z_subset2 = z_valid[subset2]
 
         # Compute CTT scores
         ctt_probs = torch.bernoulli(avg_ctt_score.unsqueeze(0).expand(subset_size))
@@ -115,6 +100,7 @@ def bootstrap_z(z, single_y, subset_size, n_bootstrap=10):
 
         # Compute inverse sigmoid scores
         inv_sigmoid_theta = inverse_sigmoid(avg_ctt_score)
+        score_inv_sigmoid.append(inv_sigmoid_theta.item())
         inv_sigmoid_probs = IRT.compute_prob(
             ability=inv_sigmoid_theta.unsqueeze(0).reshape(1, 1),
             difficulty=z_subset2,
@@ -132,44 +118,111 @@ def bootstrap_z(z, single_y, subset_size, n_bootstrap=10):
         auc_irts.append(auc_irt)
         auc_inv_sigmoids.append(auc_inv_sigmoid)
 
-    return auc_ctts, auc_irts, auc_inv_sigmoids
+    # spearman corr between mean difficulty of subset 1 and irt score
+    sm_irt = spearmanr(mean_difficulty_subset1, score_irt).statistic
+
+    # spearman corr between mean difficulty of subset 1 and ctt score
+    sm_ctt = spearmanr(mean_difficulty_subset1, score_ctt).statistic
+
+    # spearman corr between mean difficulty of subset 1 and inverse sigmoid of ctt score
+    sm_inv_sigmoid = spearmanr(mean_difficulty_subset1, score_inv_sigmoid).statistic
+
+    std_irt = np.std(score_irt)
+    std_inv_sigmoid = np.std(score_inv_sigmoid)
+
+    return (
+        auc_ctts,
+        auc_irts,
+        auc_inv_sigmoids,
+        sm_irt,
+        sm_ctt,
+        sm_inv_sigmoid,
+        std_irt,
+        std_inv_sigmoid,
+    )
 
 
-def bootstrap_X(args, response_matrix, subset_size=100, n_bootstrap=10, device="cpu"):
-    n_models, n_questions = response_matrix.shape
+def process_X(
+    tt_idx,
+    args,
+    response_matrix,
+    subset_size=100,
+    n_question_bootstrap=100,
+    device="cpu",
+):
+    n_models, _ = response_matrix.shape
+    # Step 1: Calibration on all questions and n-1 test takers, leave one test taker X out
+    y_train = response_matrix[torch.arange(n_models) != tt_idx]
+    irt_model = calibrate(
+        response_matrix=y_train,
+        D=args.D,
+        PL=args.PL,
+        fitting_method=args.fitting_method,
+        max_epoch=args.max_epoch,
+        device=device,
+    )
+    item_parms = irt_model.get_item_parameters().detach()
+    z = item_parms[:, 0]
+
+    single_y = response_matrix[tt_idx]
+    (
+        auc_ctts,
+        auc_irts,
+        auc_inv_sigmoids,
+        sm_irt,
+        sm_ctt,
+        sm_inv_sigmoid,
+        std_irt,
+        std_inv_sigmoid,
+    ) = bootstrap_z(z, single_y, subset_size, n_question_bootstrap=n_question_bootstrap)
+
+    return {
+        "tt_idx": tt_idx.item(),
+        "mean_auc_ctt": np.mean(auc_ctts),
+        "mean_auc_irt": np.mean(auc_irts),
+        "mean_auc_inv_sigmoid": np.mean(auc_inv_sigmoids),
+        "std_auc_ctt": np.std(auc_ctts),
+        "std_auc_irt": np.std(auc_irts),
+        "std_auc_inv_sigmoid": np.std(auc_inv_sigmoids),
+        "spearman_corr_irt": sm_irt,
+        "spearman_corr_ctt": sm_ctt,
+        "spearman_corr_inv_sigmoid": sm_inv_sigmoid,
+        "std_irt": std_irt,
+        "std_inv_sigmoid": std_inv_sigmoid,
+    }
+
+
+def bootstrap_student(
+    args,
+    response_matrix,
+    subset_size=100,
+    n_student_bootstrap=10,
+    n_question_bootstrap=100,
+    device="cpu",
+):
+    n_models, _ = response_matrix.shape
 
     # Randomly select n_bootstrap test takers without replacement
-    test_takers = torch.randperm(n_models)[:n_bootstrap]
+    test_takers = torch.randperm(n_models)[:n_student_bootstrap]
 
     results = []
-    for tt_idx in test_takers:
-        # Step 1: Calibration on all questions and n-1 test takers, leave one test taker X out
-        y_train = response_matrix[torch.arange(n_models) != tt_idx]
-        irt_model = calibrate(
-            response_matrix=y_train,
-            D=args.D,
-            PL=args.PL,
-            fitting_method=args.fitting_method,
-            max_epoch=args.max_epoch,
-            device=device,
-        )
-        item_parms = irt_model.get_item_parameters().detach()
-        z = item_parms[:, 0]
-
-        single_y = response_matrix[tt_idx]
-        auc_ctts, auc_irts, auc_inv_sigmoids = bootstrap_z(
-            z, single_y, subset_size, n_bootstrap=n_bootstrap
-        )
-
-        results.append(
-            {
-                "tt_idx": tt_idx.item(),
-                "auc_ctt": np.mean(auc_ctts),
-                "auc_irt": np.mean(auc_irts),
-                "auc_inv_sigmoid": np.mean(auc_inv_sigmoids),
-            }
-        )
-        print(results[-1])
+    # Run all questions parallelly
+    with ThreadPoolExecutor(max_workers=args.max_workers) as executor:
+        futures = [
+            executor.submit(
+                process_X,
+                tt_idx,
+                args,
+                response_matrix,
+                subset_size,
+                n_question_bootstrap,
+                device,
+            )
+            for tt_idx in list(test_takers)
+        ]
+        for future in tqdm(futures, desc="Question"):
+            results.append(future.result())
+            print(results[-1])
 
     return results
 
@@ -183,22 +236,21 @@ if __name__ == "__main__":
     parser.add_argument(
         "--fitting_method", type=str, default="mle", choices=["mle", "mcmc", "em"]
     )
-    parser.add_argument("--max_epoch", type=int, default=3000)
+    parser.add_argument("--max_epoch", type=int, default=1000)
+    parser.add_argument("--subset_size", type=int, default=50)
+    parser.add_argument("--max_workers", type=int, default=8)
+    parser.add_argument("--n_student_bootstrap", type=int, default=10)
+    parser.add_argument("--n_question_bootstrap", type=int, default=100)
     args = parser.parse_args()
 
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    selection_prob = 0.8
-    subset_size = 100
-    step_size = 4000
-    iterations = 1024
-    batch_size = 1024
-    assert batch_size % 2 == 0, "Batch size should divide by 2"
-
-    y = pd.read_csv(
-        f"../data/pre_calibration/{args.dataset}/matrix.csv", index_col=0
-    ).values
+    # Download and load data
+    data_folder = snapshot_download(
+        repo_id="stair-lab/reeval_responses", repo_type="dataset"
+    )
+    y = pd.read_csv(f"{data_folder}/{args.dataset}/matrix.csv", index_col=0).values
     y = torch.tensor(y, device=device).float()
 
     # rows in y with more than 500 non -1 values
@@ -216,8 +268,13 @@ if __name__ == "__main__":
     #      - probability is inverse sigmoid of CTT score + difficulty
     # Step 5: Run bootstrap with different pair of subsets and different X
 
-    results = bootstrap_X(
-        args, y, subset_size=subset_size, n_bootstrap=10, device=device
+    results = bootstrap_student(
+        args,
+        y,
+        subset_size=args.subset_size,
+        n_student_bootstrap=args.n_student_bootstrap,
+        n_question_bootstrap=args.n_question_bootstrap,
+        device=device,
     )
 
     # Save results
