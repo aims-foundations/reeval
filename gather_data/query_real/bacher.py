@@ -1,23 +1,25 @@
-from openai import OpenAI
 from concurrent.futures import ThreadPoolExecutor, wait
-from tqdm import tqdm
+
+from openai import OpenAI
 from together import Together
+from tqdm import tqdm
+
 
 class Batcher:
     def __init__(
         self,
-        api_name, # together/vllm
-        api_key, 
+        api_name,  # together/vllm
+        api_key,
         model_name,
-        temperature, 
+        temperature,
         system_prompt="",
         max_token=256,
         num_workers=64,
         timeout_duration=60,
         retry_attempts=2,
-        api_base_url=None
+        api_base_url=None,
     ):
-        
+
         if api_name == "vllm":
             self.client = OpenAI(api_key=api_key)
         elif api_name == "together":
@@ -30,7 +32,7 @@ class Batcher:
         self.num_workers = num_workers
         self.timeout_duration = timeout_duration
         self.retry_attempts = retry_attempts
-        self.miss_index =[]
+        self.miss_index = []
         self.max_token = max_token
         if api_base_url:
             self.client.base_url = api_base_url
@@ -42,7 +44,7 @@ class Batcher:
                 model=self.model_name,
                 messages=[
                     {"role": "system", "content": self.system_prompt},
-                    {"role": "user", "content": ask_text}
+                    {"role": "user", "content": ask_text},
                 ],
                 temperature=self.temperature,
                 max_tokens=self.max_token,
@@ -58,27 +60,37 @@ class Batcher:
         num_workers = self.num_workers
         timeout_duration = self.timeout_duration
         retry_attempts = 2
-    
+
         executor = ThreadPoolExecutor(max_workers=num_workers)
         message_chunks = list(self.chunk_list(message_list, num_workers))
         try:
             for chunk in tqdm(message_chunks, desc="Processing messages"):
-                future_to_message = {executor.submit(self.get_attitude, message): message for message in chunk}
+                future_to_message = {
+                    executor.submit(self.get_attitude, message): message
+                    for message in chunk
+                }
                 for _ in range(retry_attempts):
-                    done, not_done = wait(future_to_message.keys(), timeout=timeout_duration)
+                    done, not_done = wait(
+                        future_to_message.keys(), timeout=timeout_duration
+                    )
                     for future in not_done:
                         future.cancel()
                     new_list.extend(future.result() for future in done if future.done())
                     if len(not_done) == 0:
                         break
-                    future_to_message = {executor.submit(self.get_attitude, future_to_message[future]): future for future in not_done}
+                    future_to_message = {
+                        executor.submit(
+                            self.get_attitude, future_to_message[future]
+                        ): future
+                        for future in not_done
+                    }
         except Exception as e:
             print(f"Error occurred: {e}")
         finally:
             executor.shutdown(wait=False)
             return new_list
 
-    def complete_attitude_list(self,attitude_list, max_length):
+    def complete_attitude_list(self, attitude_list, max_length):
         completed_list = []
         current_index = 0
         for item in attitude_list:
@@ -99,7 +111,7 @@ class Batcher:
 
     def chunk_list(self, lst, n):
         for i in range(0, len(lst), n):
-            yield lst[i:i + n]
+            yield lst[i : i + n]
 
     def handle_message_list(self, message_list):
         indexed_list = [(index, data) for index, data in enumerate(message_list)]
@@ -109,7 +121,6 @@ class Batcher:
         attitude_list = self.complete_attitude_list(attitude_list, max_length)
         attitude_list = [x[1] for x in attitude_list]
         return attitude_list
-    
+
     def get_miss_index(self):
         return self.miss_index
-    

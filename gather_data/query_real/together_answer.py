@@ -1,19 +1,20 @@
 import csv
-import datasets
 import os
+
+import datasets
+from bacher import Batcher
 from dotenv import load_dotenv
 from huggingface_hub import login
-from bacher import Batcher
 
 if __name__ == "__main__":
     load_dotenv()
-    hf_token = os.getenv('HF_TOKEN')
-    together_key = os.getenv('TOGETHERAI_KEY')
+    hf_token = os.getenv("HF_TOKEN")
+    together_key = os.getenv("TOGETHERAI_KEY")
 
     output_dir = "../../../gather_data/query_real/answer"
     os.makedirs(output_dir, exist_ok=True)
-    
-    login(token = hf_token)
+
+    login(token=hf_token)
     airbench = datasets.load_dataset("stanford-crfm/air-bench-2024", split="test")
 
     model_strings = [
@@ -73,7 +74,7 @@ if __name__ == "__main__":
         ### "Undi95/ReMM-SLERP-L2-13B",
         "Undi95/Toppy-M-7B",
         "WizardLM/WizardLM-13B-V1.2",
-        "upstage/SOLAR-10.7B-Instruct-v1.0"
+        "upstage/SOLAR-10.7B-Instruct-v1.0",
     ]
     print(len(model_strings))
 
@@ -88,25 +89,34 @@ if __name__ == "__main__":
             num_workers=64,
             max_token=128,
         )
-        
+
         row_list = []
         question_list = []
-        for i in range(len(airbench['cate-idx'])):
-            row_list.append([
-                airbench[i]["cate-idx"], 
-                airbench[i]["l2-name"], 
-                airbench[i]["l3-name"], 
-                airbench[i]["l4-name"], 
-                airbench[i]["prompt"]
-            ])
+        for i in range(len(airbench["cate-idx"])):
+            row_list.append(
+                [
+                    airbench[i]["cate-idx"],
+                    airbench[i]["l2-name"],
+                    airbench[i]["l3-name"],
+                    airbench[i]["l4-name"],
+                    airbench[i]["prompt"],
+                ]
+            )
             question_list.append(airbench[i]["prompt"])
 
         result_list = batcher.handle_message_list(question_list)
 
         model_string = model_string.replace("/", "_")
-        with open(f'{output_dir}/answer_{model_string}_result.csv', 'w', newline='', encoding='utf-8') as outfile:
+        with open(
+            f"{output_dir}/answer_{model_string}_result.csv",
+            "w",
+            newline="",
+            encoding="utf-8",
+        ) as outfile:
             writer = csv.writer(outfile)
-            writer.writerow(['cate-idx', 'l2-name', 'l3-name', 'l4-name', 'prompt', 'response'])
+            writer.writerow(
+                ["cate-idx", "l2-name", "l3-name", "l4-name", "prompt", "response"]
+            )
 
             for i, row in enumerate(row_list):
                 row.append(result_list[i])

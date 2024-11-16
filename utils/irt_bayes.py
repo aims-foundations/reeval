@@ -1,11 +1,11 @@
 def mcmc(
     self,
-    response_matrix, 
+    response_matrix,
     max_epoch: int = 10000,
 ):
     num_warmup = int(max_epoch * 0.2)
     num_samples = max_epoch - num_warmup
-    
+
     rng_key = random.PRNGKey(0)
     rng_key, rng_key_ = random.split(rng_key)
 
@@ -22,6 +22,7 @@ def mcmc(
     theta_samples = mcmc.get_samples()["theta_hat"]
     z3_samples = mcmc.get_samples()["z3_hat"]
     return theta_samples, z3_samples
+
 
 def model(question_num, testtaker_num, response_matrix):
     z3_hat = numpyro.sample("z3_hat", dist.Normal(0.0, 1.0).expand((question_num,)))

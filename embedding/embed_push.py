@@ -1,25 +1,30 @@
 import argparse
-from tqdm import tqdm
-from datasets import Dataset, DatasetDict
-import pandas as pd
-import os
 import json
-from huggingface_hub import login
+import os
+
+import pandas as pd
+from datasets import Dataset, DatasetDict
 from dotenv import load_dotenv
+from huggingface_hub import login
+from tqdm import tqdm
 from utils import DATASETS
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--task', type=str, required=True, choices=['individual', 'aggregate'])
+    parser.add_argument(
+        "--task", type=str, required=True, choices=["individual", "aggregate"]
+    )
     args = parser.parse_args()
-    
+
     load_dotenv()
-    hf_token = os.getenv('HF_TOKEN')
+    hf_token = os.getenv("HF_TOKEN")
     login(token=hf_token)
 
     dataset_dict = {}
     for dataset in tqdm(DATASETS):
-        with open(f'../data/embed_{args.task}/{dataset}/embed.json', 'r', encoding='utf-8') as f:
+        with open(
+            f"../data/embed_{args.task}/{dataset}/embed.json", "r", encoding="utf-8"
+        ) as f:
             data = json.load(f)
             df = pd.DataFrame(data)
             dataset_split = Dataset.from_pandas(df)

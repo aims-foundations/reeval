@@ -1,9 +1,11 @@
-import os
-from dotenv import load_dotenv
 import csv
-from huggingface_hub import login
+import os
+
 import datasets
 from bacher import Batcher
+from dotenv import load_dotenv
+from huggingface_hub import login
+
 
 def extract_content(tag, text):
     start_idx = text.find(tag)
@@ -18,24 +20,27 @@ def extract_content(tag, text):
         content = text[start_of_content:end_idx].strip()
     return content
 
+
 if __name__ == "__main__":
     load_dotenv()
-    hf_token = os.getenv('HF_TOKEN')
-    openai_key = os.getenv('OPENAI_KEY')
-    
+    hf_token = os.getenv("HF_TOKEN")
+    openai_key = os.getenv("OPENAI_KEY")
+
     input_dir = "../../../gather_data/query_real/answer"
     output_dir = "../../../gather_data/query_real/eval"
     os.makedirs(output_dir, exist_ok=True)
 
     batcher = Batcher(
         api_key=openai_key,
-        model_name='gpt-4o',
+        model_name="gpt-4o",
         temperature=0,
         num_workers=64,
     )
 
-    login(token = hf_token)
-    judge_prompts = datasets.load_dataset("stanford-crfm/air-bench-2024", "judge_prompts", split="test")
+    login(token=hf_token)
+    judge_prompts = datasets.load_dataset(
+        "stanford-crfm/air-bench-2024", "judge_prompts", split="test"
+    )
 
     model_strings = [
         # "zero-one-ai/Yi-34B-Chat",
@@ -94,12 +99,17 @@ if __name__ == "__main__":
         ### "Undi95/ReMM-SLERP-L2-13B",
         "Undi95/Toppy-M-7B",
         "WizardLM/WizardLM-13B-V1.2",
-        "upstage/SOLAR-10.7B-Instruct-v1.0"
+        "upstage/SOLAR-10.7B-Instruct-v1.0",
     ]
 
     for model_string in model_strings:
-        model_string = model_string.replace('/','_')
-        with open(f'{input_dir}/answer_{model_string}_result.csv', 'r', newline='', encoding='utf-8') as infile:
+        model_string = model_string.replace("/", "_")
+        with open(
+            f"{input_dir}/answer_{model_string}_result.csv",
+            "r",
+            newline="",
+            encoding="utf-8",
+        ) as infile:
             reader = csv.reader(infile)
             header = next(reader)
             row_list = [row for row in reader]
@@ -111,21 +121,56 @@ if __name__ == "__main__":
             answer = row[5]
 
             for data in judge_prompts:
-                if data['cate-idx'] == cate_idx:
-                    judge_prompt = data['judge_prompt']
-            
-            question_list.append(judge_prompt.replace("{{QUESTION}}", prompt).replace("{{ANSWER}}", answer))
+                if data["cate-idx"] == cate_idx:
+                    judge_prompt = data["judge_prompt"]
+
+            question_list.append(
+                judge_prompt.replace("{{QUESTION}}", prompt).replace(
+                    "{{ANSWER}}", answer
+                )
+            )
 
         result_list = batcher.handle_message_list(question_list)
-        reason_list = [extract_content("##short_reasoning: ", result) for result in result_list]
-        score_list = [float(extract_content("##the_score: ", result)) for result in result_list]
+        reason_list = [
+            extract_content("##short_reasoning: ", result) for result in result_list
+        ]
+        score_list = [
+            float(extract_content("##the_score: ", result)) for result in result_list
+        ]
 
-        with open(f'{output_dir}/eval_{model_string}_result.csv', 'w', newline='', encoding='utf-8') as outfile:
+        with open(
+            f"{output_dir}/eval_{model_string}_result.csv",
+            "w",
+            newline="",
+            encoding="utf-8",
+        ) as outfile:
             writer = csv.writer(outfile)
-            writer.writerow(['cate-idx', 'l2-name', 'l3-name', 'l4-name', 'prompt', 'response', 'score_reason', 'score'])
+            writer.writerow(
+                [
+                    "cate-idx",
+                    "l2-name",
+                    "l3-name",
+                    "l4-name",
+                    "prompt",
+                    "response",
+                    "score_reason",
+                    "score",
+                ]
+            )
 
             for i, row in enumerate(row_list):
                 cate_idx, l2_name, l3_name, l4_name, prompt, response = row
                 reason = reason_list[i]
                 score = score_list[i]
-                writer.writerow([cate_idx, l2_name, l3_name, l4_name, prompt, response, reason, score])
+                writer.writerow(
+                    [
+                        cate_idx,
+                        l2_name,
+                        l3_name,
+                        l4_name,
+                        prompt,
+                        response,
+                        reason,
+                        score,
+                    ]
+                )

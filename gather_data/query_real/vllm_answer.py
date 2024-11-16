@@ -1,34 +1,35 @@
+import argparse
+import csv
 import os
-from huggingface_hub import login
+
 import datasets
 from bacher import Batcher
 from dotenv import load_dotenv
-import csv
-import argparse
+from huggingface_hub import login
 
 if __name__ == "__main__":
     load_dotenv()
-    hf_token = os.getenv('HF_TOKEN')
+    hf_token = os.getenv("HF_TOKEN")
 
     output_dir = "../../../gather_data/query_real/answer"
     os.makedirs(output_dir, exist_ok=True)
 
-    parser = argparse.ArgumentParser(description='get answer from model')
-    parser.add_argument('--url', type=str, required=True, help='API base URL')
-    parser.add_argument('--start', type=int, required=True, help='Start index')
-    parser.add_argument('--end', type=int, required=True, help='End index')
+    parser = argparse.ArgumentParser(description="get answer from model")
+    parser.add_argument("--url", type=str, required=True, help="API base URL")
+    parser.add_argument("--start", type=int, required=True, help="Start index")
+    parser.add_argument("--end", type=int, required=True, help="End index")
     args = parser.parse_args()
     url = args.url
     start = args.start
     end = args.end
 
-    login(token = hf_token)
+    login(token=hf_token)
     airbench = datasets.load_dataset("stanford-crfm/air-bench-2024", split="test")
 
     model_strings = [
-        'meta-llama/Meta-Llama-3-8B-Instruct',
-        ]
-    subset_model_strings = model_strings[start-1:end]
+        "meta-llama/Meta-Llama-3-8B-Instruct",
+    ]
+    subset_model_strings = model_strings[start - 1 : end]
 
     for model_string in subset_model_strings:
         batcher = Batcher(
@@ -43,16 +44,31 @@ if __name__ == "__main__":
 
         row_list = []
         question_list = []
-        for i in range(len(airbench['cate-idx'])):
-            row_list.append([airbench[i]["cate-idx"], airbench[i]["l2-name"], airbench[i]["l3-name"], airbench[i]["l4-name"], airbench[i]["prompt"]])
+        for i in range(len(airbench["cate-idx"])):
+            row_list.append(
+                [
+                    airbench[i]["cate-idx"],
+                    airbench[i]["l2-name"],
+                    airbench[i]["l3-name"],
+                    airbench[i]["l4-name"],
+                    airbench[i]["prompt"],
+                ]
+            )
             question_list.append(airbench[i]["prompt"])
-        
+
         result_list = batcher.handle_message_list(question_list)
 
-        model_string = model_string.replace('/','_')
-        with open(f'{output_dir}/answer_{model_string}_result.csv', 'w', newline='', encoding='utf-8') as outfile:
+        model_string = model_string.replace("/", "_")
+        with open(
+            f"{output_dir}/answer_{model_string}_result.csv",
+            "w",
+            newline="",
+            encoding="utf-8",
+        ) as outfile:
             writer = csv.writer(outfile)
-            writer.writerow(['cate-idx', 'l2-name', 'l3-name', 'l4-name', 'prompt', 'response'])
+            writer.writerow(
+                ["cate-idx", "l2-name", "l3-name", "l4-name", "prompt", "response"]
+            )
 
             for i, row in enumerate(row_list):
                 row.append(result_list[i])
