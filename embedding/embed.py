@@ -3,6 +3,7 @@ import pickle
 
 import numpy as np
 import pandas as pd
+import torch
 from datasets import Dataset
 from embed_text_package.embed_text_v2 import Embedder
 from huggingface_hub import snapshot_download
@@ -18,8 +19,9 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=1024)
     args = parser.parse_args()
 
-    description = DESCRIPTION_MAP[args.dataset]
+    num_gpus = torch.cuda.device_count()
 
+    description = DESCRIPTION_MAP[args.dataset]
     data_folder = snapshot_download(
         repo_id="stair-lab/reeval_responses", repo_type="dataset"
     )
@@ -45,7 +47,10 @@ if __name__ == "__main__":
     text_dataset = Dataset.from_pandas(text_df)
 
     embdr = Embedder()
-    embdr.load(args.model_name)
+    embdr.load(
+        args.model_name,
+        tensor_parallel_size=num_gpus,
+    )
     dataloader = DataLoader(text_dataset, batch_size=args.batch_size)
     embed = embdr.get_embeddings(dataloader, args.model_name, ["text"])
     assert len(embed["text"]) == len(text_df) == len(difficulty)
