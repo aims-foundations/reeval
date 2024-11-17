@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from utils.utils import item_response_fn_1PL, set_seed, inverse_sigmoid, plot_hard_easy
 
 if __name__ == "__main__":
-    wandb.init(project="hard_easy_test_new_em")
+    wandb.init(project="hard_easy_test")
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True)
     parser.add_argument('--calibration_method', type=str, required=True)
@@ -92,18 +92,18 @@ if __name__ == "__main__":
         theta_hats.extend(theta_hat.flatten().tolist())
         y_means.extend(inverse_sigmoid(y_sub.mean(-1)).tolist())
     
-    save_dir = f'../data/hard_easy_test_new_em/{args.dataset}'
+    save_dir = f'../data/hard_easy_test/{args.dataset}'
     os.makedirs(save_dir, exist_ok=True)
     df = pd.DataFrame({
         "theta_hat": theta_hats,
         "y_mean": y_means,
     })
-    df.to_csv(f'{save_dir}/hard_easy_test_new_em.csv', index=False)
+    df.to_csv(f'{save_dir}/hard_easy_test.csv', index=False)
     
-    theta_hats = pd.read_csv(f'../data/hard_easy_test_new_em/{args.dataset}/hard_easy_test_new_em.csv')["theta_hat"].values
-    y_means = pd.read_csv(f'../data/hard_easy_test_new_em/{args.dataset}/hard_easy_test_new_em.csv')["y_mean"].values
+    theta_hats = pd.read_csv(f'../data/hard_easy_test/{args.dataset}/hard_easy_test.csv')["theta_hat"].values
+    y_means = pd.read_csv(f'../data/hard_easy_test/{args.dataset}/hard_easy_test.csv')["y_mean"].values
     
-    plot_dir = f'../plot/hard_easy_test_new_em'
+    plot_dir = f'../plot/hard_easy_test'
     os.makedirs(plot_dir, exist_ok=True)
     plot_hard_easy(
         theta_hats,

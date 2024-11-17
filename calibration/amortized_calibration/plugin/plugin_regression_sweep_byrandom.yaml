@@ -1,9 +1,0 @@
-method: grid
-parameters:
-  dataset:
-    values:
-    - aggregate
-  seed:
-    values: [2, 3, 5, 6]
-program: plugin_regression_sweep_byrandom.py
-project: plugin_regression_sweep_byrandom

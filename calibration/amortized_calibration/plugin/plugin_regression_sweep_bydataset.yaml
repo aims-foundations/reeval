@@ -1,6 +1,0 @@
-method: grid
-parameters:
-  seed:
-    values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-program: plugin_regression_sweep_bydataset.py
-project: plugin_regression_sweep_bydataset
