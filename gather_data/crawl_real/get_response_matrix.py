@@ -98,7 +98,7 @@ if __name__ == "__main__":
     # 1. Multiple choice questions
     # 2. Open-ended questions
     # 3. Questions with no references with logprob
-    
+
     logprob_tag = False
     with open(f"{input_dir}/{full_strings[0]}.json", "r") as f:
         data = json.load(f)
