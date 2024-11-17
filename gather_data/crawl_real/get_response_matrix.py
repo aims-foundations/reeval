@@ -4,8 +4,9 @@ import os
 import re
 
 import pandas as pd
-import wandb
 from dataset_info_stats import delete_model_name
+from huggingface_hub import HfApi, snapshot_download
+from tqdm import tqdm
 
 
 def extract_model_name(filename):
@@ -68,7 +69,6 @@ def get_bool_answers_logprob(data, threshold):
 
 
 if __name__ == "__main__":
-    wandb.init(project="get_response_matrix")
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--leaderboard", type=str, default="classic", choices=["classic", "mmlu"]
@@ -76,12 +76,17 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, required=True)  # use wandb sweep, mmlu
     args = parser.parse_args()
 
-    input_dir = f"../../../data/gather_data/crawl_real/jsons/{args.dataset}_json"
-    output_dir = f"../../../data/pre_calibration/{args.dataset}"
+    # data_folder = snapshot_download(
+    #     repo_id="stair-lab/reeval_jsons", repo_type="dataset"
+    # )
+    data_folder = "/dfs/scratch1/nqduc/reeval/data/gather_data/crawl_real"
+
+    input_dir = f"{data_folder}/jsons/{args.dataset}_json"
+    output_dir = f"../../data/pre_calibration/{args.dataset}"
     os.makedirs(output_dir, exist_ok=True)
 
     full_strings_all = pd.read_csv(
-        f"../../../data/gather_data/crawl_real/crawl_dataset_name_{args.leaderboard}.csv"
+        f"{data_folder}/crawl_dataset_name_{args.leaderboard}.csv"
     )["Run"].tolist()
     full_strings = [
         f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.dataset)
@@ -93,6 +98,7 @@ if __name__ == "__main__":
     logprob_tag = False
     with open(f"{input_dir}/{full_strings[0]}.json", "r") as f:
         data = json.load(f)
+
     if not data["request_states"][0]["instance"]["references"]:
         logprob_tag = True
         logprobs = []
@@ -107,12 +113,12 @@ if __name__ == "__main__":
     # response matrix
     max_lens = []
     max_len_file_names = []
-    for i, non_model_string in enumerate(non_model_strings):
+    for i, non_model_string in enumerate(tqdm(non_model_strings)):
         max_len = 0
         max_len_file_name = ""
         single_matrix = {name: [] for name in all_model_names}
 
-        for filename in os.listdir(input_dir):
+        for filename in tqdm(os.listdir(input_dir)):
             file_name_without_json = filename[:-5]
             if filename.endswith(".json") and (
                 delete_model_name(file_name_without_json) == non_model_string
@@ -159,6 +165,7 @@ if __name__ == "__main__":
             bool_delete_list.append(1)
         else:
             bool_delete_list.append(0)
+
     all_matrix_df.to_csv(f"{output_dir}/matrix.csv", index_label=None)
 
     # index search
@@ -174,3 +181,12 @@ if __name__ == "__main__":
 
     search_df = pd.DataFrame(search_list, columns=["idx", "text", "is_deleted"])
     search_df.to_csv(f"{output_dir}/search.csv", index=False, escapechar="\\")
+
+    # Upload the content of the local folder to your remote Space
+    api = HfApi()
+    api.upload_folder(
+        folder_path=f"{output_dir}",
+        path_in_repo=args.dataset,
+        repo_id="stair-lab/reeval_responses",
+        repo_type="dataset",
+    )

@@ -5,6 +5,7 @@ import pickle
 import pandas as pd
 import torch
 from datasets import concatenate_datasets, load_dataset
+from huggingface_hub import snapshot_download
 from utils.irt import IRT
 from utils.utils import set_seed, str2bool
 
@@ -49,13 +50,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--fitting_method", type=str, default="mle", choices=["mle", "mcmc", "em"]
     )
-    parser.add_argument("--max_epoch", type=int, default=3000)
+    parser.add_argument("--max_epoch", type=int, default=1000)
     parser.add_argument("--amortized", type=str2bool, default=False)
     args = parser.parse_args()
 
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    input_dir = "../../data/pre_calibration"
+    data_folder = snapshot_download(
+        repo_id="stair-lab/reeval_responses", repo_type="dataset"
+    )
+    y = pd.read_csv(f"{data_folder}/{args.dataset}/matrix.csv", index_col=0).values
+    response_matrix = torch.tensor(y, dtype=torch.float32, device=device)
+
     output_dir = f"../../data/{args.fitting_method}_{args.PL}pl{'_amortized' if args.amortized else ''}_calibration/{args.dataset}"
     os.makedirs(output_dir, exist_ok=True)
 
@@ -77,9 +83,6 @@ if __name__ == "__main__":
         }
     else:
         amortized_model_hyperparams = None
-
-    y = pd.read_csv(f"{input_dir}/{args.dataset}/matrix.csv", index_col=0).values
-    response_matrix = torch.tensor(y, dtype=torch.float32, device=device)
 
     irt_model = calibrate(
         response_matrix=response_matrix,
