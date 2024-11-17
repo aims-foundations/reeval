@@ -10,3 +10,8 @@ wandb
 a.py
 plot.zip
 __pycache__/
+src/
+raft/
+mcmc_2pl_calibration/
+hard-easy_test_new_em/
+commonsense/

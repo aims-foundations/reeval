@@ -1,8 +1,8 @@
-model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
-dataset_name: stair-lab/airbench-sft
-output_dir: ../data/sft/lora_10epoch
+model_name_or_path: meta-llama/Meta-Llama-3.1-8B-Instruct
+dataset_name: stair-lab/reeval-sft
+output_dir: ../data/sft/lora_skampere
 overwrite_output_dir: true
-num_train_epochs: 10
+num_train_epochs: 1.0
 
 dataset_train_split: train
 dataset_test_split: test
@@ -15,13 +15,14 @@ gradient_checkpointing: true
 learning_rate: 0.0001
 lr_scheduler_type: cosine
 logging_steps: 1
-per_device_train_batch_size: 4
+per_device_train_batch_size: 8
 report_to: wandb
 save_steps: 500
 warmup_ratio: 0.1
 
 use_peft: true
-lora_alpha: 16
-lora_r: 8
+lora_alpha: 64
+lora_r: 32
 lora_dropout: 0.1
 lora_target_modules: ["q_proj", "v_proj"]
+# use_liger: true
