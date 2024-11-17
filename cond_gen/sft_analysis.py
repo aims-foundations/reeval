@@ -7,9 +7,9 @@ import pandas as pd
 import torch
 from datasets import Dataset, load_dataset
 from embed_text_package.embed_text import Embedder
-from peft import AutoPeftModelForCausalLM
 from ppo_reward_model import extract_score
-from utils import MLP, plot_hist
+from transformers import GenerationConfig
+from utils.utils import plot_hist
 from vllm import LLM, SamplingParams
 
 
@@ -29,26 +29,34 @@ def call_diff(ds, gt_zs, reward_model, restart):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--model", type=str, default="stair-lab/reeval_airbench_question_generator"
+    )
+    args = parser.parse_args()
+
     plot_dir = "../plot/sft"
     os.makedirs(plot_dir, exist_ok=True)
     restart = 64
 
-    model_dir = "../data/sft/lora_10epoch"
-    model = AutoPeftModelForCausalLM.from_pretrained(f"{model_dir}/checkpoint-2400")
     train_dataset = load_dataset("stair-lab/airbench-sft", split="train")
     test_dataset = load_dataset("stair-lab/airbench-sft", split="test")
     train_prompts = train_dataset["text"]
     test_prompts = test_dataset["text"]
-    model = model.merge_and_unload().to(torch.bfloat16)
-    model.save_pretrained(model_dir)
 
     train_gt_zs = [extract_score(p) for p in train_prompts]
     test_gt_zs = [extract_score(p) for p in test_prompts]
 
+    generation_config = GenerationConfig.from_pretrained(args.model)
     sampling_params = SamplingParams(
-        temperature=0.6, n=restart, best_of=2 * restart, top_p=0.9, max_tokens=256
+        n=restart,
+        best_of=2 * restart,
+        temperature=generation_config.temperature,
+        top_p=generation_config.top_p,
+        max_tokens=2048,
     )
-    llm = LLM(model=model_dir)
+    llm = LLM(model=args.model, gpu_memory_utilization=0.7)
+
     train_outputs = llm.generate(train_prompts, sampling_params)
     test_outputs = llm.generate(test_prompts, sampling_params)
 

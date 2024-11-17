@@ -6,7 +6,6 @@ from datasets import Dataset
 from embed_text_package.embed_text import Embedder
 from lampo.reward_model import RewardModelTemplate
 from torch.utils.data import DataLoader
-from utils import MLP
 
 
 def extract_score(input_str: str) -> float:
