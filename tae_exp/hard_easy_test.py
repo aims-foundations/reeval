@@ -151,7 +151,13 @@ if __name__ == "__main__":
         optim = torch.optim.SGD([theta_hat], lr=0.01)
 
         for _ in tqdm(range(step_size)):
-            prob = IRT.compute_prob(theta_hat, z_sub).squeeze(1)
+            prob = IRT.compute_prob(
+                theta_hat, 
+                z_sub,
+                disciminatory=1,
+                guessing=0,
+                loading_factor=1
+            ).squeeze(1)
             loss = (
                 -torch.distributions.Bernoulli(probs=prob)
                 .log_prob(y_sub)

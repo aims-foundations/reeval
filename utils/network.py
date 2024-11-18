@@ -2,16 +2,17 @@ from torch import nn
 
 
 class MLP(nn.Module):
-    def __init__(self, input_dim, n_layers, hidden_dim, output_dim):
+    def __init__(self, input_dim, n_layers, hidden_dim, output_dim, device="cpu"):
         super(MLP, self).__init__()
         self.input_dim = input_dim
         self.n_layers = n_layers
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
+        self.device = device
 
         if n_layers == 1:
             layers = [
-                nn.Linear(input_dim, output_dim),
+                nn.Linear(input_dim, output_dim).to(device),
             ]
         else:
             layers = [nn.Linear(input_dim, hidden_dim)]
@@ -19,12 +20,12 @@ class MLP(nn.Module):
                 layers.extend(
                     [
                         nn.ELU(),
-                        nn.Linear(hidden_dim, hidden_dim),
+                        nn.Linear(hidden_dim, hidden_dim).to(device),
                     ]
                 )
             layers.extend(
                 [
-                    nn.Linear(hidden_dim, output_dim),
+                    nn.Linear(hidden_dim, output_dim).to(device),
                 ]
             )
 

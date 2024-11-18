@@ -14,33 +14,50 @@ class IRT(nn.Module):
         D=1,
         PL=1,
         amortize_item=False,
+        amortize_student=False,
+        amortized_question_hyperparams=None,
         amortized_model_hyperparams=None,
+        device="cpu",
     ):
         super(IRT, self).__init__()
         self.D = D
         self.PL = PL
         self.amortize_item = amortize_item
-        self.ability = nn.Parameter(torch.randn(n_testtaker, D), requires_grad=True)
+        self.amortize_student = amortize_student
+        self.device = device
+
+        if amortize_student:
+            assert amortized_model_hyperparams is not None
+            self.ability_nn = MLP(
+                **amortized_model_hyperparams,
+                output_dim=D,
+                device=device,
+            )
+            self.ability_mask = None
+        else: 
+            self.ability = nn.Parameter(torch.randn(n_testtaker, D, device=device), requires_grad=True)
+            self.ability_mask = 1
 
         if D == 1:
-            self.register_buffer("loading_factor", torch.ones(n_questions, D))
+            self.register_buffer("loading_factor", torch.ones(n_questions, D, device=device))
         if PL == 1:
-            self.register_buffer("disciminatory", torch.ones(n_questions))
+            self.register_buffer("disciminatory", torch.ones(n_questions, device=device))
         if PL == 1 or PL == 2:
-            self.register_buffer("guessing", torch.zeros(n_questions))
+            self.register_buffer("guessing", torch.zeros(n_questions, device=device))
 
         if amortize_item:
-            assert amortized_model_hyperparams is not None
+            assert amortized_question_hyperparams is not None
             self.item_parameters_nn = MLP(
-                **amortized_model_hyperparams,
+                **amortized_question_hyperparams,
                 output_dim=3 + D,
+                device=device,
             )
 
         else:
-            self.difficulty = nn.Parameter(torch.randn(n_questions), requires_grad=True)
+            self.difficulty = nn.Parameter(torch.randn(n_questions, device=device), requires_grad=True)
 
             if D > 1:
-                self.loading_factor = torch.randn(n_questions, D)
+                self.loading_factor = torch.randn(n_questions, D, device=device)
                 self.loading_factor = nn.Parameter(
                     self.loading_factor, requires_grad=True
                 )
@@ -49,14 +66,14 @@ class IRT(nn.Module):
 
             if PL == 2:
                 self.disciminatory = nn.Parameter(
-                    torch.exp(torch.randn(n_questions)), requires_grad=True
+                    torch.exp(torch.randn(n_questions, device=device)), requires_grad=True
                 )
             elif PL == 3:
                 self.disciminatory = nn.Parameter(
-                    torch.exp(torch.randn(n_questions)), requires_grad=True
+                    torch.exp(torch.randn(n_questions, device=device)), requires_grad=True
                 )
                 self.guessing = nn.Parameter(
-                    torch.randn(n_questions), requires_grad=True
+                    torch.randn(n_questions, device=device), requires_grad=True
                 )
             elif PL != 1:
                 raise ValueError(f"PL={PL} is not supported")
@@ -83,11 +100,11 @@ class IRT(nn.Module):
             disciminatory * (ability * loading_factor).sum(-1) + difficulty
         )
 
-    def fit(self, method="mle", max_epoch=3000, response_matrix=None, embedding=None):
+    def fit(self, method="mle", max_epoch=3000, response_matrix=None, embedding=None, model_features=None):
         if method == "mle":
-            self.mle(max_epoch, response_matrix, embedding)
+            self.mle(max_epoch=max_epoch, response_matrix=response_matrix, embedding=embedding, model_features=model_features)
         elif method == "em":
-            self.em(max_epoch, response_matrix, embedding)
+            self.em(max_epoch=max_epoch, response_matrix=response_matrix, embedding=embedding, model_features=model_features)
         else:
             raise ValueError(f"{method} is not supported")
 
@@ -107,22 +124,34 @@ class IRT(nn.Module):
         max_epoch: int,
         response_matrix: torch.Tensor,
         embedding=None,
+        model_features=None,
     ):
-        if self.amortize_item:
+        if self.amortize_item or self.amortize_student:
             optimizer = optim.Adam(self.parameters(), lr=1e-3)
         else:
             optimizer = optim.Adam(self.parameters(), lr=0.01)
 
+        if self.amortize_student:
+            self.ability_mask = model_features[:, 0] != -1
+            response_matrix = response_matrix[self.ability_mask]
+         
+        mask = response_matrix != -1
+        masked_response_matrix = response_matrix[mask]
+        
         pbar = tqdm(range(max_epoch))
         for _ in pbar:
             if self.amortize_item:
                 self.item_parameters = self.item_parameters_nn(embedding)
 
+            if self.amortize_student:
+                self.ability = self.ability_nn(model_features)
+                
             prob_matrix = self.forward()
 
-            mask = response_matrix != -1
-            masked_response_matrix = response_matrix.flatten()[mask.flatten()]
-            masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
+            if self.amortize_student:
+                masked_prob_matrix = prob_matrix[self.ability_mask][mask]
+            else:
+                masked_prob_matrix = prob_matrix[mask]
 
             berns = torch.distributions.Bernoulli(probs=masked_prob_matrix)
             loss = -berns.log_prob(masked_response_matrix).mean()
@@ -135,19 +164,21 @@ class IRT(nn.Module):
         self,
         max_epoch: int,
         response_matrix: torch.Tensor,
-        num_node: int = 64,
+        embedding=None,
+        model_features=None,
+        n_mc_samples: int = 64,
     ):
-        self.em_item(max_epoch, response_matrix, num_node)
-        self.em_ability(max_epoch, response_matrix)
+        self.em_item(max_epoch=max_epoch, response_matrix=response_matrix, embedding=embedding, n_mc_samples=n_mc_samples)
+        self.em_ability(max_epoch=max_epoch, response_matrix=response_matrix, embedding=embedding, model_features=model_features)
 
     def em_item(
         self,
         max_epoch: int,
         response_matrix: torch.Tensor,
+        embedding=None,
         n_mc_samples: int = 64,
     ):
         n_testtaker, num_item = response_matrix.shape
-
         theta_nodes, weights = np.polynomial.hermite.hermgauss(n_mc_samples)
         theta_nodes = torch.tensor(theta_nodes, device=response_matrix.device)
 
@@ -158,17 +189,26 @@ class IRT(nn.Module):
         weights = weights / torch.sum(weights)
         # >>> n_mc_samples
 
-        parameters = [self.difficulty]
-        if self.PL > 1:
-            parameters.append(self.disciminatory)
-        if self.PL > 2:
-            parameters.append(self.guessing)
-        if self.D > 1:
-            parameters.append(self.loading_factor)
-        optimizer = optim.Adam(parameters, lr=0.01)
+        if self.amortize_item:
+            optimizer = optim.Adam(self.item_parameters_nn.parameters(), lr=1e-3)
+        else:
+            parameters = [self.difficulty]
+            if self.PL > 1:
+                parameters.append(self.disciminatory)
+            if self.PL > 2:
+                parameters.append(self.guessing)
+            if self.D > 1:
+                parameters.append(self.loading_factor)
+            optimizer = optim.Adam(parameters, lr=0.01)
 
+        mask = response_matrix != -1
+        masked_response_matrix = response_matrix[mask]
+            
         pbar = tqdm(range(max_epoch))
         for _ in pbar:
+            if self.amortize_item:
+                self.item_parameters = self.item_parameters_nn(embedding)
+                
             difficulty = self.get_difficulty()
             disciminatory = self.get_disciminatory()
             guessing = self.get_guessing()
@@ -178,8 +218,7 @@ class IRT(nn.Module):
                 theta_matrices, difficulty, disciminatory, guessing, loading_factor
             )
 
-            mask = response_matrix != -1
-            masked_response_matrix = response_matrix[mask]
+            
             masked_prob_matrix = prob_matrices[:, mask]
 
             berns = torch.distributions.Bernoulli(
@@ -196,15 +235,36 @@ class IRT(nn.Module):
         self,
         max_epoch: int,
         response_matrix: torch.Tensor,
+        embedding=None,
+        model_features=None,
     ):
-        optimizer = optim.Adam([self.ability], lr=0.01)
+        if self.amortize_student:
+            optimizer = optim.Adam(self.ability_nn.parameters(), lr=1e-3)
+        else:
+            optimizer = optim.Adam([self.ability], lr=0.01)
+    
         pbar = tqdm(range(max_epoch))
+        if self.amortize_item:
+            with torch.no_grad():
+                self.item_parameters = self.item_parameters_nn(embedding)
+        
+        if self.amortize_student:
+            self.ability_mask = model_features[:, 0] != -1
+            response_matrix = response_matrix[self.ability_mask]
+         
+        mask = response_matrix != -1
+        masked_response_matrix = response_matrix[mask]
+                
         for _ in pbar:
+            if self.amortize_student:
+                self.ability = self.ability_nn(model_features)
+
             prob_matrix = self.forward()
 
-            mask = response_matrix != -1
-            masked_response_matrix = response_matrix.flatten()[mask.flatten()]
-            masked_prob_matrix = prob_matrix.flatten()[mask.flatten()]
+            if self.amortize_student:
+                masked_prob_matrix = prob_matrix[self.ability_mask][mask]
+            else:
+                masked_prob_matrix = prob_matrix[mask]
 
             berns = torch.distributions.Bernoulli(probs=masked_prob_matrix)
             loss = -berns.log_prob(masked_response_matrix).mean()
@@ -214,9 +274,18 @@ class IRT(nn.Module):
             pbar.set_postfix({"loss": loss.item()})
 
     def get_abilities(self):
-        mean_ability = torch.mean(self.ability, dim=0)
-        std_ability = torch.std(self.ability, dim=0)
+        if self.ability_mask is None and self.amortize_student:
+            raise ValueError("Please fit the model first")
+        
+        if self.ability_mask is not None:
+            ability = self.ability[self.ability_mask]
+        else:
+            ability = self.ability
+
+        mean_ability = torch.mean(ability, dim=0)
+        std_ability = torch.std(ability, dim=0)
         ability = (self.ability - mean_ability) / std_ability
+
         return ability
 
     def get_difficulty(self):
