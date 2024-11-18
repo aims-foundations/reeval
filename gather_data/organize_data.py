@@ -1,7 +1,9 @@
 import os
 import io
 import requests
+import torch
 import pandas as pd
+
 from tqdm import tqdm
 from datasets import Dataset, load_dataset
 from huggingface_hub import snapshot_download
@@ -95,23 +97,52 @@ if __name__ == "__main__":
         huggingface_model_id = check_model_existence(f"{hf_org_name}/{hf_model_name}")
         huggingface_model_ids[model_name] = huggingface_model_id
 
+    embedding_folder = snapshot_download(
+        repo_id="stair-lab/reeval_all_embeddings", repo_type="dataset"
+    )
+    
+    helm_score_folder = snapshot_download(
+        repo_id="stair-lab/reeval_helm_scores", repo_type="dataset"
+    )
+
     for dataset in tqdm(DATASETS):
         # Data
         data = pd.read_csv(f"{data_folder}/{dataset}/matrix.csv", index_col=0)
+        response_matrix = torch.tensor(data.values, dtype=torch.float32)
+        
+        if os.path.exists(f"{helm_score_folder}/{dataset}.csv"):
+            helm_scores = pd.read_csv(f"{helm_score_folder}/{dataset}.csv")
+        else:
+            helm_scores = None
         
         # Row key
         row_key = data.index.tolist()
         row_data = []
-        for model_name in row_key:
+        
+        assert len(row_key) == response_matrix.shape[0]
+        for model_name, model_ctt_scores in zip(row_key, response_matrix):
             single_model_info = model_info[model_info["model_names_reeval"] == model_name]
+            if helm_scores is not None:
+                single_model_hs = helm_scores[helm_scores["model_name"] == model_name]
+                
+                if len(single_model_hs) == 0:
+                    single_model_hs = None
+                else:
+                    single_model_hs = single_model_hs["score"].iloc[0]
+            else:
+                single_model_hs = None
 
+            model_ctt_score = model_ctt_scores[model_ctt_scores != -1].mean().item()
+            
             if len(single_model_info) == 0:
                 row_data.append({
                     'model_name': model_name,
                     'huggingface_model_id': huggingface_model_ids[model_name],
                     'model_size': None, 
                     'pretraining_data_size': None, 
-                    'flop': None
+                    'flop': None,
+                    'helm_score': single_model_hs,
+                    'ctt_score': model_ctt_score
                 })
             else:
                 row_data.append({
@@ -119,9 +150,11 @@ if __name__ == "__main__":
                     'huggingface_model_id': huggingface_model_ids[model_name],
                     'model_size': single_model_info['Model Size (B)'].values[0], 
                     'pretraining_data_size': single_model_info['Pretraining Data Size (T)'].values[0], 
-                    'flop': single_model_info['FLOPs (1E21)'].values[0]
+                    'flop': single_model_info['FLOPs (1E21)'].values[0],
+                    'helm_score': single_model_hs,
+                    'ctt_score': model_ctt_score
                 })
-        
+    
         row_key = pd.DataFrame(row_data)
         
         assert row_key.shape[0] == data.shape[0]
@@ -153,5 +186,16 @@ if __name__ == "__main__":
             path_or_fileobj=question_key_file,
             # run_as_future=True,
         )
+        
+        for file in os.listdir(f"{embedding_folder}/{dataset}"):
+            embedding_file = f"{embedding_folder}/{dataset}/{file}"
+            upload_api.upload_file(
+                repo_id="stair-lab/reeval_responses",
+                repo_type="dataset",
+                path_in_repo=f"{dataset}/{file}",
+                path_or_fileobj=embedding_file,
+                # run_as_future=True,
+            )
+        
         
     print("Done")
