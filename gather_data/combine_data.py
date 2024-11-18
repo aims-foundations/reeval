@@ -5,6 +5,7 @@ from datasets import Dataset, load_dataset, concatenate_datasets
 from huggingface_hub import snapshot_download, HfApi
 from utils.constants import DATASETS
 from tqdm import tqdm
+import torch
 
 # DATASETS = DATASETS[:3]
 
@@ -31,6 +32,15 @@ if __name__ == "__main__":
         repo_id="stair-lab/reeval_responses",
         repo_type="dataset",
         path_in_repo="combined_data/matrix.csv",
+        path_or_fileobj=combined_matrix_file,
+    )
+    # upload the response matrix as a torch object
+    combined_matrix_file = io.BytesIO()
+    torch.save(torch.tensor(combined_matrix.values, dtype=torch.float32), combined_matrix_file)
+    upload_api.upload_file(
+        repo_id="stair-lab/reeval_responses",
+        repo_type="dataset",
+        path_in_repo="combined_data/response_matrix.pt",
         path_or_fileobj=combined_matrix_file,
     )
     

@@ -110,6 +110,17 @@ if __name__ == "__main__":
         data = pd.read_csv(f"{data_folder}/{dataset}/matrix.csv", index_col=0)
         response_matrix = torch.tensor(data.values, dtype=torch.float32)
         
+        # Push response matrix as a torch object 
+        response_matrix_file = io.BytesIO()
+        torch.save(response_matrix, response_matrix_file)
+        upload_api.upload_file(
+            repo_id="stair-lab/reeval_responses",
+            repo_type="dataset",
+            path_in_repo=f"{dataset}/response_matrix.pt",
+            path_or_fileobj=response_matrix_file,
+            # run_as_future=True,
+        )
+        
         if os.path.exists(f"{helm_score_folder}/{dataset}.csv"):
             helm_scores = pd.read_csv(f"{helm_score_folder}/{dataset}.csv")
         else:
