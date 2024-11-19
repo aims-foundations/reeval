@@ -152,11 +152,7 @@ if __name__ == "__main__":
 
         for _ in tqdm(range(step_size)):
             prob = IRT.compute_prob(
-                theta_hat, 
-                z_sub,
-                disciminatory=1,
-                guessing=0,
-                loading_factor=1
+                theta_hat, z_sub, disciminatory=1, guessing=0, loading_factor=1
             ).squeeze(1)
             loss = (
                 -torch.distributions.Bernoulli(probs=prob)
