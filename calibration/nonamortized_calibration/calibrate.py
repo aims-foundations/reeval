@@ -4,6 +4,7 @@ import pickle
 
 import pandas as pd
 import torch
+import wandb
 from datasets import concatenate_datasets, load_dataset
 from huggingface_hub import snapshot_download
 from utils.irt import IRT
@@ -48,6 +49,8 @@ def calibrate(
 
 
 if __name__ == "__main__":
+    wandb.init(project="reeval")
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, required=True)
     parser.add_argument("--D", type=int, default=1)
@@ -85,26 +88,10 @@ if __name__ == "__main__":
 
     # Loading data for amortized calibration
     if args.amortized_question:
-        data_files = os.listdir(f"{data_folder}/{args.dataset}")
-
-        # Filter out the files that ends with .parquet
-        data_files = [
-            f for f in data_files if f.endswith(".parquet") and f.startswith("train")
-        ]
-
-        # Construct the full path
-        data_files = [f"{data_folder}/{args.dataset}/{f}" for f in data_files]
-
-        # Sort the files by the number
-        data_files = sorted(data_files)
-
-        print("Loading item embeddings...")
-        dataset_emb = load_dataset("parquet", data_files=data_files, split="train")
-
-        print("Converting to tensor...")
-        item_embeddings = torch.tensor(
-            dataset_emb["embed"], dtype=torch.float32, device=device
-        )
+        # load item embeddings
+        item_embeddings = torch.load(
+            f"{data_folder}/{args.dataset}/item_embeddings.pt",
+        ).to(device=device)
 
         # select training data
         item_embeddings = item_embeddings[train_indices]
@@ -162,6 +149,8 @@ if __name__ == "__main__":
 
     abilities = irt_model.get_abilities().cpu().detach().tolist()
     item_parms = irt_model.get_item_parameters().cpu().detach().tolist()
+    
+    wandb.finish()
 
     pickle.dump(abilities, open(f"{output_dir}/abilities.pkl", "wb"))
     pickle.dump(item_parms, open(f"{output_dir}/item_parms.pkl", "wb"))
