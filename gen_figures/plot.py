@@ -7,8 +7,8 @@ from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use("seaborn-v0_8-paper")
 
-from .constants import PLOT_NAME_MAP
-from .irt import IRT
+from utils.constants import PLOT_NAME_MAP
+from utils.irt import IRT
 
 def theta_corr_plot(
     mode: str,
