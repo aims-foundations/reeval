@@ -47,10 +47,7 @@ if __name__ == "__main__":
     text_dataset = Dataset.from_pandas(text_df)
 
     embdr = Embedder()
-    embdr.load(
-        args.model_name,
-        tensor_parallel_size=num_gpus,
-    )
+    embdr.load(args.model_name, tensor_parallel_size=num_gpus, dtype=torch.float16)
     dataloader = DataLoader(text_dataset, batch_size=args.batch_size)
     embed = embdr.get_embeddings(dataloader, args.model_name, ["text"])
     assert len(embed["text"]) == len(text_df) == len(difficulty)

@@ -1,17 +1,18 @@
-import os
 import io
+import os
+
 import pandas as pd
-from datasets import Dataset, load_dataset, concatenate_datasets
-from huggingface_hub import snapshot_download, HfApi
-from utils.constants import DATASETS
-from tqdm import tqdm
 import torch
+from datasets import concatenate_datasets, Dataset, load_dataset
+from huggingface_hub import HfApi, snapshot_download
+from tqdm import tqdm
+from utils.constants import DATASETS
 
 # DATASETS = DATASETS[:3]
 
 if __name__ == "__main__":
     upload_api = HfApi()
-    
+
     # Combine response matrices
     data_folder = snapshot_download(
         repo_id="stair-lab/reeval_responses", repo_type="dataset"
@@ -22,7 +23,7 @@ if __name__ == "__main__":
         if combined_matrix is None:
             combined_matrix = matrix
         else:
-            combined_matrix = combined_matrix.join(matrix, how='outer', rsuffix='_dup')
+            combined_matrix = combined_matrix.join(matrix, how="outer", rsuffix="_dup")
     combined_matrix.fillna(-1, inplace=True)
     # ds = Dataset.from_pandas(combined_matrix)
     # ds.push_to_hub("stair-lab/reeval_responses", "combined_data")
@@ -36,14 +37,16 @@ if __name__ == "__main__":
     )
     # upload the response matrix as a torch object
     combined_matrix_file = io.BytesIO()
-    torch.save(torch.tensor(combined_matrix.values, dtype=torch.float32), combined_matrix_file)
+    torch.save(
+        torch.tensor(combined_matrix.values, dtype=torch.float32), combined_matrix_file
+    )
     upload_api.upload_file(
         repo_id="stair-lab/reeval_responses",
         repo_type="dataset",
         path_in_repo="combined_data/response_matrix.pt",
         path_or_fileobj=combined_matrix_file,
     )
-    
+
     # Combine column keys
     combined_search = None
     for dataset in DATASETS:
@@ -52,7 +55,7 @@ if __name__ == "__main__":
             combined_search = matrix
         else:
             combined_search = pd.concat([combined_search, matrix], axis=0)
-            
+
     assert combined_matrix.shape[1] == (1 - combined_search["is_deleted"]).sum()
     # ds = Dataset.from_pandas(combined_search)
     # ds.push_to_hub("stair-lab/reeval_responses", "combined_data")
@@ -64,7 +67,7 @@ if __name__ == "__main__":
         path_in_repo="combined_data/search.csv",
         path_or_fileobj=combined_search_file,
     )
-        
+
     combined_column_keys = None
     for dataset in DATASETS:
         matrix = pd.read_csv(f"{data_folder}/{dataset}/question_keys.csv")
@@ -72,12 +75,16 @@ if __name__ == "__main__":
             combined_column_keys = matrix
         else:
             combined_column_keys = pd.concat([combined_column_keys, matrix], axis=0)
-    
+
     assert combined_matrix.shape[1] == combined_column_keys.shape[0]
-    df_sorted = combined_column_keys.set_index('question_id').loc[combined_matrix.columns].reset_index()
+    df_sorted = (
+        combined_column_keys.set_index("question_id")
+        .loc[combined_matrix.columns]
+        .reset_index()
+    )
     combined_column_keys = df_sorted.rename(columns={"index": "question_id"})
     # ds = Dataset.from_pandas(combined_column_keys)
-    # ds.push_to_hub("stair-lab/reeval_responses", "combined_data")    
+    # ds.push_to_hub("stair-lab/reeval_responses", "combined_data")
     combined_column_file = io.BytesIO()
     combined_column_keys.to_csv(combined_column_file, index=False)
     upload_api.upload_file(
@@ -86,7 +93,7 @@ if __name__ == "__main__":
         path_in_repo="combined_data/question_keys.csv",
         path_or_fileobj=combined_column_file,
     )
-    
+
     # Combine the row keys
     combined_row_keys = None
     for dataset in DATASETS:
@@ -95,12 +102,16 @@ if __name__ == "__main__":
             combined_row_keys = matrix
         else:
             combined_row_keys = pd.concat([combined_row_keys, matrix], axis=0)
-            
+
     # Remove the duplicates
-    combined_row_keys = combined_row_keys.drop_duplicates(subset=['model_name'])
-    
+    combined_row_keys = combined_row_keys.drop_duplicates(subset=["model_name"])
+
     assert combined_matrix.shape[0] == combined_row_keys.shape[0]
-    df_sorted = combined_row_keys.set_index('model_name').loc[combined_matrix.index].reset_index()
+    df_sorted = (
+        combined_row_keys.set_index("model_name")
+        .loc[combined_matrix.index]
+        .reset_index()
+    )
     combined_row_keys = df_sorted.rename(columns={"index": "model_name"})
     # ds = Dataset.from_pandas(combined_row_keys)
     # ds.push_to_hub("stair-lab/reeval_responses", "combined_data")
@@ -117,20 +128,20 @@ if __name__ == "__main__":
     emb_ds = None
     for dataset in DATASETS:
         data_files = os.listdir(f"{data_folder}/{dataset}")
-        
+
         # Filter out the files that ends with .parquet
-        data_files = [f for f in data_files if f.endswith(".parquet") and f.startswith("train")]
-        
+        data_files = [
+            f for f in data_files if f.endswith(".parquet") and f.startswith("train")
+        ]
+
         # Construct the full path
         data_files = [f"{data_folder}/{dataset}/{f}" for f in data_files]
-        
+
         # Sort the files by the number
         data_files = sorted(data_files)
-        
-        dataset_emb = load_dataset("parquet", 
-                                   data_files=data_files, 
-                                   split="train")
-        
+
+        dataset_emb = load_dataset("parquet", data_files=data_files, split="train")
+
         if emb_ds is None:
             emb_ds = dataset_emb
         else:
@@ -138,4 +149,3 @@ if __name__ == "__main__":
 
     assert len(emb_ds) == combined_matrix.shape[1]
     emb_ds.push_to_hub("stair-lab/reeval_responses", "combined_data")
-        

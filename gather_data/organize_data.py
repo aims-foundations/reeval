@@ -1,18 +1,20 @@
-import os
 import io
+import os
+
+import pandas as pd
 import requests
 import torch
-import pandas as pd
+from datasets import Dataset, load_dataset
+from huggingface_hub import HfApi, snapshot_download
 
 from tqdm import tqdm
-from datasets import Dataset, load_dataset
-from huggingface_hub import snapshot_download
 from utils.constants import DATASETS
-from huggingface_hub import HfApi
+
+
 def check_model_existence(huggingface_model_id):
     # call model in huggingface in a try catch block
     model_url = f"https://huggingface.co/{huggingface_model_id}"
-    
+
     # Check if model exists by calling the model url
     # If returning code is 200, then model exists
     try:
@@ -23,12 +25,13 @@ def check_model_existence(huggingface_model_id):
     except:
         print(f"Model {huggingface_model_id} does not exist")
         huggingface_model_id = None
-        
+
     return huggingface_model_id
-        
+
+
 if __name__ == "__main__":
     upload_api = HfApi()
-    
+
     # Combine response matrices
     data_folder = snapshot_download(
         repo_id="stair-lab/reeval_responses", repo_type="dataset"
@@ -63,7 +66,7 @@ if __name__ == "__main__":
             hf_model_name = "meta-llama/Llama-3.1-405B-Instruct"
         elif hf_model_name == "meta/llama-3.1-70b-instruct-turbo":
             hf_model_name = "meta-llama/Llama-3.1-70B-Instruct"
-        elif hf_model_name == "meta/llama-3.1-8b-instruct-turbo": 
+        elif hf_model_name == "meta/llama-3.1-8b-instruct-turbo":
             hf_model_name = "meta-llama/Llama-3.1-8B-Instruct"
         elif hf_model_name == "ai21/jamba-instruct":
             hf_model_name = "ai21labs/Jamba-v0.1"
@@ -84,23 +87,23 @@ if __name__ == "__main__":
         elif hf_model_name == "together/redpajama-incite-instruct-7b":
             hf_model_name = "togethercomputer/RedPajama-INCITE-7B-Instruct"
 
-        try:   
+        try:
             hf_org_name, hf_model_name = hf_model_name.split("/")
         except:
             print(f"Splitting the name of model {hf_model_name} failed")
             hf_org_name = None
             huggingface_model_id = None
-            
+
         if hf_org_name == "meta":
             hf_org_name = "meta-llama"
-            
+
         huggingface_model_id = check_model_existence(f"{hf_org_name}/{hf_model_name}")
         huggingface_model_ids[model_name] = huggingface_model_id
 
     embedding_folder = snapshot_download(
         repo_id="stair-lab/reeval_all_embeddings", repo_type="dataset"
     )
-    
+
     helm_score_folder = snapshot_download(
         repo_id="stair-lab/reeval_helm_scores", repo_type="dataset"
     )
@@ -109,8 +112,8 @@ if __name__ == "__main__":
         # Data
         data = pd.read_csv(f"{data_folder}/{dataset}/matrix.csv", index_col=0)
         response_matrix = torch.tensor(data.values, dtype=torch.float32)
-        
-        # Push response matrix as a torch object 
+
+        # Push response matrix as a torch object
         response_matrix_file = io.BytesIO()
         torch.save(response_matrix, response_matrix_file)
         upload_api.upload_file(
@@ -120,22 +123,24 @@ if __name__ == "__main__":
             path_or_fileobj=response_matrix_file,
             # run_as_future=True,
         )
-        
+
         if os.path.exists(f"{helm_score_folder}/{dataset}.csv"):
             helm_scores = pd.read_csv(f"{helm_score_folder}/{dataset}.csv")
         else:
             helm_scores = None
-        
+
         # Row key
         row_key = data.index.tolist()
         row_data = []
-        
+
         assert len(row_key) == response_matrix.shape[0]
         for model_name, model_ctt_scores in zip(row_key, response_matrix):
-            single_model_info = model_info[model_info["model_names_reeval"] == model_name]
+            single_model_info = model_info[
+                model_info["model_names_reeval"] == model_name
+            ]
             if helm_scores is not None:
                 single_model_hs = helm_scores[helm_scores["model_name"] == model_name]
-                
+
                 if len(single_model_hs) == 0:
                     single_model_hs = None
                 else:
@@ -144,30 +149,36 @@ if __name__ == "__main__":
                 single_model_hs = None
 
             model_ctt_score = model_ctt_scores[model_ctt_scores != -1].mean().item()
-            
+
             if len(single_model_info) == 0:
-                row_data.append({
-                    'model_name': model_name,
-                    'huggingface_model_id': huggingface_model_ids[model_name],
-                    'model_size': None, 
-                    'pretraining_data_size': None, 
-                    'flop': None,
-                    'helm_score': single_model_hs,
-                    'ctt_score': model_ctt_score
-                })
+                row_data.append(
+                    {
+                        "model_name": model_name,
+                        "huggingface_model_id": huggingface_model_ids[model_name],
+                        "model_size": None,
+                        "pretraining_data_size": None,
+                        "flop": None,
+                        "helm_score": single_model_hs,
+                        "ctt_score": model_ctt_score,
+                    }
+                )
             else:
-                row_data.append({
-                    'model_name': model_name,
-                    'huggingface_model_id': huggingface_model_ids[model_name],
-                    'model_size': single_model_info['Model Size (B)'].values[0], 
-                    'pretraining_data_size': single_model_info['Pretraining Data Size (T)'].values[0], 
-                    'flop': single_model_info['FLOPs (1E21)'].values[0],
-                    'helm_score': single_model_hs,
-                    'ctt_score': model_ctt_score
-                })
-    
+                row_data.append(
+                    {
+                        "model_name": model_name,
+                        "huggingface_model_id": huggingface_model_ids[model_name],
+                        "model_size": single_model_info["Model Size (B)"].values[0],
+                        "pretraining_data_size": single_model_info[
+                            "Pretraining Data Size (T)"
+                        ].values[0],
+                        "flop": single_model_info["FLOPs (1E21)"].values[0],
+                        "helm_score": single_model_hs,
+                        "ctt_score": model_ctt_score,
+                    }
+                )
+
         row_key = pd.DataFrame(row_data)
-        
+
         assert row_key.shape[0] == data.shape[0]
         # row_key.to_csv(f"{data_folder}/{dataset}/model_keys.csv", index=False)
         model_key_file = io.BytesIO()
@@ -182,10 +193,12 @@ if __name__ == "__main__":
 
         # Column key
         search_df = pd.read_csv(f"{data_folder}/{dataset}/search.csv", index_col=0)
-        question_content_df = search_df.loc[search_df["is_deleted"] != 1, ["text"]].reset_index(
-            drop=True
+        question_content_df = search_df.loc[
+            search_df["is_deleted"] != 1, ["text"]
+        ].reset_index(drop=True)
+        column_key = pd.DataFrame(
+            {"question_id": data.columns.tolist(), "text": question_content_df["text"]}
         )
-        column_key = pd.DataFrame({"question_id": data.columns.tolist(), "text": question_content_df["text"]})
         assert column_key.shape[0] == data.shape[1]
         # column_key.to_csv(f"{data_folder}/{dataset}/question_keys.csv", index=False)
         question_key_file = io.BytesIO()
@@ -197,7 +210,7 @@ if __name__ == "__main__":
             path_or_fileobj=question_key_file,
             # run_as_future=True,
         )
-        
+
         for file in os.listdir(f"{embedding_folder}/{dataset}"):
             embedding_file = f"{embedding_folder}/{dataset}/{file}"
             upload_api.upload_file(
@@ -207,6 +220,5 @@ if __name__ == "__main__":
                 path_or_fileobj=embedding_file,
                 # run_as_future=True,
             )
-        
-        
+
     print("Done")

@@ -67,10 +67,14 @@ if __name__ == "__main__":
         repo_id="stair-lab/reeval_responses", repo_type="dataset"
     )
     print("Loading data...")
-    response_matrix = torch.load(f"{data_folder}/{args.dataset}/response_matrix.pt").to(device=device)
+    response_matrix = torch.load(f"{data_folder}/{args.dataset}/response_matrix.pt").to(
+        device=device
+    )
 
-    train_indices = torch.randperm(response_matrix.shape[1])[: int(0.8 * response_matrix.shape[1])]
-    test_indices = torch.tensor([i for i in range(response_matrix.shape[1]) if i not in train_indices])
+    print("Splitting data...")
+    all_indices = torch.randperm(response_matrix.shape[1])
+    train_indices = all_indices[: int(0.8 * response_matrix.shape[1])]
+    test_indices = all_indices[int(0.8 * response_matrix.shape[1]) :]
 
     # select training data
     response_matrix = response_matrix[:, train_indices]
@@ -81,20 +85,23 @@ if __name__ == "__main__":
 
     # Loading data for amortized calibration
     if args.amortized_question:
-        print("Loading item embeddings...")
         data_files = os.listdir(f"{data_folder}/{args.dataset}")
-        
+
         # Filter out the files that ends with .parquet
-        data_files = [f for f in data_files if f.endswith(".parquet") and f.startswith("train")]
-        
+        data_files = [
+            f for f in data_files if f.endswith(".parquet") and f.startswith("train")
+        ]
+
         # Construct the full path
         data_files = [f"{data_folder}/{args.dataset}/{f}" for f in data_files]
-        
+
         # Sort the files by the number
         data_files = sorted(data_files)
-        
-        dataset_emb = load_dataset("parquet",  data_files=data_files, split="train")
-        
+
+        print("Loading item embeddings...")
+        dataset_emb = load_dataset("parquet", data_files=data_files, split="train")
+
+        print("Converting to tensor...")
         item_embeddings = torch.tensor(
             dataset_emb["embed"], dtype=torch.float32, device=device
         )
@@ -112,18 +119,22 @@ if __name__ == "__main__":
         amortized_question_hyperparams = None
 
     if args.amortized_student:
-        # load flop 
+        # load flop
         # compute log(flop) for each student
         # make the model_features = [1, log(flop)]
         model_keys = pd.read_csv(f"{data_folder}/{args.dataset}/model_keys.csv")
-        model_features = model_keys['flop'].tolist()
-        model_features = torch.tensor(model_features, dtype=torch.float32, device=device)
+        model_features = model_keys["flop"].tolist()
+        model_features = torch.tensor(
+            model_features, dtype=torch.float32, device=device
+        )
         model_features = torch.log(model_features)
-        model_features = torch.stack([model_features, torch.ones_like(model_features)], dim=1)
-        
+        model_features = torch.stack(
+            [model_features, torch.ones_like(model_features)], dim=1
+        )
+
         # Fill nan with -1
         model_features[torch.isnan(model_features)] = -1
-        
+
         amortized_model_hyperparams = {
             "input_dim": 2,
             "n_layers": 1,
@@ -132,8 +143,8 @@ if __name__ == "__main__":
     else:
         model_features = None
         amortized_model_hyperparams = None
-        
 
+    print("Calibrating...")
     irt_model = calibrate(
         response_matrix=response_matrix,
         D=args.D,

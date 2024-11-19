@@ -8,7 +8,6 @@ from lampo.reward_model import RewardModelTemplate
 from torch.utils.data import DataLoader
 
 
-
 def extract_score(input_str: str) -> float:
     match = re.search(r"Difficulty: ([-+]?\d*\.\d+|\d+)", input_str)
     return float(match.group(1))

@@ -12,21 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datasets import load_dataset, get_dataset_config_names, DatasetDict, concatenate_datasets
+from dataclasses import dataclass
+from typing import Optional
+
+from datasets import (
+    concatenate_datasets,
+    DatasetDict,
+    get_dataset_config_names,
+    load_dataset,
+)
 from transformers import AutoTokenizer
 
 from trl import (
+    get_kbit_device_map,
+    get_peft_config,
+    get_quantization_config,
     ModelConfig,
     SFTConfig,
     SFTTrainer,
     TrlParser,
-    get_kbit_device_map,
-    get_peft_config,
-    get_quantization_config,
 )
-
-from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -77,7 +82,9 @@ if __name__ == "__main__":
     )
     training_args.model_init_kwargs = model_kwargs
     tokenizer = AutoTokenizer.from_pretrained(
-        model_config.model_name_or_path, trust_remote_code=model_config.trust_remote_code, use_fast=True
+        model_config.model_name_or_path,
+        trust_remote_code=model_config.trust_remote_code,
+        use_fast=True,
     )
     tokenizer.pad_token = tokenizer.eos_token
 
@@ -90,25 +97,38 @@ if __name__ == "__main__":
         configs = get_dataset_config_names(script_args.dataset_name)
         sub_dataset_train = None
         sub_dataset_test = None
-        
+
         for config in configs:
             sub_dataset = load_dataset(script_args.dataset_name, config)
             if config == configs[0]:
                 sub_dataset_train = sub_dataset[script_args.dataset_train_split]
                 sub_dataset_test = sub_dataset[script_args.dataset_test_split]
             else:
-                sub_dataset_train = concatenate_datasets([sub_dataset_train, sub_dataset[script_args.dataset_train_split]]) 
-                sub_dataset_test = concatenate_datasets([sub_dataset_test, sub_dataset[script_args.dataset_test_split]])
-                
-        dataset = DatasetDict({script_args.dataset_train_split: sub_dataset_train, script_args.dataset_test_split: sub_dataset_test})
+                sub_dataset_train = concatenate_datasets(
+                    [sub_dataset_train, sub_dataset[script_args.dataset_train_split]]
+                )
+                sub_dataset_test = concatenate_datasets(
+                    [sub_dataset_test, sub_dataset[script_args.dataset_test_split]]
+                )
+
+        dataset = DatasetDict(
+            {
+                script_args.dataset_train_split: sub_dataset_train,
+                script_args.dataset_test_split: sub_dataset_test,
+            }
+        )
     else:
         dataset = load_dataset(script_args.dataset_name, script_args.dataset_subset)
-        
+
     # Shuffle the training dataset
-    dataset[script_args.dataset_train_split] = dataset[script_args.dataset_train_split].shuffle(seed=training_args.seed)
-    
+    dataset[script_args.dataset_train_split] = dataset[
+        script_args.dataset_train_split
+    ].shuffle(seed=training_args.seed)
+
     # Shuffle the test dataset
-    dataset[script_args.dataset_test_split] = dataset[script_args.dataset_test_split].shuffle(seed=training_args.seed)
+    dataset[script_args.dataset_test_split] = dataset[
+        script_args.dataset_test_split
+    ].shuffle(seed=training_args.seed)
 
     ################
     # Training
@@ -117,7 +137,11 @@ if __name__ == "__main__":
         model=model_config.model_name_or_path,
         args=training_args,
         train_dataset=dataset[script_args.dataset_train_split],
-        eval_dataset=dataset[script_args.dataset_test_split] if training_args.eval_strategy != "no" else None,
+        eval_dataset=(
+            dataset[script_args.dataset_test_split]
+            if training_args.eval_strategy != "no"
+            else None
+        ),
         processing_class=tokenizer,
         peft_config=get_peft_config(model_config),
     )

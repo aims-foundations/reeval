@@ -33,3 +33,8 @@ for dataset in "${datasets[@]}"; do
     echo "Creating SFT dataset $dataset 1PL"
     python sft_dataset.py --dataset $dataset --PL 1 --fitting_method mle 
 done
+
+for dataset in "${datasets[@]}"; do
+    echo "Creating PPO dataset $dataset"
+    python ppo_dataset.py --dataset $dataset
+done
