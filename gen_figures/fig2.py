@@ -1,3 +1,7 @@
+"""
+Plotting number of test takers and questions in each benchmark,
+which is the Figure 2 in the paper.
+"""
 import os
 
 import pandas as pd
