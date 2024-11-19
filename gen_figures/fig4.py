@@ -1,3 +1,8 @@
+"""
+Plotting the Goodness of Fit of Rasch's model and the correlation of IRT estimated
+ability with two popular scoring methods: HELM score and CTT score on the full test
+set. Each dot represents a dataset from HELM, which is the Figure 4 in the paper.
+"""
 import os
 
 import pandas as pd
