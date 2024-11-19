@@ -29,7 +29,7 @@ DESCRIPTION_MAP = {
     # 'code': '### DATASET: Code, ### PUBLISH TIME: 2021, ### CONTENT: for measuring competence on code challenges, for measuring functional correctness for synthesizing programs from docstrings',
     # 'msmarco': '### DATASET: MSMARCO, ### PUBLISH TIME: 2016, ### CONTENT: for passage retrieval in information retrieval',
 }
-DATASETS = list(DESCRIPTION_MAP.keys())
+DATASETS = list(DESCRIPTION_MAP.keys()) + ["combined_data"]
 
 PLOT_NAME_MAP = {
     "wikifact": "wikifact",
