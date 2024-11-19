@@ -26,6 +26,7 @@ parameters:
     - lsat_qa
     - bold
     - dyck_language_np3
+    - combined_data
   PL:
     values: [1, 2, 3]
   D:
