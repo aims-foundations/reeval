@@ -214,17 +214,18 @@ class IRT(nn.Module):
         response_matrix: torch.Tensor,
         embedding=None,
         n_mc_samples: int = 64,
+        batch_size = 4,
     ):
         n_testtaker, num_item = response_matrix.shape
-        theta_nodes, weights = np.polynomial.hermite.hermgauss(n_mc_samples)
-        theta_nodes = torch.tensor(theta_nodes, device=response_matrix.device)
+        theta_nodes, weights = np.polynomial.hermite_e.hermegauss(n_mc_samples)
 
+        theta_nodes = torch.tensor(theta_nodes, device=response_matrix.device)
         theta_matrices = theta_nodes[:, None, None].repeat(1, n_testtaker, self.D)
         # >>> n_mc_samples x n_testtaker x D
 
         weights = torch.tensor(weights, device=response_matrix.device)
-        weights = weights / torch.sum(weights)
-        # >>> n_mc_samples
+        weights = (weights / torch.sum(weights))[:, None]
+        # >>> n_mc_samples x 1
 
         if self.amortize_item:
             optimizer = optim.Adam(self.item_parameters_nn.parameters(), lr=1e-3)
@@ -239,7 +240,7 @@ class IRT(nn.Module):
             optimizer = optim.Adam(parameters, lr=0.01)
 
         mask = response_matrix != -1
-        masked_response_matrix = response_matrix[mask]
+        # masked_response_matrix = response_matrix[mask]
 
         pbar = tqdm(range(max_epoch))
         for _ in pbar:
@@ -251,20 +252,30 @@ class IRT(nn.Module):
             guessing = self.get_guessing()
             loading_factor = self.get_loading_factor()
 
-            prob_matrices = self.compute_prob(
-                theta_matrices, difficulty, disciminatory, guessing, loading_factor
-            )
+            # instead forwarding on the full theta_matrices, do it in batches of 
+            # row and accumulate the gradients
+            loss = []
+            for batch_start in range(0, n_testtaker, batch_size):
+                batch_end = min(batch_start + batch_size, n_testtaker)
+                
+                prob_matrices = self.compute_prob(
+                    theta_matrices[:, batch_start:batch_end],
+                    difficulty, disciminatory, guessing, loading_factor
+                )
 
-            masked_prob_matrix = prob_matrices[:, mask]
+                local_mask = mask[batch_start:batch_end]
+                masked_prob_matrix = prob_matrices[:, local_mask]
+                
+                berns = torch.distributions.Bernoulli(
+                    probs=(masked_prob_matrix * weights).sum(0)
+                )
+                l = -berns.log_prob(response_matrix[batch_start:batch_end][local_mask])
+                loss.append(l)
 
-            berns = torch.distributions.Bernoulli(
-                probs=(masked_prob_matrix * weights[:, None]).sum(0)
-            )
-            loss = -berns.log_prob(masked_response_matrix).mean()
+            loss = torch.concatenate(loss).mean()
             loss.backward()
             optimizer.step()
-            optimizer.zero_grad()
-
+            optimizer.zero_grad()            
             pbar.set_postfix({"loss": loss.item()})
 
     def em_ability(
