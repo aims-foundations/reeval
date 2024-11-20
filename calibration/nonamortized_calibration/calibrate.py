@@ -75,12 +75,17 @@ if __name__ == "__main__":
     )
 
     print("Splitting data...")
-    all_indices = torch.randperm(response_matrix.shape[1])
-    train_indices = all_indices[: int(0.8 * response_matrix.shape[1])]
-    test_indices = all_indices[int(0.8 * response_matrix.shape[1]) :]
+    all_question_indices = torch.randperm(response_matrix.shape[1])
+    train_question_indices = all_question_indices[: int(0.8 * response_matrix.shape[1])]
+    test_question_indices = all_question_indices[int(0.8 * response_matrix.shape[1]) :]
+
+    all_model_indices = torch.randperm(response_matrix.shape[0])
+    train_model_indices = all_model_indices[: int(0.8 * response_matrix.shape[0])]
+    test_model_indices = all_model_indices[int(0.8 * response_matrix.shape[0]) :]
 
     # select training data
-    response_matrix = response_matrix[:, train_indices]
+    response_matrix = response_matrix[train_model_indices]
+    response_matrix = response_matrix[:, train_question_indices]
 
     # output_dir = f"../../data/{args.fitting_method}_{args.PL}pl{'_amortized' if args.amortized_question else ''}_calibration/{args.dataset}"
     output_dir = f"../../results/calibration/{args.dataset}/s{args.seed}_{args.fitting_method}_{args.PL}pl_{args.D}d{'_aq' if args.amortized_question else ''}{'_as' if args.amortized_student else ''}"
@@ -94,7 +99,7 @@ if __name__ == "__main__":
         ).to(device=device)
 
         # select training data
-        item_embeddings = item_embeddings[train_indices]
+        item_embeddings = item_embeddings[train_question_indices]
 
         amortized_question_hyperparams = {
             "input_dim": item_embeddings.shape[1],
@@ -114,6 +119,7 @@ if __name__ == "__main__":
         model_features = torch.tensor(
             model_features, dtype=torch.float32, device=device
         )
+        model_features = model_features[train_model_indices]
         model_features = torch.log(model_features)
         model_features = torch.stack(
             [model_features, torch.ones_like(model_features)], dim=1
@@ -156,14 +162,18 @@ if __name__ == "__main__":
     pickle.dump(item_parms, open(f"{output_dir}/item_parms.pkl", "wb"))
 
     # save the indices for train and test
-    pickle.dump(train_indices, open(f"{output_dir}/train_indices.pkl", "wb"))
-    pickle.dump(test_indices, open(f"{output_dir}/test_indices.pkl", "wb"))
+    pickle.dump(train_question_indices, open(f"{output_dir}/train_question_indices.pkl", "wb"))
+    pickle.dump(test_question_indices, open(f"{output_dir}/test_question_indices.pkl", "wb"))
+    pickle.dump(train_model_indices, open(f"{output_dir}/train_model_indices.pkl", "wb"))
+    pickle.dump(test_model_indices, open(f"{output_dir}/test_model_indices.pkl", "wb"))
     
     if args.amortized_question:
         torch.save(irt_model.item_parameters_nn.state_dict(), f"{output_dir}/item_parameters_nn.pt")
+        pickle.dump(irt_model.item_parameters_nn, open(f"{output_dir}/item_parameters_nn.pkl", "wb"))
         
     if args.amortized_student:
-        torch.save(irt_model.student_parameters_nn.state_dict(), f"{output_dir}/student_parameters_nn.pt")
+        torch.save(irt_model.ability_nn.state_dict(), f"{output_dir}/student_parameters_nn.pt")
+        pickle.dump(irt_model.ability_nn, open(f"{output_dir}/student_parameters_nn.pkl", "wb"))
         
     # stair-lab/reeval_results
     hf_repo_path  = f"{args.dataset}/s{args.seed}_{args.fitting_method}_{args.PL}pl_{args.D}d{'_aq' if args.amortized_question else ''}{'_as' if args.amortized_student else ''}"
