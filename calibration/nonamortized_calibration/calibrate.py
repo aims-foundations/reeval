@@ -6,7 +6,7 @@ import pandas as pd
 import torch
 import wandb
 from datasets import concatenate_datasets, load_dataset
-from huggingface_hub import snapshot_download
+from huggingface_hub import snapshot_download, HfApi
 from utils.irt import IRT
 from utils.utils import set_seed, str2bool
 
@@ -158,3 +158,20 @@ if __name__ == "__main__":
     # save the indices for train and test
     pickle.dump(train_indices, open(f"{output_dir}/train_indices.pkl", "wb"))
     pickle.dump(test_indices, open(f"{output_dir}/test_indices.pkl", "wb"))
+    
+    if args.amortized_question:
+        torch.save(irt_model.item_parameters_nn.state_dict(), f"{output_dir}/item_parameters_nn.pt")
+        
+    if args.amortized_student:
+        torch.save(irt_model.student_parameters_nn.state_dict(), f"{output_dir}/student_parameters_nn.pt")
+        
+    # stair-lab/reeval_results
+    hf_repo_path  = f"{args.dataset}/s{args.seed}_{args.fitting_method}_{args.PL}pl_{args.D}d{'_aq' if args.amortized_question else ''}{'_as' if args.amortized_student else ''}"
+    upload_api = HfApi()
+    upload_api.create_repo(repo_id="stair-lab/reeval_results", repo_type="dataset", exist_ok=True)
+    upload_api.upload_folder(
+        folder_path=output_dir,
+        repo_id="stair-lab/reeval_results",
+        repo_type="dataset",
+        path_in_repo=hf_repo_path,
+    )
