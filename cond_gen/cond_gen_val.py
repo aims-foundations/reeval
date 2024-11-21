@@ -10,11 +10,11 @@ import pandas as pd
 import requests
 import torch
 from datasets import Dataset, load_dataset
+from dotenv import find_dotenv, load_dotenv
 from huggingface_hub import snapshot_download
 from ppo_reward_model import extract_score
 from transformers import AutoTokenizer, GenerationConfig
 from vllm import LLM, SamplingParams
-from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
 
@@ -133,7 +133,9 @@ if __name__ == "__main__":
     if args.smoke_test:
         test_question_df = pd.DataFrame({"text": ["What is the capital of US?"]})
     else:
-        test_question_df = pd.read_csv("../data/generated_questions/test_answers_filtered.csv")
+        test_question_df = pd.read_csv(
+            "../data/generated_questions/test_answers_filtered.csv"
+        )
         test_dataset = load_dataset(f"stair-lab/{args.dataset}-ppo", split="test")
         test_texts = test_dataset["text"][: len(test_question_df)]
         gt_difficulties = [extract_score(p) for p in test_texts]
