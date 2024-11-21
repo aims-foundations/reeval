@@ -8,7 +8,7 @@ from huggingface_hub import HfApi, snapshot_download
 from tqdm import tqdm
 from utils.constants import DATASETS
 
-# DATASETS = DATASETS[:3]
+DATASETS = DATASETS[:1]
 
 if __name__ == "__main__":
     upload_api = HfApi()
@@ -102,9 +102,10 @@ if __name__ == "__main__":
             combined_row_keys = matrix
         else:
             combined_row_keys = pd.concat([combined_row_keys, matrix], axis=0)
-
+    
     # Remove the duplicates
     combined_row_keys = combined_row_keys.drop_duplicates(subset=["model_name"])
+    
 
     assert combined_matrix.shape[0] == combined_row_keys.shape[0]
     df_sorted = (
@@ -113,6 +114,17 @@ if __name__ == "__main__":
         .reset_index()
     )
     combined_row_keys = df_sorted.rename(columns={"index": "model_name"})
+    
+    # Set all values in `helm_score` column to nan
+    combined_row_keys["helm_score"] = ""
+    
+    ctt_scores = []
+    for ctts in combined_matrix.values:
+        ctts = torch.tensor(ctts)
+        ctt_scores.append(ctts[ctts!=-1].mean().item())
+        
+    combined_row_keys["ctt_score"] = ctt_scores
+    
     # ds = Dataset.from_pandas(combined_row_keys)
     # ds.push_to_hub("stair-lab/reeval_responses", "combined_data")
     combined_row_file = io.BytesIO()
