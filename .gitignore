@@ -20,3 +20,4 @@ results/
 *.png
 hard_easy_test_new_em/
 calibration/nonamortized_calibration/run_calibration.sh
+archived_data/

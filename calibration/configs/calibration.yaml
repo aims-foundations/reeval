@@ -1,6 +1,6 @@
 method: grid
 parameters:
-  dataset:
+  dataset: 
     values:
     - airbench
     - twitter_aae
@@ -26,5 +26,23 @@ parameters:
     - lsat_qa
     - bold
     - dyck_language_np3
-program: mle_3pl_calibration.py
-project: mle_3pl_calibration
+    - combined_data
+  PL:
+    values: [1, 2, 3]
+  D:
+    values: [1, 2]
+  fitting_method:
+    values: [mle, em]
+  amortized_question:
+    values: [True, False]
+  amortized_student:
+    values: [True, False]
+  n_layers:
+    values: [2, 3, 4, 5]
+  hidden_dim:
+    values: [32, 64, 128]
+  report_to:
+    values: [wandb]
+ 
+program: calibrate.py
+project: calibration
