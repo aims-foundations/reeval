@@ -16,3 +16,7 @@ mcmc_2pl_calibration/
 hard-easy_test_new_em/
 commonsense/
 results/
+*.ipynb
+*.png
+hard_easy_test_new_em/
+calibration/nonamortized_calibration/run_calibration.sh
