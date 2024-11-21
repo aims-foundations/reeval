@@ -5,52 +5,14 @@ import pickle
 import pandas as pd
 import torch
 import wandb
-from datasets import concatenate_datasets, load_dataset
-from huggingface_hub import snapshot_download, HfApi
+from check_calibration_results import check_results
+from huggingface_hub import HfApi, snapshot_download
 from utils.irt import IRT
-from utils.utils import set_seed, str2bool
-
-
-def calibrate(
-    response_matrix,
-    D,
-    PL,
-    fitting_method="mle",
-    max_epoch=30000,
-    amortized_question=False,
-    amortized_student=False,
-    amortized_question_hyperparams={},
-    amortized_model_hyperparams={},
-    item_embeddings=None,
-    model_features=None,
-    device="cpu",
-):
-    n_models, n_questions = response_matrix.shape
-
-    irt_model = IRT(
-        n_questions=n_questions,
-        n_testtaker=n_models,
-        D=D,
-        PL=PL,
-        amortize_item=amortized_question,
-        amortize_student=amortized_student,
-        amortized_question_hyperparams=amortized_question_hyperparams,
-        amortized_model_hyperparams=amortized_model_hyperparams,
-        device=device,
-    )
-    irt_model.fit(
-        max_epoch=max_epoch,
-        response_matrix=response_matrix,
-        method=fitting_method,
-        embedding=item_embeddings,
-        model_features=model_features,
-    )
-    return irt_model
-
+from utils.utils import arg2str, set_seed, str2bool
 
 if __name__ == "__main__":
     wandb.init(project="reeval")
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, required=True)
     parser.add_argument("--D", type=int, default=1)
@@ -62,6 +24,10 @@ if __name__ == "__main__":
     parser.add_argument("--max_epoch", type=int, default=5000)
     parser.add_argument("--amortized_question", type=str2bool, default=False)
     parser.add_argument("--amortized_student", type=str2bool, default=False)
+    parser.add_argument("--n_layers", type=int, default=1)
+    parser.add_argument("--hidden_dim", type=int, default=None)
+    parser.add_argument("--report_to", type=str, default=None)
+    parser.add_argument("--force_run", type=str2bool, default=False)
     args = parser.parse_args()
 
     set_seed(args.seed)
@@ -69,6 +35,17 @@ if __name__ == "__main__":
     data_folder = snapshot_download(
         repo_id="stair-lab/reeval_responses", repo_type="dataset"
     )
+    output_dir = f"../../results/calibration/" + arg2str(args)
+    os.makedirs(output_dir, exist_ok=True)
+
+    print(f"Output directory: {output_dir}")
+    if not args.force_run and check_results(
+        output_dir, args.amortized_question, args.amortized_student
+    ):
+        print("Already calibrated")
+        wandb.finish()
+        exit(0)
+
     print("Loading data...")
     response_matrix = torch.load(f"{data_folder}/{args.dataset}/response_matrix.pt").to(
         device=device
@@ -87,10 +64,6 @@ if __name__ == "__main__":
     response_matrix = response_matrix[train_model_indices]
     response_matrix = response_matrix[:, train_question_indices]
 
-    # output_dir = f"../../data/{args.fitting_method}_{args.PL}pl{'_amortized' if args.amortized_question else ''}_calibration/{args.dataset}"
-    output_dir = f"../../results/calibration/{args.dataset}/s{args.seed}_{args.fitting_method}_{args.PL}pl_{args.D}d{'_aq' if args.amortized_question else ''}{'_as' if args.amortized_student else ''}"
-    os.makedirs(output_dir, exist_ok=True)
-
     # Loading data for amortized calibration
     if args.amortized_question:
         # load item embeddings
@@ -101,19 +74,24 @@ if __name__ == "__main__":
         # select training data
         item_embeddings = item_embeddings[train_question_indices]
 
+        if item_embeddings.shape[0] > 4 * 4096:
+            n_layers = args.n_layers
+            hidden_dim = args.hidden_dim
+        else:
+            n_layers = 1
+            hidden_dim = None
+
         amortized_question_hyperparams = {
             "input_dim": item_embeddings.shape[1],
-            "n_layers": 1,
-            "hidden_dim": None,
+            "n_layers": n_layers,
+            "hidden_dim": hidden_dim,
         }
     else:
         item_embeddings = None
         amortized_question_hyperparams = None
 
     if args.amortized_student:
-        # load flop
-        # compute log(flop) for each student
-        # make the model_features = [1, log(flop)]
+        # load flop as model features
         model_keys = pd.read_csv(f"{data_folder}/{args.dataset}/model_keys.csv")
         model_features = model_keys["flop"].tolist()
         model_features = torch.tensor(
@@ -138,50 +116,71 @@ if __name__ == "__main__":
         amortized_model_hyperparams = None
 
     print("Calibrating...")
-    irt_model = calibrate(
-        response_matrix=response_matrix,
+    n_models, n_questions = response_matrix.shape
+    irt_model = IRT(
+        n_questions=n_questions,
+        n_testtaker=n_models,
         D=args.D,
         PL=args.PL,
-        fitting_method=args.fitting_method,
-        max_epoch=args.max_epoch,
-        amortized_question=args.amortized_question,
-        amortized_student=args.amortized_student,
+        amortize_item=args.amortized_question,
+        amortize_student=args.amortized_student,
         amortized_question_hyperparams=amortized_question_hyperparams,
         amortized_model_hyperparams=amortized_model_hyperparams,
-        item_embeddings=item_embeddings,
-        model_features=model_features,
         device=device,
+        report_to=args.report_to,
     )
+    irt_model.fit(
+        max_epoch=args.max_epoch,
+        response_matrix=response_matrix,
+        method=args.fitting_method,
+        embedding=item_embeddings,
+        model_features=model_features,
+    )
+    wandb.finish()
 
+    # save results
     abilities = irt_model.get_abilities().cpu().detach().tolist()
     item_parms = irt_model.get_item_parameters().cpu().detach().tolist()
-    
-    wandb.finish()
 
     pickle.dump(abilities, open(f"{output_dir}/abilities.pkl", "wb"))
     pickle.dump(item_parms, open(f"{output_dir}/item_parms.pkl", "wb"))
 
-    # save the indices for train and test
-    pickle.dump(train_question_indices, open(f"{output_dir}/train_question_indices.pkl", "wb"))
-    pickle.dump(test_question_indices, open(f"{output_dir}/test_question_indices.pkl", "wb"))
-    pickle.dump(train_model_indices, open(f"{output_dir}/train_model_indices.pkl", "wb"))
+    pickle.dump(
+        train_question_indices, open(f"{output_dir}/train_question_indices.pkl", "wb")
+    )
+    pickle.dump(
+        test_question_indices, open(f"{output_dir}/test_question_indices.pkl", "wb")
+    )
+    pickle.dump(
+        train_model_indices, open(f"{output_dir}/train_model_indices.pkl", "wb")
+    )
     pickle.dump(test_model_indices, open(f"{output_dir}/test_model_indices.pkl", "wb"))
-    
+
     if args.amortized_question:
-        torch.save(irt_model.item_parameters_nn.state_dict(), f"{output_dir}/item_parameters_nn.pt")
-        pickle.dump(irt_model.item_parameters_nn, open(f"{output_dir}/item_parameters_nn.pkl", "wb"))
-        
+        torch.save(
+            irt_model.item_parameters_nn.state_dict(),
+            f"{output_dir}/item_parameters_nn.pt",
+        )
+        pickle.dump(
+            irt_model.item_parameters_nn,
+            open(f"{output_dir}/item_parameters_nn.pkl", "wb"),
+        )
+
     if args.amortized_student:
-        torch.save(irt_model.ability_nn.state_dict(), f"{output_dir}/student_parameters_nn.pt")
-        pickle.dump(irt_model.ability_nn, open(f"{output_dir}/student_parameters_nn.pkl", "wb"))
-        
-    # stair-lab/reeval_results
-    hf_repo_path  = f"{args.dataset}/s{args.seed}_{args.fitting_method}_{args.PL}pl_{args.D}d{'_aq' if args.amortized_question else ''}{'_as' if args.amortized_student else ''}"
+        torch.save(
+            irt_model.ability_nn.state_dict(), f"{output_dir}/student_parameters_nn.pt"
+        )
+        pickle.dump(
+            irt_model.ability_nn, open(f"{output_dir}/student_parameters_nn.pkl", "wb")
+        )
+
     upload_api = HfApi()
-    upload_api.create_repo(repo_id="stair-lab/reeval_results", repo_type="dataset", exist_ok=True)
+    upload_api.create_repo(
+        repo_id="stair-lab/reeval_results", repo_type="dataset", exist_ok=True
+    )
     upload_api.upload_folder(
         folder_path=output_dir,
         repo_id="stair-lab/reeval_results",
         repo_type="dataset",
-        path_in_repo=hf_repo_path,
+        path_in_repo=arg2str(args),
     )
