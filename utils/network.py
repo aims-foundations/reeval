@@ -12,7 +12,7 @@ class MLP(nn.Module):
 
         if n_layers == 1:
             layers = [
-                nn.Linear(input_dim, output_dim).to(device),
+                nn.Linear(input_dim, output_dim),
             ]
         else:
             layers = [nn.Linear(input_dim, hidden_dim)]
@@ -20,16 +20,16 @@ class MLP(nn.Module):
                 layers.extend(
                     [
                         nn.ELU(),
-                        nn.Linear(hidden_dim, hidden_dim).to(device),
+                        nn.Linear(hidden_dim, hidden_dim),
                     ]
                 )
             layers.extend(
                 [
-                    nn.Linear(hidden_dim, output_dim).to(device),
+                    nn.Linear(hidden_dim, output_dim),
                 ]
             )
 
-        self.model = nn.Sequential(*layers)
+        self.model = nn.Sequential(*layers).to(device)
 
     def forward(self, x):
         return self.model(x)

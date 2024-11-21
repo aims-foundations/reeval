@@ -25,10 +25,10 @@ def call_diff(ds, gt_zs, reward_model, restart, batch_size=4):
 
     gt_zs = torch.tensor([gt_zs for _ in range(restart)]).T
     mae = torch.abs(pred_zs - gt_zs).min(dim=-1)
-    
+
     # Select the pred_zs using mae.indices
     pred_zs = pred_zs[range(len(mae.indices)), mae.indices]
-    
+
     return pred_zs.tolist(), mae.values.tolist(), mae.indices.tolist()
 
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     plot_dir = f"../plot/sft/{args.dataset}"
     os.makedirs(plot_dir, exist_ok=True)
-    
+
     generation_dir = f"../data/generated_questions/{args.dataset}"
     os.makedirs(generation_dir, exist_ok=True)
 
@@ -79,9 +79,7 @@ if __name__ == "__main__":
         train_answer_dataset = Dataset.from_pandas(train_answer_df)
 
         # Save the answers
-        train_answer_df.to_csv(
-            f"{generation_dir}/train_answers.csv", index=False
-        )
+        train_answer_df.to_csv(f"{generation_dir}/train_answers.csv", index=False)
 
         del llm
         torch.cuda.empty_cache()
@@ -119,13 +117,11 @@ if __name__ == "__main__":
             num_restarts,
             batch_size=args.batch_size,
         )
-        
+
         # Saving the results
         pickle.dump(train_diffs, open(f"{generation_dir}/train_diffs.pkl", "wb"))
         pickle.dump(train_maes, open(f"{generation_dir}/train_maes.pkl", "wb"))
-        pickle.dump(
-            train_indices, open(f"{generation_dir}/train_indices.pkl", "wb")
-        )
+        pickle.dump(train_indices, open(f"{generation_dir}/train_indices.pkl", "wb"))
 
         # Reshape the answers to List[List[str]]
         train_answers = [

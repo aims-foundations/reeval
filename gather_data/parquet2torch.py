@@ -1,14 +1,15 @@
-from utils.constants import DATASETS
-from datasets import load_dataset
-from huggingface_hub import snapshot_download, HfApi
-import os
 import io
+import os
+
 import torch
+from datasets import load_dataset
+from huggingface_hub import HfApi, snapshot_download
+from utils.constants import DATASETS
 
 
 if __name__ == "__main__":
     upload_api = HfApi()
-    
+
     data_folder = snapshot_download(
         repo_id="stair-lab/reeval_responses", repo_type="dataset"
     )
@@ -32,10 +33,8 @@ if __name__ == "__main__":
         dataset_emb = load_dataset("parquet", data_files=data_files, split="train")
 
         print("Converting to tensor...")
-        item_embeddings = torch.tensor(
-            dataset_emb["embed"], dtype=torch.float32
-        )
-        
+        item_embeddings = torch.tensor(dataset_emb["embed"], dtype=torch.float32)
+
         item_embedding_file = io.BytesIO()
         torch.save(item_embeddings, item_embedding_file)
         upload_api.upload_file(

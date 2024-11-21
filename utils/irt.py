@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import wandb
 from torch import nn, optim
 from tqdm import tqdm
 
@@ -18,6 +19,7 @@ class IRT(nn.Module):
         amortized_question_hyperparams=None,
         amortized_model_hyperparams=None,
         device="cpu",
+        report_to=None,
     ):
         super(IRT, self).__init__()
         self.D = D
@@ -25,6 +27,7 @@ class IRT(nn.Module):
         self.amortize_item = amortize_item
         self.amortize_student = amortize_student
         self.device = device
+        self.report_to = report_to
 
         if amortize_student:
             assert amortized_model_hyperparams is not None
@@ -154,7 +157,7 @@ class IRT(nn.Module):
         model_features=None,
     ):
         if self.amortize_item or self.amortize_student:
-            optimizer = optim.Adam(self.parameters(), lr=1e-3)
+            optimizer = optim.Adam(self.parameters(), lr=1e-3, weight_decay=1e-4)
         else:
             optimizer = optim.Adam(self.parameters(), lr=0.01)
 
@@ -186,6 +189,8 @@ class IRT(nn.Module):
             optimizer.step()
             optimizer.zero_grad()
             pbar.set_postfix({"loss": loss.item()})
+            if self.report_to is not None:
+                wandb.log({"loss": loss.item()})
 
     def em(
         self,
@@ -214,7 +219,7 @@ class IRT(nn.Module):
         response_matrix: torch.Tensor,
         embedding=None,
         n_mc_samples: int = 64,
-        batch_size = 4,
+        batch_size=4,
     ):
         n_testtaker, num_item = response_matrix.shape
         theta_nodes, weights = np.polynomial.hermite_e.hermegauss(n_mc_samples)
@@ -228,7 +233,9 @@ class IRT(nn.Module):
         # >>> n_mc_samples x 1
 
         if self.amortize_item:
-            optimizer = optim.Adam(self.item_parameters_nn.parameters(), lr=1e-3)
+            optimizer = optim.Adam(
+                self.item_parameters_nn.parameters(), lr=1e-3, weight_decay=1e-4
+            )
         else:
             parameters = [self.difficulty]
             if self.PL > 1:
@@ -252,20 +259,23 @@ class IRT(nn.Module):
             guessing = self.get_guessing()
             loading_factor = self.get_loading_factor()
 
-            # instead forwarding on the full theta_matrices, do it in batches of 
+            # instead forwarding on the full theta_matrices, do it in batches of
             # row and accumulate the gradients
             loss = []
             for batch_start in range(0, n_testtaker, batch_size):
                 batch_end = min(batch_start + batch_size, n_testtaker)
-                
+
                 prob_matrices = self.compute_prob(
                     theta_matrices[:, batch_start:batch_end],
-                    difficulty, disciminatory, guessing, loading_factor
+                    difficulty,
+                    disciminatory,
+                    guessing,
+                    loading_factor,
                 )
 
                 local_mask = mask[batch_start:batch_end]
                 masked_prob_matrix = prob_matrices[:, local_mask]
-                
+
                 berns = torch.distributions.Bernoulli(
                     probs=(masked_prob_matrix * weights).sum(0)
                 )
@@ -275,8 +285,10 @@ class IRT(nn.Module):
             loss = torch.concatenate(loss).mean()
             loss.backward()
             optimizer.step()
-            optimizer.zero_grad()            
-            pbar.set_postfix({"loss": loss.item()})
+            optimizer.zero_grad()
+            pbar.set_postfix({"loss_item": loss.item()})
+            if self.report_to is not None:
+                wandb.log({"loss_item": loss.item()})
 
     def em_ability(
         self,
@@ -286,7 +298,9 @@ class IRT(nn.Module):
         model_features=None,
     ):
         if self.amortize_student:
-            optimizer = optim.Adam(self.ability_nn.parameters(), lr=1e-3)
+            optimizer = optim.Adam(
+                self.ability_nn.parameters(), lr=1e-3, weight_decay=1e-4
+            )
         else:
             optimizer = optim.Adam([self.ability], lr=0.01)
 
@@ -318,7 +332,9 @@ class IRT(nn.Module):
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            pbar.set_postfix({"loss": loss.item()})
+            pbar.set_postfix({"loss_ability": loss.item()})
+            if self.report_to is not None:
+                wandb.log({"loss_ability": loss.item()})
 
     def get_abilities(self):
         if self.ability_mask is None and self.amortize_student:
@@ -384,3 +400,31 @@ class IRT(nn.Module):
             dim=-1,
         )
         return torch.cat([item_params, self.get_loading_factor()], dim=-1)
+
+    @classmethod
+    def apply_item_constrains(cls, item_parameters, D, PL):
+        difficulty = item_parameters[..., 0:1]
+        disciminatory = item_parameters[..., 1:2]
+        guessing = item_parameters[..., 2:3]
+        loading_factor = item_parameters[..., 3:]
+
+        mean_difficulty = torch.mean(difficulty)
+        std_difficulty = torch.std(difficulty)
+        difficulty = (difficulty - mean_difficulty) / std_difficulty
+
+        if PL == 1:
+            disciminatory = torch.ones_like(disciminatory)
+        else:
+            disciminatory = torch.relu(disciminatory)
+
+        if PL < 3:
+            guessing = torch.zeros_like(guessing)
+        else:
+            guessing = torch.sigmoid(guessing)
+
+        if D == 1:
+            loading_factor = torch.ones_like(loading_factor)
+        else:
+            loading_factor = torch.softmax(loading_factor, dim=-1)
+
+        return torch.cat([difficulty, disciminatory, guessing, loading_factor], dim=-1)

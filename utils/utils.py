@@ -14,6 +14,20 @@ from .constants import HELM_MODEL_MAP
 from .irt import IRT
 
 
+def arg2str(args):
+    return (
+        (
+            f"{args.dataset}/"
+            f"s{args.seed}_"
+            f"{args.fitting_method}_{args.PL}pl_{args.D}"
+            f"d{'_aq' if args.amortized_question else ''}"
+            f"{'_as' if args.amortized_student else ''}"
+        )
+        + (f"_nl{args.n_layers}" if args.n_layers is not None else "")
+        + (f"_hd{args.hidden_dim}" if args.hidden_dim is not None else "")
+    )
+
+
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
@@ -94,46 +108,6 @@ def goodness_of_fit(
 
         diffs.append(np.array(diff_D))
     return np.concatenate(diffs)
-
-
-def goodness_of_fit_plot(
-    z: torch.Tensor,
-    theta: torch.Tensor,
-    y: torch.Tensor,
-    plot_path: str,
-    bin_size: int = 6,
-):
-    diff_array = goodness_of_fit(z, theta, y, bin_size)
-    mean_diff = np.mean(diff_array)
-
-    sample_means = []
-    for _ in range(100):
-        indices = np.random.choice(
-            len(diff_array), int(0.8 * len(diff_array)), replace=False
-        )
-        sample_mean = np.mean(diff_array[indices])
-        sample_means.append(sample_mean)
-    std_diff = np.std(sample_means)
-
-    plt.figure(figsize=(10, 6))
-    plt.hist(diff_array, bins=40, density=True, alpha=0.4)
-    plt.xlabel(r"Difference between empirical and theoretical $P(y=1)$", fontsize=30)
-    plt.ylabel(r"Goodness of fit", fontsize=30)
-    plt.tick_params(axis="both", labelsize=25)
-    plt.xlim(0, 1)
-    plt.axvline(mean_diff, linestyle="--")
-    plt.text(
-        mean_diff,
-        plt.gca().get_ylim()[1],
-        f"{mean_diff:.2f} $\\pm$ {3 * std_diff:.2f}",
-        ha="center",
-        va="bottom",
-        fontsize=25,
-    )
-    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
-    plt.close()
-
-    return mean_diff, std_diff
 
 
 def goodness_of_fit_1PL_multi_dim(
@@ -267,7 +241,7 @@ def load_theta_corr_scores(
     dataset: str,
 ):
     y_model_names = pd.read_csv(
-        f"{data_folder}/pre_calibration/{dataset}/matrix.csv", index_col=0
+        f"{data_folder}/{dataset}/matrix.csv", index_col=0
     ).index.tolist()
 
     helm_df = pd.read_csv(

@@ -3,35 +3,39 @@ import numpy as np
 import torch
 from torchmetrics import SpearmanCorrCoef
 from tueplots import bundles
+from utils.utils import goodness_of_fit
 
-plt.rcParams.update(bundles.icml2022())
+plt.rcParams.update(bundles.iclr2024())
 plt.style.use("seaborn-v0_8-paper")
 
 from utils.constants import PLOT_NAME_MAP
 from utils.irt import IRT
 
+
 def theta_corr_plot(
     mode: str,
     theta: np.array,
     plot_path: str,
-    data_folder: str = None,
-    y: np.array = None,
-    dataset: np.array = None,
+    ctt_score: np.array = None,
+    helm_score: np.array = None,
 ):
-    if dataset == "airbench" and mode == "helm":
-        print("airbench dataset does not have HELM scores.")
-        return None, None
-
     if theta.shape[-1] > 1:
         print("Theta correlation is only supported for 1D.")
-        return None, None
+        return np.nan, np.nan
 
     sm_fn = SpearmanCorrCoef()
     if mode == "ctt":
-        theta, external_scores = load_ctt_corr_scores(theta, y)
+        external_scores = ctt_score
     elif mode == "helm":
-        theta, external_scores = load_theta_corr_scores(data_folder, theta, dataset)
-    corr = sm_fn(theta, external_scores)
+        # Check all external scores are nan
+        nan_helm_idxs = torch.isnan(helm_score)
+        if nan_helm_idxs.all():
+            return np.nan, np.nan
+
+        theta = theta[~nan_helm_idxs]
+        external_scores = helm_score[~nan_helm_idxs]
+
+    corr = sm_fn(theta, external_scores).item()
 
     sample_corrs = []
     n_bootstrap_samples = 100
@@ -70,8 +74,7 @@ def accuracy_plot(
     item_parms_list = [*(item_parms[..., 0:3].T), item_parms[..., 3:]]
     probs_theoretical = IRT.compute_prob(theta, *item_parms_list)
     y_theoretical = (probs_theoretical > 0.5).float()
-
-    accuracy = (y_theoretical == y).float().mean(dim=0)
+    accuracy = (y_theoretical == y).float()
 
     sample_accs = []
     for _ in range(100):
@@ -82,25 +85,25 @@ def accuracy_plot(
         sample_accs.append(sample_acc)
     std_acc = torch.std(torch.stack(sample_accs)).item()
 
-    plt.figure(figsize=(10, 6))
-    plt.hist(accuracy.cpu(), bins=40, density=True, alpha=0.4)
-    plt.xlabel(r"Accuracy", fontsize=30)
-    plt.ylabel(r"Frequency", fontsize=30)
-    plt.tick_params(axis="both", labelsize=25)
-    plt.xlim(0, 1)
-    plt.axvline(accuracy.mean().item(), linestyle="--")
-    plt.text(
-        accuracy.mean().item(),
-        plt.gca().get_ylim()[1],
-        f"{accuracy.mean().item():.2f} $\\pm$ {3 * std_acc:.2f}",
-        ha="center",
-        va="bottom",
-        fontsize=25,
-    )
-    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
-    plt.close()
+    # plt.figure(figsize=(10, 6))
+    # plt.hist(accuracy.cpu(), bins=40, density=True, alpha=0.4)
+    # plt.xlabel(r"Accuracy", fontsize=30)
+    # plt.ylabel(r"Frequency", fontsize=30)
+    # plt.tick_params(axis="both", labelsize=25)
+    # plt.xlim(0, 1)
+    # plt.axvline(accuracy.mean().item(), linestyle="--")
+    # plt.text(
+    #     accuracy.mean().item(),
+    #     plt.gca().get_ylim()[1],
+    #     f"{accuracy.mean().item():.2f} $\\pm$ {3 * std_acc:.2f}",
+    #     ha="center",
+    #     va="bottom",
+    #     fontsize=25,
+    # )
+    # plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+    # plt.close()
 
-    return accuracy.mean(), std_acc
+    return accuracy.mean().item(), std_acc
 
 
 def error_bar_plot_single(datasets, means, stds, plot_path, xlabel, xlim_upper=1.1):
@@ -354,3 +357,43 @@ def plot_cat(
     plt.legend(fontsize=25)
     plt.savefig(plot_path, dpi=300, bbox_inches="tight")
     plt.close()
+
+
+def goodness_of_fit_plot(
+    z: torch.Tensor,
+    theta: torch.Tensor,
+    y: torch.Tensor,
+    plot_path: str,
+    bin_size: int = 6,
+):
+    diff_array = goodness_of_fit(z, theta, y, bin_size)
+    mean_diff = np.mean(diff_array)
+
+    sample_means = []
+    for _ in range(100):
+        indices = np.random.choice(
+            len(diff_array), int(0.8 * len(diff_array)), replace=False
+        )
+        sample_mean = np.mean(diff_array[indices])
+        sample_means.append(sample_mean)
+    std_diff = np.std(sample_means)
+
+    plt.figure(figsize=(10, 6))
+    plt.hist(diff_array, bins=40, density=True, alpha=0.4)
+    plt.xlabel(r"Difference between empirical and theoretical $P(y=1)$", fontsize=30)
+    plt.ylabel(r"Goodness of fit", fontsize=30)
+    plt.tick_params(axis="both", labelsize=25)
+    plt.xlim(0, 1)
+    plt.axvline(mean_diff, linestyle="--")
+    plt.text(
+        mean_diff,
+        plt.gca().get_ylim()[1],
+        f"{mean_diff:.2f} $\\pm$ {3 * std_diff:.2f}",
+        ha="center",
+        va="bottom",
+        fontsize=25,
+    )
+    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+    return mean_diff, std_diff
