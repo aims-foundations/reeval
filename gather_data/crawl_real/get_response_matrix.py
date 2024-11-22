@@ -116,6 +116,8 @@ if __name__ == "__main__":
         full_strings = [f for f in full_strings if (("max_train_instances=0" not in f) \
             and ("groups=ablation_multiple_choice" not in f))]
     
+    print(full_strings)
+    
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])
     non_model_strings = list(set([delete_model_name(f) for f in full_strings]))
