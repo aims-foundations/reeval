@@ -108,7 +108,8 @@ if __name__ == "__main__":
         f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.dataset)
     ]
     
-    full_strings = [f for f in full_strings if "ablation" not in f]
+    if args.dataset != "commonsense":
+        full_strings = [f for f in full_strings if "ablation" not in f]
     if args.dataset == "truthful_qa":
         full_strings = [f for f in full_strings if "max_train_instances=0" not in f]
     
