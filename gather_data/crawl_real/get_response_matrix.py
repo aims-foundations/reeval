@@ -174,6 +174,7 @@ if __name__ == "__main__":
         else:
             bool_delete_list.append(0)
 
+    print(f"response matrix shape of {args.dataset}: {all_matrix_df.shape}")
     all_matrix_df.to_csv(f"{output_dir}/matrix.csv", index_label=None)
 
     # index search
@@ -192,10 +193,10 @@ if __name__ == "__main__":
     search_df.to_csv(f"{output_dir}/search.csv", index=False, escapechar="\\")
 
     # Upload the content of the local folder to your remote Space
-    api = HfApi()
-    api.upload_folder(
-        folder_path=f"{output_dir}",
-        path_in_repo=args.dataset,
-        repo_id="stair-lab/reeval_responses",
-        repo_type="dataset",
-    )
+    # api = HfApi()
+    # api.upload_folder(
+    #     folder_path=f"{output_dir}",
+    #     path_in_repo=args.dataset,
+    #     repo_id="stair-lab/reeval_responses",
+    #     repo_type="dataset",
+    # )
