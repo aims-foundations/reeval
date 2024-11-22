@@ -195,7 +195,6 @@ if __name__ == "__main__":
     removed_indices = remove_duplicates(search_dict["text"])
     for idx in removed_indices:
         search_dict["is_deleted"][idx] = 1
-        all_matrix_df = all_matrix_df.drop(column=idx)
 
     # delete questions that all models succeed/fail
     for idx, (col_name, col_data) in enumerate(all_matrix_df.items()):
