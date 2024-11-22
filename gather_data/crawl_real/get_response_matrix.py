@@ -3,6 +3,7 @@ import json
 import os
 import re
 
+import numpy as np
 import pandas as pd
 from huggingface_hub import HfApi, snapshot_download
 from tqdm import tqdm
@@ -204,7 +205,7 @@ if __name__ == "__main__":
             search_dict["is_deleted"][idx] = 1
     
     # delete "is_deleted" indices from all_matrix_df
-    all_matrix_df = all_matrix_df.loc[:, all_matrix_df.columns[search_dict["is_deleted"] == 0]]
+    all_matrix_df = all_matrix_df.loc[:, all_matrix_df.columns[np.array(search_dict["is_deleted"]) == 0]]
     
     # save data
     search_df = pd.DataFrame(search_dict)
