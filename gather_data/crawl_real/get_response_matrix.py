@@ -4,9 +4,14 @@ import os
 import re
 
 import pandas as pd
-from dataset_info_stats import delete_model_name
 from huggingface_hub import HfApi, snapshot_download
 from tqdm import tqdm
+
+
+def delete_model_name(filename):
+    filename = re.sub(r",stop=hash", "", filename)
+    filename = re.sub(r",global_prefix=nlg", "", filename)
+    return re.sub(r"model=[^,]*,?", "", filename).strip(",")
 
 
 def extract_model_name(filename):
@@ -62,7 +67,7 @@ def get_bool_answers(data):
 def get_bool_answers_logprob(data, threshold):
     bool_answers = []
     for question in data["request_states"]:
-        assert not question["instance"]["references"]
+        # assert not question["instance"]["references"]
         logprob = question["result"]["completions"][0]["logprob"]
         bool_answers.append(int(logprob > threshold))
     return bool_answers
@@ -77,7 +82,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     data_folder = snapshot_download(
-        repo_id="stair-lab/reeval_jsons", repo_type="dataset"
+        repo_id=f"stair-lab/reeval_jsons", repo_type="dataset"
     )
     # data_folder = "../../data/gather_data/crawl_real"
 
@@ -91,8 +96,6 @@ if __name__ == "__main__":
     full_strings = [
         f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.dataset)
     ]
-    full_strings = [re.sub(r",stop=hash", "", f) for f in full_strings]
-    full_strings = [re.sub(r",global_prefix=nlg", "", f) for f in full_strings]
     
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])
@@ -193,10 +196,10 @@ if __name__ == "__main__":
     search_df.to_csv(f"{output_dir}/search.csv", index=False, escapechar="\\")
 
     # Upload the content of the local folder to your remote Space
-    # api = HfApi()
-    # api.upload_folder(
-    #     folder_path=f"{output_dir}",
-    #     path_in_repo=args.dataset,
-    #     repo_id="stair-lab/reeval_responses",
-    #     repo_type="dataset",
-    # )
+    api = HfApi()
+    api.upload_folder(
+        folder_path=f"{output_dir}",
+        path_in_repo=args.dataset,
+        repo_id="stair-lab/reeval_responses",
+        repo_type="dataset",
+    )
