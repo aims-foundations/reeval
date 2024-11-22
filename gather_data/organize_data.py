@@ -100,9 +100,9 @@ if __name__ == "__main__":
         huggingface_model_id = check_model_existence(f"{hf_org_name}/{hf_model_name}")
         huggingface_model_ids[model_name] = huggingface_model_id
 
-    embedding_folder = snapshot_download(
-        repo_id="stair-lab/reeval_all_embeddings", repo_type="dataset"
-    )
+    # embedding_folder = snapshot_download(
+    #     repo_id="stair-lab/reeval_all_embeddings", repo_type="dataset"
+    # )
 
     helm_score_folder = snapshot_download(
         repo_id="stair-lab/reeval_helm_scores", repo_type="dataset"
@@ -211,14 +211,14 @@ if __name__ == "__main__":
             # run_as_future=True,
         )
 
-        for file in os.listdir(f"{embedding_folder}/{dataset}"):
-            embedding_file = f"{embedding_folder}/{dataset}/{file}"
-            upload_api.upload_file(
-                repo_id="stair-lab/reeval_responses",
-                repo_type="dataset",
-                path_in_repo=f"{dataset}/{file}",
-                path_or_fileobj=embedding_file,
-                # run_as_future=True,
-            )
+        # for file in os.listdir(f"{embedding_folder}/{dataset}"):
+        #     embedding_file = f"{embedding_folder}/{dataset}/{file}"
+        #     upload_api.upload_file(
+        #         repo_id="stair-lab/reeval_responses",
+        #         repo_type="dataset",
+        #         path_in_repo=f"{dataset}/{file}",
+        #         path_or_fileobj=embedding_file,
+        #         # run_as_future=True,
+        #     )
 
     print("Done")
