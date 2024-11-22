@@ -31,17 +31,17 @@ if __name__ == "__main__":
         drop=True
     )
 
-    item_parms_folder = snapshot_download(
-        repo_id=f"stair-lab/reeval_{args.fitting_method}_calibration",
-        repo_type="dataset",
-    )
-    item_parms = pickle.load(
-        open(f"{item_parms_folder}/{args.PL}pl/{args.dataset}/item_parms.pkl", "rb")
-    )
-    # >>> n_questions x (3 + D)
+    # item_parms_folder = snapshot_download(
+    #     repo_id=f"stair-lab/reeval_{args.fitting_method}_calibration",
+    #     repo_type="dataset",
+    # )
+    # item_parms = pickle.load(
+    #     open(f"{item_parms_folder}/{args.PL}pl/{args.dataset}/item_parms.pkl", "rb")
+    # )
+    # # >>> n_questions x (3 + D)
 
-    difficulty = np.array(item_parms)[:, 0].tolist()
-    assert len(text_df) == len(difficulty)
+    # difficulty = np.array(item_parms)[:, 0].tolist()
+    # assert len(text_df) == len(difficulty)
 
     text_df["text"] = description + ", ### PROMPT: " + text_df["text"]
     text_dataset = Dataset.from_pandas(text_df)
@@ -50,12 +50,12 @@ if __name__ == "__main__":
     embdr.load(args.model_name, tensor_parallel_size=num_gpus, dtype=torch.float16)
     dataloader = DataLoader(text_dataset, batch_size=args.batch_size)
     embed = embdr.get_embeddings(dataloader, args.model_name, ["text"])
-    assert len(embed["text"]) == len(text_df) == len(difficulty)
+    # assert len(embed["text"]) == len(text_df) == len(difficulty)
 
     ds_embed = Dataset.from_dict(
         {
             "text": text_df["text"],
-            "difficulty": difficulty,
+            # "difficulty": difficulty,
             "embed": embed["text"],
         }
     )
