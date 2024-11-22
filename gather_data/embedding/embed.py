@@ -6,9 +6,10 @@ import pandas as pd
 import torch
 from datasets import Dataset
 from embed_text_package.embed_text_v2 import Embedder
-from huggingface_hub import snapshot_download
+from huggingface_hub import HfApi, snapshot_download
 from torch.utils.data import DataLoader
 from utils.constants import DESCRIPTION_MAP
+import io
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -19,6 +20,8 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=1024)
     args = parser.parse_args()
 
+    upload_api = HfApi()
+    
     num_gpus = torch.cuda.device_count()
 
     description = DESCRIPTION_MAP[args.dataset]
@@ -52,11 +55,34 @@ if __name__ == "__main__":
     embed = embdr.get_embeddings(dataloader, args.model_name, ["text"])
     # assert len(embed["text"]) == len(text_df) == len(difficulty)
 
+    item_embeddings = torch.tensor(embed["text"], dtype=torch.float32)
+
+    item_embedding_file = io.BytesIO()
+    torch.save(item_embeddings, item_embedding_file)
+    upload_api.upload_file(
+        repo_id="stair-lab/reeval_responses",
+        repo_type="dataset",
+        path_in_repo=f"{args.dataset}/item_embeddings.pt",
+        path_or_fileobj=item_embedding_file,
+        # run_as_future=True,
+    )
+
+    text_file = io.BytesIO()
+    row_key.to_csv(model_key_file, index=False)
+    upload_api.upload_file(
+        repo_id="stair-lab/reeval_responses",
+        repo_type="dataset",
+        path_in_repo=f"{dataset}/model_keys.csv",
+        path_or_fileobj=model_key_file,
+        # run_as_future=True,
+    )
+
+
     ds_embed = Dataset.from_dict(
         {
             "text": text_df["text"],
             # "difficulty": difficulty,
-            "embed": embed["text"],
+            # "embed": embed["text"],
         }
     )
     ds_embed.push_to_hub("stair-lab/reeval_all_embeddings", args.dataset)
