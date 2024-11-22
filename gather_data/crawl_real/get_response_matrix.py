@@ -94,10 +94,10 @@ if __name__ == "__main__":
     # use wandb sweep, mmlu, thai_exam
     args = parser.parse_args()
 
-    data_folder = snapshot_download(
-        repo_id=f"stair-lab/reeval_jsons", repo_type="dataset"
-    )
-    # data_folder = "../../data/gather_data/crawl_real"
+    # data_folder = snapshot_download(
+    #     repo_id=f"stair-lab/reeval_jsons", repo_type="dataset"
+    # )
+    data_folder = "../../data/gather_data/"
 
     input_dir = f"{data_folder}/jsons/{args.dataset}_json"
 
