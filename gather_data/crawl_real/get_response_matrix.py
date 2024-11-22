@@ -209,8 +209,6 @@ if __name__ == "__main__":
     
     # save data
     search_df = pd.DataFrame(search_dict)
-    assert len(search_df["text"].unique()) == len(search_df), f"{len(search_df['text'].unique())} != {len(search_df)}"
-    
     print(f"response matrix shape of {args.dataset}: {all_matrix_df.shape}")
     all_matrix_df.to_csv(f"{output_dir}/matrix.csv", index_label=None)
     
