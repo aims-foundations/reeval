@@ -109,6 +109,9 @@ if __name__ == "__main__":
         f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.dataset)
     ]
     
+    if args.dataset == "civil_comments":
+        # delete all f in full_strings that contain "groups=ablation_prompts" or "groups=ablation_in_context"
+    
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])
     non_model_strings = list(set([delete_model_name(f) for f in full_strings]))
@@ -141,7 +144,7 @@ if __name__ == "__main__":
         max_len_file_name = ""
         single_matrix = {name: [] for name in all_model_names}
 
-        for filename in tqdm(os.listdir(input_dir)):
+        for filename in tqdm(sorted(os.listdir(input_dir))):
             file_name_without_json = filename[:-5]
             if filename.endswith(".json") and (
                 delete_model_name(file_name_without_json) == non_model_string
@@ -186,7 +189,7 @@ if __name__ == "__main__":
         with open(f"{input_dir}/{max_len_file_names[i]}", "r") as f:
             data = json.load(f)
         for j, question in enumerate(data["request_states"]):
-            text = question["instance"]["input"]["text"]
+            text = question["request"]["prompt"]
             search_dict["idx"].append(base_idx + j)
             search_dict["text"].append(text)
             search_dict["is_deleted"].append(0)
