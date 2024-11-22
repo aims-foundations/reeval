@@ -111,6 +111,7 @@ if __name__ == "__main__":
     
     print(args.dataset)
     if args.dataset == "civil_comments" or "imdb":
+        print("Hi")
         full_strings = [f for f in full_strings if "groups=ablation_prompts" not in f \
             and "groups=ablation_in_context" not in f]
     elif args.dataset == "truthful_qa":
