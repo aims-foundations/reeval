@@ -109,9 +109,6 @@ if __name__ == "__main__":
         f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.dataset)
     ]
     
-    print(full_strings)
-    
-    print(args.dataset)
     if args.dataset == "civil_comments":
         full_strings = [f for f in full_strings if "groups=ablation_prompts" not in f \
             and "groups=ablation_in_context" not in f]
