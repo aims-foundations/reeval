@@ -192,10 +192,10 @@ if __name__ == "__main__":
         base_idx += max_lens[i]
 
     search_df = pd.DataFrame(search_list, columns=["idx", "text", "is_deleted"])
-    assert len(search_df["text"].unique()) == len(search_df)
+    assert len(search_df["text"].unique()) == len(search_df), f"{len(search_df['text'].unique())} != {len(search_df)}"
     search_df.to_csv(f"{output_dir}/search.csv", index=False, escapechar="\\")
 
-    # Upload the content of the local folder to your remote Space
+    # Upload the content of the lbocal folder to your remote Space
     api = HfApi()
     api.upload_folder(
         folder_path=f"{output_dir}",
