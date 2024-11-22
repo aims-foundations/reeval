@@ -110,19 +110,9 @@ if __name__ == "__main__":
         f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.dataset)
     ]
     
-    if args.dataset == "civil_comments":
-        full_strings = [f for f in full_strings if "groups=ablation_prompts" not in f \
-            and "groups=ablation_in_context" not in f]
-    elif args.dataset == "imdb":
-        full_strings = [f for f in full_strings if "groups=ablation_prompts" not in f \
-            and "groups=ablation_in_context" not in f]
-    elif args.dataset == "truthful_qa":
-        full_strings = [f for f in full_strings if "max_train_instances=0" not in f \
-            and "groups=ablation_multiple_choice" not in f]
-    elif args.dataset == "legal_support":
-        full_strings = [f for f in full_strings if "groups=ablation_multiple_choice" not in f]
-    elif args.dataset == "bbq":
-        full_strings = [f for f in full_strings if "groups=ablation_multiple_choice" not in f]
+    full_strings = [f for f in full_strings if "ablation" not in f]
+    if args.dataset == "truthful_qa":
+        full_strings = [f for f in full_strings if "max_train_instances=0" not in f]
     
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])
