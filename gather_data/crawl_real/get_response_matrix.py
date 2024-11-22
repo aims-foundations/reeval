@@ -97,7 +97,7 @@ if __name__ == "__main__":
     # data_folder = snapshot_download(
     #     repo_id=f"stair-lab/reeval_jsons", repo_type="dataset"
     # )
-    data_folder = "../../data/gather_data/"
+    data_folder = "../../data/gather_data/crawl_real"
 
     input_dir = f"{data_folder}/jsons/{args.dataset}_json"
 
