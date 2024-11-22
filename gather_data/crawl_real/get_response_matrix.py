@@ -91,6 +91,9 @@ if __name__ == "__main__":
     full_strings = [
         f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.dataset)
     ]
+    full_strings = [re.sub(r",stop=hash", "", f) for f in full_strings]
+    full_strings = [re.sub(r",global_prefix=nlg", "", f) for f in full_strings]
+    
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])
     non_model_strings = list(set([delete_model_name(f) for f in full_strings]))
@@ -185,6 +188,7 @@ if __name__ == "__main__":
         base_idx += max_lens[i]
 
     search_df = pd.DataFrame(search_list, columns=["idx", "text", "is_deleted"])
+    assert len(search_df["text"].unique()) == len(search_df)
     search_df.to_csv(f"{output_dir}/search.csv", index=False, escapechar="\\")
 
     # Upload the content of the local folder to your remote Space
