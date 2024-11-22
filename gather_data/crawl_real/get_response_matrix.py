@@ -19,6 +19,17 @@ def extract_model_name(filename):
     return match.group(1)
 
 
+def remove_duplicates(lst):
+    seen = set()
+    removed_indices = []
+    for i, item in enumerate(lst):
+        if item not in seen:
+            seen.add(item)
+        else:
+            removed_indices.append(i)
+    return removed_indices
+
+
 def get_bool_answers(data):
     bool_answers = []
     for question in data["request_states"]:
@@ -160,39 +171,49 @@ if __name__ == "__main__":
         single_matrix_df = pd.DataFrame(single_matrix).T
         single_matrix_df.columns = [f"{j}_{non_model_string}" for j in range(max_len)]
 
+        assert single_matrix_df.index.tolist() == all_model_names
+        
         if i == 0:
             all_matrix_df = single_matrix_df
         else:
             all_matrix_df = pd.concat([all_matrix_df, single_matrix_df], axis=1)
 
-    assert all_matrix_df.shape[0] == len(all_model_names)
-
-    bool_delete_list = []
-    for col_name, col_data in all_matrix_df.items():
-        if set(col_data.unique()).issubset({0, -1}) or set(col_data.unique()).issubset(
-            {1, -1}
-        ):
-            all_matrix_df = all_matrix_df.drop(columns=[col_name])
-            bool_delete_list.append(1)
-        else:
-            bool_delete_list.append(0)
-
-    print(f"response matrix shape of {args.dataset}: {all_matrix_df.shape}")
-    all_matrix_df.to_csv(f"{output_dir}/matrix.csv", index_label=None)
-
-    # index search
-    search_list = []
+    # load all the text for each question
+    search_dict = {"idx":[], "text":[], "is_deleted":[]}
     base_idx = 0
     for i, non_model_string in enumerate(non_model_strings):
         with open(f"{input_dir}/{max_len_file_names[i]}", "r") as f:
             data = json.load(f)
         for j, question in enumerate(data["request_states"]):
             text = question["instance"]["input"]["text"]
-            search_list.append([base_idx + j, text, bool_delete_list[base_idx + j]])
+            search_dict["idx"].append(base_idx + j)
+            search_dict["text"].append(text)
+            search_dict["is_deleted"].append(0)
         base_idx += max_lens[i]
+    
+    # delete duplicate question text
+    removed_indices = remove_duplicates(search_dict["text"])
+    for idx in removed_indices:
+        search_dict["is_deleted"][idx] = 1
+        all_matrix_df = all_matrix_df.drop(column=idx)
 
-    search_df = pd.DataFrame(search_list, columns=["idx", "text", "is_deleted"])
+    # delete questions that all models succeed/fail
+    for idx, (col_name, col_data) in enumerate(all_matrix_df.items()):
+        if set(col_data.unique()).issubset({0, -1}) or set(col_data.unique()).issubset(
+            {1, -1}
+        ):
+            search_dict["is_deleted"][idx] = 1
+    
+    # delete "is_deleted" indices from all_matrix_df
+    all_matrix_df = all_matrix_df.loc[:, all_matrix_df.columns[search_dict["is_deleted"] == 0]]
+    
+    # save data
+    search_df = pd.DataFrame(search_dict)
     assert len(search_df["text"].unique()) == len(search_df), f"{len(search_df['text'].unique())} != {len(search_df)}"
+    
+    print(f"response matrix shape of {args.dataset}: {all_matrix_df.shape}")
+    all_matrix_df.to_csv(f"{output_dir}/matrix.csv", index_label=None)
+    
     search_df.to_csv(f"{output_dir}/search.csv", index=False, escapechar="\\")
 
     # Upload the content of the lbocal folder to your remote Space
