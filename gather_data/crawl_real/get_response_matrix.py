@@ -109,8 +109,9 @@ if __name__ == "__main__":
         f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.dataset)
     ]
     
-    # if args.dataset == "civil_comments":
-        # delete all f in full_strings that contain "groups=ablation_prompts" or "groups=ablation_in_context"
+    if args.dataset == "civil_comments":
+        full_strings = [f for f in full_strings if "groups=ablation_prompts" not in f \
+            and "groups=ablation_in_context" not in f]
     
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])
