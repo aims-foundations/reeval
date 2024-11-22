@@ -100,8 +100,6 @@ if __name__ == "__main__":
     # data_folder = "../../data/gather_data/crawl_real"
 
     input_dir = f"{data_folder}/jsons/{args.dataset}_json"
-    output_dir = f"../../data/pre_calibration/{args.dataset}"
-    os.makedirs(output_dir, exist_ok=True)
 
     full_strings_all = pd.read_csv(
         f"{data_folder}/crawl_dataset_name_{args.leaderboard}.csv"
@@ -214,6 +212,10 @@ if __name__ == "__main__":
     all_matrix_df = all_matrix_df.loc[:, all_matrix_df.columns[np.array(search_dict["is_deleted"]) == 0]]
     
     # save data
+    if args.dataset == "dyck_language_np=3":
+        args.dataset = "dyck_language_np3"
+    output_dir = f"../../data/pre_calibration/{args.dataset}"
+    os.makedirs(output_dir, exist_ok=True)
     search_df = pd.DataFrame(search_dict)
     print(f"response matrix shape of {args.dataset}: {all_matrix_df.shape}")
     all_matrix_df.to_csv(f"{output_dir}/matrix.csv", index_label=None)
