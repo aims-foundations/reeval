@@ -102,10 +102,8 @@ if __name__ == "__main__":
             combined_row_keys = matrix
         else:
             combined_row_keys = pd.concat([combined_row_keys, matrix], axis=0)
-    
     # Remove the duplicates
     combined_row_keys = combined_row_keys.drop_duplicates(subset=["model_name"])
-    
 
     assert combined_matrix.shape[0] == combined_row_keys.shape[0]
     df_sorted = (

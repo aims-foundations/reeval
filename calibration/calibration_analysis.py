@@ -57,6 +57,7 @@ def mask_student_whose_feature_missing(items):
     return [item[abilities_mask] for item in items]
 
 
+
 if __name__ == "__main__":
     fig, axs = plt.subplots(4)
     D = [1]
@@ -251,7 +252,7 @@ if __name__ == "__main__":
 
             for train_test_iter in train_test_iters:
                 item_parms, abilities, response_matrix, helm_score, ctt_score, is_train = train_test_iter
-                
+             
                 if item_parms is None and abilities is None:
                     continue
 
@@ -293,7 +294,7 @@ if __name__ == "__main__":
                 print(
                     f"{dataset_and_method_name} {is_train} corr_helm: {corr_helm_mean:.4f} ± {corr_helm_std}"
                 )
-                
+
                 # metric 4: AUC-ROC
                 auc_mean ,auc_std = auc_roc_plot(
                     item_parms=item_parms,

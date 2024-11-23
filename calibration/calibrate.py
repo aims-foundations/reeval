@@ -99,7 +99,6 @@ if __name__ == "__main__":
         )
         model_features = model_features[train_model_indices]
         model_features = torch.log(model_features).unsqueeze(-1)
-        
         # Fill nan with -1
         model_features[torch.isnan(model_features)] = -1
 
