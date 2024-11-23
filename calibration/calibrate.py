@@ -102,11 +102,18 @@ if __name__ == "__main__":
         # Fill nan with -1
         model_features[torch.isnan(model_features)] = -1
 
-        amortized_model_hyperparams = {
-            "input_dim": 1,
-            "n_layers": 2,
-            "hidden_dim": 64,
-        }
+        if args.dataset == "combined_data":
+            amortized_model_hyperparams = {
+                "input_dim": 1,
+                "n_layers": 2,
+                "hidden_dim": 64,
+            }
+        else:
+            amortized_model_hyperparams = {
+                "input_dim": 1,
+                "n_layers": 1,
+                "hidden_dim": None,
+            }
     else:
         model_features = None
         amortized_model_hyperparams = None
