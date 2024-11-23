@@ -1,18 +1,18 @@
 # Model for PPO finetuning
-model_name_or_path: ../data/sft/lora_10epoch
+model_name_or_path: stair-lab/reeval_question_generator_sft
 use_peft: true
-lora_alpha: 512
-lora_r: 256
+lora_alpha: 128
+lora_r: 64
 lora_dropout: 0.1
 lora_target_modules: ["q_proj", "v_proj"]
-output_dir: ../data/ppo/llama3-ppo
+# output_dir: ../data/ppo/llama3-ppo
 
 # Reward model
-reward_model: http://hyperturing2:4324
+reward_model: http://hyperturing1:8000
 discount_reward_factor: 0.99
 
 # Dataset
-query_dataset: stair-lab/airbench-ppo
+query_dataset: stair-lab/reeval-ppo
 ppo_epochs: 4
 mini_batch_size: 2
 batch_size: 2
@@ -23,5 +23,5 @@ gradient_checkpointing: true
 learning_rate: 1.0e-5
 save_steps: 50
 
-max_new_tokens: 256
+max_new_tokens: 1024
 log_with: wandb

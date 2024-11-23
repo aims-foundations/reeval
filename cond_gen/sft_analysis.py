@@ -12,6 +12,7 @@ from gen_figures.plot import plot_hist
 from ppo_reward_model import extract_score
 from transformers import GenerationConfig
 from vllm import LLM, SamplingParams
+from huggingface_hub import snapshot_download
 
 
 def call_diff(ds, gt_zs, reward_model, restart, batch_size=4):
@@ -106,8 +107,14 @@ if __name__ == "__main__":
         )
 
         # Load the reward model
-        with open("../data/plugin_regression/airbench/bayridge.pkl", "rb") as f:
+        result_folder = snapshot_download(
+            repo_id="stair-lab/reeval_results", repo_type="dataset"
+        )
+        
+        with open(f"{result_folder}/combined_data/s42_em_1pl_1d_aq/item_parameters_nn.pkl", "rb") as f:
             reward_model = pickle.load(f)
+
+        difficulty_predictor = lambda x: reward_model(x)[:, 0]
 
         # Re-calculating the number of restarts due to vLLM's bug
         train_diffs, train_maes, train_indices = call_diff(
