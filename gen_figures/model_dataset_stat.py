@@ -12,6 +12,7 @@ if __name__ == "__main__":
     for dataset in tqdm(DATASETS):
         model_name = pd.read_csv(f"{data_folder}/{dataset}/matrix.csv", index_col=0).index.tolist()
         model_names.extend(model_name)
+    print(list(set(model_names)))
     model_names = sorted(list(set(model_names)))
     
     # create a dataframe, each row is a model, each column is a dataset, the value is 1 if the model is in the dataset
