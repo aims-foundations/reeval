@@ -35,7 +35,7 @@ if __name__ == "__main__":
     data_folder = snapshot_download(
         repo_id="stair-lab/reeval_responses", repo_type="dataset"
     )
-    output_dir = f"../../results/calibration/" + arg2str(args)
+    output_dir = f"../results/calibration/" + arg2str(args)
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"Output directory: {output_dir}")
@@ -98,18 +98,14 @@ if __name__ == "__main__":
             model_features, dtype=torch.float32, device=device
         )
         model_features = model_features[train_model_indices]
-        model_features = torch.log(model_features)
-        model_features = torch.stack(
-            [model_features, torch.ones_like(model_features)], dim=1
-        )
-
+        model_features = torch.log(model_features).unsqueeze(-1)
         # Fill nan with -1
         model_features[torch.isnan(model_features)] = -1
 
         amortized_model_hyperparams = {
-            "input_dim": 2,
-            "n_layers": 1,
-            "hidden_dim": None,
+            "input_dim": 1,
+            "n_layers": 2,
+            "hidden_dim": 64,
         }
     else:
         model_features = None

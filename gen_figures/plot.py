@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torchmetrics import SpearmanCorrCoef
 from tueplots import bundles
+from sklearn.metrics import roc_auc_score
 from utils.utils import goodness_of_fit
 
 plt.rcParams.update(bundles.iclr2024())
@@ -26,6 +27,11 @@ def theta_corr_plot(
     sm_fn = SpearmanCorrCoef()
     if mode == "ctt":
         external_scores = ctt_score
+        #### PATCHING SOLUTION FOR BAD DATA ####
+        nan_mask = ~torch.isnan(external_scores)
+        theta = theta[nan_mask]
+        external_scores = external_scores[nan_mask]
+        #######################################
     elif mode == "helm":
         # Check all external scores are nan
         nan_helm_idxs = torch.isnan(helm_score)
@@ -58,12 +64,12 @@ def theta_corr_plot(
 
     return corr, sample_std
 
-
-def accuracy_plot(
+def auc_roc_plot(
     item_parms: torch.Tensor,
     theta: torch.Tensor,
     y: torch.Tensor,
     plot_path: str,
+    bootstrap_size: int = 100,
 ):
     n_items = item_parms.shape[0]
     n_testtakers = theta.shape[0]
@@ -73,37 +79,22 @@ def accuracy_plot(
 
     item_parms_list = [*(item_parms[..., 0:3].T), item_parms[..., 3:]]
     probs_theoretical = IRT.compute_prob(theta, *item_parms_list)
-    y_theoretical = (probs_theoretical > 0.5).float()
-    accuracy = (y_theoretical == y).float()
-
+    y_mask = y != -1
+    y = y[y_mask]
+    probs_theoretical = probs_theoretical[y_mask]
+    auc_roc = roc_auc_score(y.cpu(), probs_theoretical.cpu())
+    
     sample_accs = []
-    for _ in range(100):
+    num_dp = len(y)
+    for _ in range(bootstrap_size):
         indices = np.random.choice(
-            len(accuracy), int(0.8 * len(accuracy)), replace=False
+            num_dp, int(0.8 * num_dp), replace=False
         )
-        sample_acc = accuracy[indices].mean()
+        sample_acc = roc_auc_score(y[indices].cpu(), probs_theoretical[indices].cpu())
         sample_accs.append(sample_acc)
-    std_acc = torch.std(torch.stack(sample_accs)).item()
+    std_auc_roc = np.std(sample_accs)
 
-    # plt.figure(figsize=(10, 6))
-    # plt.hist(accuracy.cpu(), bins=40, density=True, alpha=0.4)
-    # plt.xlabel(r"Accuracy", fontsize=30)
-    # plt.ylabel(r"Frequency", fontsize=30)
-    # plt.tick_params(axis="both", labelsize=25)
-    # plt.xlim(0, 1)
-    # plt.axvline(accuracy.mean().item(), linestyle="--")
-    # plt.text(
-    #     accuracy.mean().item(),
-    #     plt.gca().get_ylim()[1],
-    #     f"{accuracy.mean().item():.2f} $\\pm$ {3 * std_acc:.2f}",
-    #     ha="center",
-    #     va="bottom",
-    #     fontsize=25,
-    # )
-    # plt.savefig(plot_path, dpi=300, bbox_inches="tight")
-    # plt.close()
-
-    return accuracy.mean().item(), std_acc
+    return auc_roc, std_auc_roc
 
 
 def error_bar_plot_single(datasets, means, stds, plot_path, xlabel, xlim_upper=1.1):

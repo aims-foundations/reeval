@@ -329,6 +329,13 @@ class IRT(nn.Module):
 
             berns = torch.distributions.Bernoulli(probs=masked_prob_matrix)
             loss = -berns.log_prob(masked_response_matrix).mean()
+
+            # encourage the ability to have mean 0 and std 1            
+            abilities = self.ability[self.ability_mask]
+            mean_ability = torch.mean(abilities, dim=0)
+            std_ability = torch.std(abilities, dim=0)
+            loss = loss + torch.abs(mean_ability) + torch.abs(std_ability - 1)
+            
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
@@ -428,3 +435,15 @@ class IRT(nn.Module):
             loading_factor = torch.softmax(loading_factor, dim=-1)
 
         return torch.cat([difficulty, disciminatory, guessing, loading_factor], dim=-1)
+    
+    @classmethod
+    def apply_student_constrains(cls, abilities, model_features):       
+        ability_mask = model_features[:, 0] != -1
+        
+        mean_ability = torch.mean(abilities[ability_mask], dim=0)
+        std_ability = torch.std(abilities[ability_mask], dim=0)
+        
+        # replace -1 with torch nan
+        abilities[~ability_mask] = torch.nan
+        abilities = (abilities - mean_ability) / std_ability
+        return abilities
