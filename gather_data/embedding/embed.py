@@ -17,7 +17,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_name", type=str, default="meta-llama/Meta-Llama-3-8B")
     parser.add_argument("--PL", type=int, default=1)
     parser.add_argument("--fitting_method", type=str, default="mle")
-    parser.add_argument("--batch_size", type=int, default=1024)
+    parser.add_argument("--batch_size", type=int, default=2048)
     args = parser.parse_args()
 
     upload_api = HfApi()
@@ -68,21 +68,13 @@ if __name__ == "__main__":
     )
 
     text_file = io.BytesIO()
-    row_key.to_csv(model_key_file, index=False)
+    text_df = pd.DataFrame({"text": text_df["text"]})
+    
+    text_df.to_csv(text_file, index=False)
     upload_api.upload_file(
         repo_id="stair-lab/reeval_responses",
         repo_type="dataset",
-        path_in_repo=f"{dataset}/model_keys.csv",
-        path_or_fileobj=model_key_file,
+        path_in_repo=f"{args.dataset}/question_text.csv",
+        path_or_fileobj=text_file,
         # run_as_future=True,
     )
-
-
-    ds_embed = Dataset.from_dict(
-        {
-            "text": text_df["text"],
-            # "difficulty": difficulty,
-            # "embed": embed["text"],
-        }
-    )
-    ds_embed.push_to_hub("stair-lab/reeval_all_embeddings", args.dataset)
