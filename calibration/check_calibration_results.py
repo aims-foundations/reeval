@@ -68,7 +68,7 @@ if __name__ == "__main__":
                 for fitting_method in FITTING_METHODS:
                     for amortized_question in AMORTIZED_QUESTION:
                         for amortized_student in AMORTIZED_STUDENT:
-                            output_dir = f"../../results/calibration/{dataset}/s42_{fitting_method}_{kl}pl_{d}d{'_aq' if amortized_question else ''}{'_as' if amortized_student else ''}"
+                            output_dir = f"../results/calibration/{dataset}/s42_{fitting_method}_{kl}pl_{d}d{'_aq' if amortized_question else ''}{'_as' if amortized_student else ''}"
                             check_results(
                                 output_dir, amortized_question, amortized_student
                             )
