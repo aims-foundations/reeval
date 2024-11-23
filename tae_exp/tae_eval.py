@@ -1,26 +1,30 @@
 import argparse
 import os
 from concurrent.futures import ThreadPoolExecutor
+import io
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import torch
-from calibration.nonamortized_calibration.calibrate import calibrate
 from huggingface_hub import snapshot_download
 from scipy.stats import spearmanr
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 from utils.irt import IRT
 from utils.utils import inverse_sigmoid, set_seed, str2bool
+from huggingface_hub import HfApi
+from utils.constants import DATASETS
+from utils.irt import IRT
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def run_mle(y, z, max_epoch=200):
     ability = torch.zeros((1, 1), device=y.device, requires_grad=True)
 
     optimizer = torch.optim.Adam([ability], lr=0.01)
-    pbar = tqdm(range(max_epoch))
+    # pbar = tqdm(range(max_epoch))
+    pbar = range(max_epoch)
 
     for _ in pbar:
         prob_matrix = IRT.compute_prob(
@@ -40,7 +44,7 @@ def run_mle(y, z, max_epoch=200):
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
-        pbar.set_postfix({"loss": loss.item()})
+        # pbar.set_postfix({"loss": loss.item()})
 
     return ability.detach()
 
@@ -64,6 +68,19 @@ def bootstrap_z(z, single_y, subset_size, n_question_bootstrap):
         # Step 2: Sample 2 subset of questions (and corresponding z) with size = 100
         subset1 = torch.randperm(n_questions)[:subset_size]
         subset2 = torch.randperm(n_questions)[:subset_size]
+
+        ground_truth = single_y_valid[subset2]
+        # if grountruth is all 0 or 1, try again
+        for _ in range(10):
+            if ground_truth.sum() == 0 or ground_truth.sum() == len(ground_truth):
+                subset2 = torch.randperm(n_questions)[:subset_size]
+                ground_truth = single_y_valid[subset2]
+            else:
+                break
+        
+        # if grountruth is all 0 or 1, skip this iteration
+        if ground_truth.sum() == 0 or ground_truth.sum() == len(ground_truth):
+            continue
 
         # Step 3: On the first subset:
         #      - Compute CTT scores for X via averaging all scores on this subset
@@ -153,14 +170,29 @@ def process_X(
     n_models, _ = response_matrix.shape
     # Step 1: Calibration on all questions and n-1 test takers, leave one test taker X out
     y_train = response_matrix[torch.arange(n_models) != tt_idx]
-    irt_model = calibrate(
-        response_matrix=y_train,
+
+    n_models, n_questions = y_train.shape
+    irt_model = IRT(
+        n_questions=n_questions,
+        n_testtaker=n_models,
         D=args.D,
         PL=args.PL,
-        fitting_method=args.fitting_method,
-        max_epoch=args.max_epoch,
+        amortize_item=False,
+        amortize_student=False,
+        amortized_question_hyperparams=None,
+        amortized_model_hyperparams=None,
         device=device,
+        report_to=None,
     )
+
+    irt_model.fit(
+        max_epoch=args.max_epoch,
+        response_matrix=y_train,
+        method=args.fitting_method,
+        embedding=None,
+        model_features=None,
+    )
+
     item_parms = irt_model.get_item_parameters().detach()
     z = item_parms[:, 0]
 
@@ -220,7 +252,7 @@ def bootstrap_student(
             )
             for tt_idx in list(test_takers)
         ]
-        for future in tqdm(futures, desc="Question"):
+        for future in tqdm(futures, desc="Test taker"):
             results.append(future.result())
             print(results[-1])
 
@@ -229,7 +261,7 @@ def bootstrap_student(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--dataset", type=str, default="airbench")
     parser.add_argument("--D", type=int, default=1)
     parser.add_argument("--PL", type=int, default=1)
     parser.add_argument("--seed", type=int, default=42)
@@ -238,9 +270,9 @@ if __name__ == "__main__":
     )
     parser.add_argument("--max_epoch", type=int, default=1000)
     parser.add_argument("--subset_size", type=int, default=50)
-    parser.add_argument("--max_workers", type=int, default=8)
+    parser.add_argument("--max_workers", type=int, default=10)
     parser.add_argument("--n_student_bootstrap", type=int, default=10)
-    parser.add_argument("--n_question_bootstrap", type=int, default=100)
+    parser.add_argument("--n_question_bootstrap", type=int, default=10)
     args = parser.parse_args()
 
     set_seed(args.seed)
@@ -250,8 +282,10 @@ if __name__ == "__main__":
     data_folder = snapshot_download(
         repo_id="stair-lab/reeval_responses", repo_type="dataset"
     )
-    y = pd.read_csv(f"{data_folder}/{args.dataset}/matrix.csv", index_col=0).values
-    y = torch.tensor(y, device=device).float()
+
+    y = torch.load(f"{data_folder}/{args.dataset}/response_matrix.pt").to(
+        device=device, dtype=torch.float32
+    )
 
     # rows in y with more than 500 non -1 values
     valid_rows_mask = (y != -1).sum(axis=1) > 500
@@ -278,6 +312,13 @@ if __name__ == "__main__":
     )
 
     # Save results
-    os.makedirs(f"../data/bootstrap/{args.dataset}", exist_ok=True)
+    upload_api = HfApi()
     df = pd.DataFrame(results)
-    df.to_csv(f"../data/bootstrap/{args.dataset}/results.csv", index=False)
+    results_file = io.BytesIO()
+    pd.DataFrame(results).to_csv(results_file, index=False)
+    upload_api.upload_file(
+        repo_id="stair-lab/reeval_results",
+        repo_type="dataset",
+        path_in_repo=f"tae/{args.dataset}.csv",
+        path_or_fileobj=results_file,
+    )

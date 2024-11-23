@@ -28,6 +28,8 @@ if __name__ == "__main__":
     parser.add_argument("--hidden_dim", type=int, default=None)
     parser.add_argument("--report_to", type=str, default=None)
     parser.add_argument("--force_run", type=str2bool, default=False)
+    parser.add_argument("--embedder_name", type=str, default="meta-llama/Meta-Llama-3-8B")
+
     args = parser.parse_args()
 
     set_seed(args.seed)
@@ -66,9 +68,10 @@ if __name__ == "__main__":
 
     # Loading data for amortized calibration
     if args.amortized_question:
+        _, embedder_name = args.embedder_name.split("/")
         # load item embeddings
         item_embeddings = torch.load(
-            f"{data_folder}/{args.dataset}/item_embeddings.pt",
+            f"{data_folder}/{args.dataset}/{embedder_name}_item_embeddings.pt",
         ).to(device=device)
 
         # select training data
