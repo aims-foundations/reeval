@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# List of dataset names
 datasets=(
     "airbench"
     "twitter_aae"
@@ -26,11 +25,11 @@ datasets=(
     "lsat_qa"
     "bold"
     "dyck_language_np3"
+    "combined_data"
 )
 
-# Loop through each dataset and run the Python command
 for dataset in "${datasets[@]}"; do
     echo "Run TAE on $dataset 1PL"
-    # python hard_easy_test.py --dataset $dataset --PL 1 --fitting_method mle& 
-    python tae_eval.py
+    export CUDA_VISIBLE_DEVICES=0
+    python tae_eval.py --dataset $dataset 
 done

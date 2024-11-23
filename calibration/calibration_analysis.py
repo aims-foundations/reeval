@@ -14,7 +14,6 @@ from tueplots import bundles
 from utils.constants import DATASETS
 from utils.irt import IRT
 from utils.utils import arg2str
-# supress warning 
 import warnings
 warnings.filterwarnings("ignore")
 
