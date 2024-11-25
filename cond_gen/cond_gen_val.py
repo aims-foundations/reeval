@@ -145,7 +145,7 @@ if __name__ == "__main__":
             repo_id="stair-lab/reeval_generated_questions", repo_type="dataset"
         )
         test_question_df = pd.read_csv(
-            f"{generated_questions_folder}/sft/{args.dataset}/test_answers_filtered.csv"
+            f"{generated_questions_folder}/sft/{args.dataset}/train_answers_filtered.csv"
         )
         
         test_dataset = load_dataset(f"stair-lab/{args.dataset}-ppo", split="test")
