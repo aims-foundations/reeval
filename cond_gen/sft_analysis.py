@@ -1,5 +1,6 @@
 import argparse
 import gc
+import io
 import os
 import pickle
 
@@ -12,7 +13,7 @@ from gen_figures.plot import plot_hist
 from ppo_reward_model import extract_score
 from transformers import GenerationConfig
 from vllm import LLM, SamplingParams
-from huggingface_hub import snapshot_download
+from huggingface_hub import snapshot_download, HfApi
 
 
 def call_diff(ds, gt_zs, reward_model, restart, batch_size):
@@ -46,6 +47,8 @@ if __name__ == "__main__":
     parser.add_argument("--run_generation", action="store_true")
     args = parser.parse_args()
 
+    upload_api = HfApi()
+    
     plot_dir = f"../plot/sft/{args.dataset}"
     os.makedirs(plot_dir, exist_ok=True)
 
@@ -89,7 +92,12 @@ if __name__ == "__main__":
 
     else:
         # Load the generated answers
-        train_answer_df = pd.read_csv(f"{generation_dir}/train_answers.csv")
+        # train_answer_df = pd.read_csv(f"{generation_dir}/train_answers.csv")
+        hf_folder = snapshot_download(
+            repo_id="stair-lab/reeval_generated_questions", repo_type="dataset"
+        )
+        train_answer_df = pd.read_csv(f"{hf_folder}/{args.dataset}/train_answers.csv")
+        
         train_answers = train_answer_df["text"].tolist()
         num_restarts = int(len(train_answers) / len(train_prompts))
         print(num_restarts)
@@ -128,9 +136,34 @@ if __name__ == "__main__":
         )
 
         # Saving the results
-        pickle.dump(train_diffs, open(f"{generation_dir}/train_diffs.pkl", "wb"))
-        pickle.dump(train_maes, open(f"{generation_dir}/train_maes.pkl", "wb"))
-        pickle.dump(train_indices, open(f"{generation_dir}/train_indices.pkl", "wb"))
+        # pickle.dump(train_diffs, open(f"{generation_dir}/train_diffs.pkl", "wb"))
+        # pickle.dump(train_maes, open(f"{generation_dir}/train_maes.pkl", "wb"))
+        # pickle.dump(train_indices, open(f"{generation_dir}/train_indices.pkl", "wb"))
+        
+        train_diffs_file = io.BytesIO()
+        pickle.dump(train_diffs, train_diffs_file)
+        upload_api.upload_file(
+            repo_id="stair-lab/reeval_generated_questions",
+            repo_type="dataset",
+            path_in_repo=f"{args.dataset}/train_diffs.pkl",
+            path_or_fileobj=train_diffs_file,
+        )
+        train_maes_file = io.BytesIO()
+        pickle.dump(train_maes, train_maes_file)
+        upload_api.upload_file(
+            repo_id="stair-lab/reeval_generated_questions",
+            repo_type="dataset",
+            path_in_repo=f"{args.dataset}/train_maes.pkl",
+            path_or_fileobj=train_maes_file,
+        )
+        train_indices_file = io.BytesIO()
+        pickle.dump(train_indices, train_indices_file)
+        upload_api.upload_file(
+            repo_id="stair-lab/reeval_generated_questions",
+            repo_type="dataset",
+            path_in_repo=f"{args.dataset}/train_indices.pkl",
+            path_or_fileobj=train_indices_file,
+        )
 
         # Reshape the answers to List[List[str]]
         train_answers = [
@@ -145,8 +178,16 @@ if __name__ == "__main__":
 
         # Save the answers
         train_answer_df = pd.DataFrame(train_answers, columns=["text"])
-        train_answer_df.to_csv(
-            f"{generation_dir}/train_answers_filtered.csv", index=False
+        # train_answer_df.to_csv(
+        #     f"{generation_dir}/train_answers_filtered.csv", index=False
+        # )
+        train_answer_file = io.BytesIO()
+        train_answer_df.to_csv(train_answer_file, index=False)
+        upload_api.upload_file(
+            repo_id="stair-lab/reeval_generated_questions",
+            repo_type="dataset",
+            path_in_repo=f"{args.dataset}/train_answers_filtered.csv",
+            path_or_fileobj=train_answer_file,
         )
 
         # Plot the histograms
