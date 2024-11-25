@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
+    DATASETS = [d for d in DATASETS if d != "combined_data"]
     DATASETS = sorted(DATASETS)
     data_folder = snapshot_download(
         repo_id="stair-lab/reeval_responses", repo_type="dataset"
