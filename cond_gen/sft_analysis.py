@@ -15,7 +15,7 @@ from vllm import LLM, SamplingParams
 from huggingface_hub import snapshot_download
 
 
-def call_diff(ds, gt_zs, reward_model, restart, batch_size=4):
+def call_diff(ds, gt_zs, reward_model, restart, batch_size):
     dataloader = torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=False)
     emb = embdr.get_embeddings(dataloader, "meta-llama/Meta-Llama-3-8B", ["text"])
     embs = emb["text"]
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, default="airbench")
     parser.add_argument("--num_samples", type=int, default=1000)
     parser.add_argument("--num_restarts", type=int, default=64)
-    parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--batch_size", type=int, default=1024)
     parser.add_argument("--gpu_memory_utilization", type=float, default=0.9)
     parser.add_argument("--run_generation", action="store_true")
     args = parser.parse_args()
