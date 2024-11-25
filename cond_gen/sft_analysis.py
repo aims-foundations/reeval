@@ -72,6 +72,7 @@ if __name__ == "__main__":
             gpu_memory_utilization=args.gpu_memory_utilization,
             tensor_parallel_size=torch.cuda.device_count(),
             dtype=torch.float16,
+            max_num_seqs=128,
         )
         train_outputs = llm.generate(train_prompts, sampling_params)
 
