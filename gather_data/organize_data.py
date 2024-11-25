@@ -225,6 +225,30 @@ if __name__ == "__main__":
             combined_matrix = combined_matrix.join(matrix, how="outer", rsuffix="_dup")
     combined_matrix.fillna(-1, inplace=True)
 
+    print(f"Combined matrix shape: {combined_matrix.shape}")
+
+    # Combine the row keys
+    combined_row_keys = None
+    for dataset in DATASETS[:-1]:
+        matrix = pd.read_csv(f"{data_folder}/{dataset}/model_keys.csv")
+        if combined_row_keys is None:
+            combined_row_keys = matrix
+        else:
+            combined_row_keys = pd.concat([combined_row_keys, matrix], axis=0)
+    
+    # Remove the duplicates
+    combined_row_keys = combined_row_keys.drop_duplicates(subset=["model_name"])
+
+    df_sorted = (
+        combined_row_keys.set_index("model_name")
+        .loc[combined_matrix.index]
+        .reset_index()
+    )
+    combined_row_keys = df_sorted.rename(columns={"index": "model_name"})
+    
+    assert combined_matrix.index.tolist() == combined_row_keys["model_name"].tolist(),\
+        f"{combined_matrix.index.tolist()} != {combined_row_keys['model_name'].tolist()}"
+    
     # upload the response matrix as a csv file
     combined_matrix_file = io.BytesIO()
     combined_matrix.to_csv(combined_matrix_file, index_label=None)
@@ -246,7 +270,18 @@ if __name__ == "__main__":
         path_in_repo="combined_data/response_matrix.pt",
         path_or_fileobj=combined_matrix_file,
     )
-
+    
+    # ds = Dataset.from_pandas(combined_row_keys)
+    # ds.push_to_hub("stair-lab/reeval_responses", "combined_data")
+    combined_row_file = io.BytesIO()
+    combined_row_keys.to_csv(combined_row_file, index=False)
+    upload_api.upload_file(
+        repo_id="stair-lab/reeval_responses",
+        repo_type="dataset",
+        path_in_repo="combined_data/model_keys.csv",
+        path_or_fileobj=combined_row_file,
+    )
+    
     # Combine column keys
     combined_search = None
     for dataset in DATASETS[:-1]:
@@ -294,33 +329,4 @@ if __name__ == "__main__":
         path_or_fileobj=combined_column_file,
     )
 
-    # Combine the row keys
-    combined_row_keys = None
-    for dataset in DATASETS[:-1]:
-        matrix = pd.read_csv(f"{data_folder}/{dataset}/model_keys.csv")
-        if combined_row_keys is None:
-            combined_row_keys = matrix
-        else:
-            combined_row_keys = pd.concat([combined_row_keys, matrix], axis=0)
-
-    # Remove the duplicates
-    combined_row_keys = combined_row_keys.drop_duplicates(subset=["model_name"])
-
-    assert combined_matrix.index.tolist() == combined_row_keys["model_name"].tolist()
     
-    df_sorted = (
-        combined_row_keys.set_index("model_name")
-        .loc[combined_matrix.index]
-        .reset_index()
-    )
-    combined_row_keys = df_sorted.rename(columns={"index": "model_name"})
-    # ds = Dataset.from_pandas(combined_row_keys)
-    # ds.push_to_hub("stair-lab/reeval_responses", "combined_data")
-    combined_row_file = io.BytesIO()
-    combined_row_keys.to_csv(combined_row_file, index=False)
-    upload_api.upload_file(
-        repo_id="stair-lab/reeval_responses",
-        repo_type="dataset",
-        path_in_repo="combined_data/model_keys.csv",
-        path_or_fileobj=combined_row_file,
-    )
