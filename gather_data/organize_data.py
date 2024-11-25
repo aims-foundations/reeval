@@ -42,10 +42,10 @@ if __name__ == "__main__":
     )
     # model_ids = pd.read_csv(f"{model_info_folder}/model_id.csv", index_col=0)
     model_ids = []
-    for dataset in tqdm(DATASETS[:-1]):
+    for dataset in DATASETS[:-1]:
         model_name = pd.read_csv(f"{data_folder}/{dataset}/matrix.csv", index_col=0).index.tolist()
         model_ids.extend(model_name)
-    model_names = sorted(list(set(model_ids)))
+    model_ids = sorted(list(set(model_ids)))
     model_info = pd.read_csv(f"{model_info_folder}/model_id_final.csv", index_col=0)
 
     huggingface_model_ids = {}
