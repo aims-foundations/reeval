@@ -111,7 +111,7 @@ if __name__ == "__main__":
         embdr = Embedder()
         embdr.load(
             "meta-llama/Meta-Llama-3-8B",
-            gpu_memory_utilization=0.7,
+            gpu_memory_utilization=0.9,
             tensor_parallel_size=torch.cuda.device_count(),
             dtype=torch.float16,
         )
