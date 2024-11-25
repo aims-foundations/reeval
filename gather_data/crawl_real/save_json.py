@@ -37,7 +37,7 @@ if __name__ == "__main__":
             max_version = 8
         elif args.leaderboard == "thaiexam":
             base_url = "https://storage.googleapis.com/crfm-helm-public/thaiexam/benchmark_output/runs/v1."
-            max_version = 0
+            max_version = 1
 
         found_tag = False
         for i in range(max_version + 1):
