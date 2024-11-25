@@ -64,15 +64,18 @@ def mask_student_whose_feature_missing(items):
 if __name__ == "__main__":
     fig, axs = plt.subplots(4)
     D = [1]
-    PL = [1] # [1, 2, 3]
+    PL = [1, 2, 3] # [1, 2, 3]
     fitting_methods = ["mle"] # ["em", "mle"]
     amortized_question = [False] # [False, True]
     amortized_student = [False] # [False, True]
     seeds = [42]
-    nls = [1]
+    # nls = [1]
 
+    # cartesian_product = itertools.product(
+    #     D, PL, fitting_methods, amortized_question, amortized_student, seeds, nls
+    # )
     cartesian_product = itertools.product(
-        D, PL, fitting_methods, amortized_question, amortized_student, seeds, nls
+        D, PL, fitting_methods, amortized_question, amortized_student, seeds
     )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     data_folder = snapshot_download(
@@ -91,7 +94,8 @@ if __name__ == "__main__":
         args.amortized_question = arg_list[3]
         args.amortized_student = arg_list[4]
         args.seed = arg_list[5]
-        args.n_layers = arg_list[6]
+        # args.n_layers = arg_list[6]
+        args.n_layers = None
         args.hidden_dim = None
         args.device = device
 
