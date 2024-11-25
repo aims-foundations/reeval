@@ -91,6 +91,7 @@ if __name__ == "__main__":
         train_answer_df = pd.read_csv(f"{generation_dir}/train_answers.csv")
         train_answers = train_answer_df["text"].tolist()
         num_restarts = int(len(train_answers) / len(train_prompts))
+        print(num_restarts)
         train_answers = train_answers[: args.num_samples * num_restarts]
         train_answer_dataset = Dataset.from_pandas(
             train_answer_df[: args.num_samples * num_restarts]
