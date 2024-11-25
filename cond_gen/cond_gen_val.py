@@ -2,6 +2,7 @@ import argparse
 import base64
 import gc
 
+import io
 import os
 import pickle
 
@@ -11,7 +12,7 @@ import requests
 import torch
 from datasets import Dataset, load_dataset
 from dotenv import find_dotenv, load_dotenv
-from huggingface_hub import snapshot_download
+from huggingface_hub import snapshot_download, HfApi
 from ppo_reward_model import extract_score
 from transformers import AutoTokenizer, GenerationConfig
 from vllm import LLM, SamplingParams
@@ -121,7 +122,11 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, default="airbench")
     parser.add_argument("--smoke_test", action="store_true")
     args = parser.parse_args()
+    
+    upload_api = HfApi()
+    
     output_dir = f"../data/sft_analysis/{args.dataset}"
+    os.makedirs(output_dir, exist_ok=True)
 
     # Load list of model keys
     data_folder = snapshot_download(
@@ -133,9 +138,16 @@ if __name__ == "__main__":
     if args.smoke_test:
         test_question_df = pd.DataFrame({"text": ["What is the capital of US?"]})
     else:
-        test_question_df = pd.read_csv(
-            "../data/generated_questions/test_answers_filtered.csv"
+        # test_question_df = pd.read_csv(
+        #     "../data/generated_questions/test_answers_filtered.csv"
+        # )
+        generated_questions_folder = snapshot_download(
+            repo_id="stair-lab/reeval_generated_questions", repo_type="dataset"
         )
+        test_question_df = pd.read_csv(
+            f"{generated_questions_folder}/sft/{args.dataset}/test_answers_filtered.csv"
+        )
+        
         test_dataset = load_dataset(f"stair-lab/{args.dataset}-ppo", split="test")
         test_texts = test_dataset["text"][: len(test_question_df)]
         gt_difficulties = [extract_score(p) for p in test_texts]
@@ -212,6 +224,15 @@ if __name__ == "__main__":
         )
 
         results.to_csv(f"{output_dir}/{model_name}.csv", index=False)
-
+        
+        results_file = io.BytesIO()
+        results.to_csv(results_file, index=False)
+        upload_api.upload_file(
+            repo_id="stair-lab/reeval_generated_questions",
+            repo_type="dataset",
+            path_in_repo=f"sft/{args.dataset}/cond_gen_val.csv",
+            path_or_fileobj=results_file,
+        )
+        
         # Delete model
         del llm

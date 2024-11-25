@@ -136,9 +136,9 @@ if __name__ == "__main__":
         )
 
         # Saving the results
-        # pickle.dump(train_diffs, open(f"{generation_dir}/train_diffs.pkl", "wb"))
-        # pickle.dump(train_maes, open(f"{generation_dir}/train_maes.pkl", "wb"))
-        # pickle.dump(train_indices, open(f"{generation_dir}/train_indices.pkl", "wb"))
+        pickle.dump(train_diffs, open(f"{generation_dir}/train_diffs.pkl", "wb"))
+        pickle.dump(train_maes, open(f"{generation_dir}/train_maes.pkl", "wb"))
+        pickle.dump(train_indices, open(f"{generation_dir}/train_indices.pkl", "wb"))
         
         train_diffs_file = io.BytesIO()
         pickle.dump(train_diffs, train_diffs_file)
@@ -178,9 +178,9 @@ if __name__ == "__main__":
 
         # Save the answers
         train_answer_df = pd.DataFrame(train_answers, columns=["text"])
-        # train_answer_df.to_csv(
-        #     f"{generation_dir}/train_answers_filtered.csv", index=False
-        # )
+        train_answer_df.to_csv(
+            f"{generation_dir}/train_answers_filtered.csv", index=False
+        )
         train_answer_file = io.BytesIO()
         train_answer_df.to_csv(train_answer_file, index=False)
         upload_api.upload_file(
