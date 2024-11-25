@@ -23,10 +23,12 @@ if __name__ == "__main__":
     #         if "#/groups" in href:
     #             hrefs.append(href)
 
-    output_dir = "../../../data/gather_data/crawl_real/helm_socre"
+    output_dir = "../../data/gather_data/crawl_real/helm_socre"
     os.makedirs(output_dir, exist_ok=True)
 
-    hrefs = ["https://crfm.stanford.edu/helm/mmlu/latest/#/leaderboard"]
+    # hrefs = ["https://crfm.stanford.edu/helm/mmlu/latest/#/leaderboard"]
+    
+    hrefs = ["https://crfm.stanford.edu/helm/thaiexam/latest/#/leaderboard"]
 
     for url in tqdm(hrefs):
         try:
