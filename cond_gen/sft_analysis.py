@@ -96,7 +96,7 @@ if __name__ == "__main__":
         hf_folder = snapshot_download(
             repo_id="stair-lab/reeval_generated_questions", repo_type="dataset"
         )
-        train_answer_df = pd.read_csv(f"{hf_folder}/{args.dataset}/train_answers.csv")
+        train_answer_df = pd.read_csv(f"{hf_folder}/sft/{args.dataset}/train_answers.csv")
         
         train_answers = train_answer_df["text"].tolist()
         num_restarts = int(len(train_answers) / len(train_prompts))
@@ -145,7 +145,7 @@ if __name__ == "__main__":
         upload_api.upload_file(
             repo_id="stair-lab/reeval_generated_questions",
             repo_type="dataset",
-            path_in_repo=f"{args.dataset}/train_diffs.pkl",
+            path_in_repo=f"sft/{args.dataset}/train_diffs.pkl",
             path_or_fileobj=train_diffs_file,
         )
         train_maes_file = io.BytesIO()
@@ -153,7 +153,7 @@ if __name__ == "__main__":
         upload_api.upload_file(
             repo_id="stair-lab/reeval_generated_questions",
             repo_type="dataset",
-            path_in_repo=f"{args.dataset}/train_maes.pkl",
+            path_in_repo=f"sft/{args.dataset}/train_maes.pkl",
             path_or_fileobj=train_maes_file,
         )
         train_indices_file = io.BytesIO()
@@ -161,7 +161,7 @@ if __name__ == "__main__":
         upload_api.upload_file(
             repo_id="stair-lab/reeval_generated_questions",
             repo_type="dataset",
-            path_in_repo=f"{args.dataset}/train_indices.pkl",
+            path_in_repo=f"sft/{args.dataset}/train_indices.pkl",
             path_or_fileobj=train_indices_file,
         )
 
@@ -186,7 +186,7 @@ if __name__ == "__main__":
         upload_api.upload_file(
             repo_id="stair-lab/reeval_generated_questions",
             repo_type="dataset",
-            path_in_repo=f"{args.dataset}/train_answers_filtered.csv",
+            path_in_repo=f"sft/{args.dataset}/train_answers_filtered.csv",
             path_or_fileobj=train_answer_file,
         )
 
