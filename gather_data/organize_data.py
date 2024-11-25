@@ -40,11 +40,17 @@ if __name__ == "__main__":
     model_info_folder = snapshot_download(
         repo_id="stair-lab/reeval_model_info", repo_type="dataset"
     )
-    model_ids = pd.read_csv(f"{model_info_folder}/model_id.csv", index_col=0)
+    # model_ids = pd.read_csv(f"{model_info_folder}/model_id.csv", index_col=0)
+    model_ids = []
+    for dataset in tqdm(DATASETS[:-1]):
+        model_name = pd.read_csv(f"{data_folder}/{dataset}/matrix.csv", index_col=0).index.tolist()
+        model_ids.extend(model_name)
+    model_names = sorted(list(set(model_ids)))
     model_info = pd.read_csv(f"{model_info_folder}/model_id_final.csv", index_col=0)
 
     huggingface_model_ids = {}
-    for _, model_name in model_ids["model_names"].items():
+    # for _, model_name in model_ids["model_names"].items():
+    for model_name in model_ids:
         hf_model_name = model_name.replace("_", "/")
         if hf_model_name == "mistralai/mixtral-8x22b":
             hf_model_name = "mistralai/Mixtral-8x22B-v0.1"
@@ -221,7 +227,7 @@ if __name__ == "__main__":
 
     # upload the response matrix as a csv file
     combined_matrix_file = io.BytesIO()
-    combined_matrix.to_csv(combined_matrix_file, index=False)
+    combined_matrix.to_csv(combined_matrix_file, index_label=None)
     upload_api.upload_file(
         repo_id="stair-lab/reeval_responses",
         repo_type="dataset",
@@ -300,7 +306,8 @@ if __name__ == "__main__":
     # Remove the duplicates
     combined_row_keys = combined_row_keys.drop_duplicates(subset=["model_name"])
 
-    assert combined_matrix.shape[0] == combined_row_keys.shape[0]
+    assert combined_matrix.index.tolist() == combined_row_keys["model_name"].tolist()
+    
     df_sorted = (
         combined_row_keys.set_index("model_name")
         .loc[combined_matrix.index]
