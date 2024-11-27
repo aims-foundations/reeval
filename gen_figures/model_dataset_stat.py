@@ -35,9 +35,15 @@ if __name__ == "__main__":
     plt.imshow(data_transposed, cmap='Blues', interpolation='nearest')
     plt.xticks(range(data_transposed.shape[1]), data_transposed.columns, rotation=45, ha='right', fontsize=6)
     plt.yticks(range(data_transposed.shape[0]), data_transposed.index, fontsize=6)
-    plt.grid(visible=True, which='both', color='gray', linestyle='--', linewidth=0.5)
-    plt.gca().set_xticks([x - 0.5 for x in range(1, data_transposed.shape[1])], minor=True)
-    plt.gca().set_yticks([y - 0.5 for y in range(1, data_transposed.shape[0])], minor=True)
-    plt.gca().grid(which='minor', color='gray', linestyle='-', linewidth=0.5)
+    plt.grid(visible=False)
+    
+    # plt.gca().set_xticks([x - 0.5 for x in range(1, data_transposed.shape[1])], minor=True)
+    # plt.gca().set_yticks([y - 0.5 for y in range(1, data_transposed.shape[0])], minor=True)
+    # plt.gca().grid(which='minor', color='gray', linestyle='-', linewidth=0.5)
+    for x in range(data_transposed.shape[1] + 1):
+        plt.axvline(x - 0.5, color='gray', linestyle='--', linewidth=0.5)
+    for y in range(data_transposed.shape[0] + 1):
+        plt.axhline(y - 0.5, color='gray', linestyle='--', linewidth=0.5)
+
     plt.savefig(f"{output_dir}/model_dataset_stat.png", dpi=300, bbox_inches='tight')
     plt.close()

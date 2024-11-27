@@ -62,6 +62,8 @@ def mask_student_whose_feature_missing(items):
 
 
 if __name__ == "__main__":
+    DATASETS = [d for d in DATASETS if d != "thai_exam"]
+    
     fig, axs = plt.subplots(4)
     D = [1, 2]
     PL = [1, 2, 3]
