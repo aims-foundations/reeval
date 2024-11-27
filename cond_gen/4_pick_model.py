@@ -31,7 +31,7 @@ if __name__ == "__main__":
         repo_id="stair-lab/reeval_responses", repo_type="dataset"
     )
     model_keys = pd.read_csv(f"{data_folder}/{args.dataset}/model_keys.csv")
-
+        
     for d in range(args.D):
         list_thetas = []
         list_names = []
@@ -59,3 +59,22 @@ if __name__ == "__main__":
         plt.title("Ability Distribution")
         plt.savefig(f"{output_dir}/ability_distribution_{d}.png")
         plt.close()
+
+    
+    # Read model list
+    # model_list = pd.read_csv(f"./model_list.csv")
+    
+    # # Get huggingface model id
+    # list_model_hf_id = []
+    # for model_name in model_list["model_name"]:
+    #     model_hf_id = model_keys[model_keys["model_name"] == model_name]["huggingface_model_id"]
+    #     if len(model_hf_id) != 0:
+    #         model_hf_id = model_hf_id.values[0]
+    #     else:
+    #         model_hf_id = model_name
+    #     list_model_hf_id.append(model_hf_id)
+    #     print(f"{model_name}: {model_hf_id}")
+        
+    # # Save list model hf id using pandas
+    # model_hf_id_df = pd.DataFrame(list_model_hf_id, columns=["huggingface_model_id"])
+    # model_hf_id_df.to_csv(f"./model_hf_id.csv", index=False)
