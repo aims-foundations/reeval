@@ -65,10 +65,10 @@ if __name__ == "__main__":
     DATASETS = [d for d in DATASETS if d != "thai_exam"]
     
     fig, axs = plt.subplots(4)
-    D = [1]
-    PL = [1, 2, 3] # [1, 2, 3]
-    fitting_methods = ["mle"] # ["em", "mle"]
-    amortized_question = [False] # [False, True]
+    D = [1, 2]
+    PL = [1, 2, 3]
+    fitting_methods = ["mle"]
+    amortized_question = [True] # [False, True]
     amortized_student = [False] # [False, True]
     seeds = [42]
     # nls = [1]
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         args.amortized_student = arg_list[4]
         args.seed = arg_list[5]
         # args.n_layers = arg_list[6]
-        args.n_layers = None
+        args.n_layers = 1
         args.hidden_dim = None
         args.device = device
 
@@ -109,8 +109,8 @@ if __name__ == "__main__":
 
         list_datasets = []
         for dataset in tqdm(DATASETS):
-            # if dataset != "airbench":
-            #     continue
+            if dataset != "airbench":
+                continue
             list_datasets.append(dataset)
 
             # Setup the arguments

@@ -324,17 +324,18 @@ class IRT(nn.Module):
 
             if self.amortize_student:
                 masked_prob_matrix = prob_matrix[self.ability_mask][mask]
+                abilities = self.ability[self.ability_mask]
             else:
                 masked_prob_matrix = prob_matrix[mask]
+                abilities = self.ability
 
             berns = torch.distributions.Bernoulli(probs=masked_prob_matrix)
             loss = -berns.log_prob(masked_response_matrix).mean()
 
             # encourage the ability to have mean 0 and std 1            
-            abilities = self.ability[self.ability_mask]
             mean_ability = torch.mean(abilities, dim=0)
             std_ability = torch.std(abilities, dim=0)
-            loss = loss + torch.abs(mean_ability) + torch.abs(std_ability - 1)
+            loss = loss + torch.abs(mean_ability).mean() + torch.abs(std_ability - 1).mean()
             
             loss.backward()
             optimizer.step()

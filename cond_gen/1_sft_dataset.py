@@ -1,12 +1,10 @@
 import argparse
-import os
 import pickle
 
 import numpy as np
 import pandas as pd
 from datasets import Dataset
-from dotenv import load_dotenv
-from huggingface_hub import login, snapshot_download
+from huggingface_hub import snapshot_download
 from transformers import AutoTokenizer
 from utils.constants import DESCRIPTION_MAP
 
@@ -14,18 +12,18 @@ from utils.constants import DESCRIPTION_MAP
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--fitting_method", type=str, default="mle")
     parser.add_argument("--PL", type=int, default=1)
     parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument(
-        "--model", type=str, default="bayridge", choices=["bayridge", "mlp"]
-    )
     args = parser.parse_args()
-
-    load_dotenv()
-    hf_token = os.getenv("HF_TOKEN")
-    login(token=hf_token)
-    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
+    
+    model_short_name = args.model.split("/")[-1]
+    if model_short_name == "Meta-Llama-3.1-8B-Instruct":
+        model_short_name = ""
+    else:
+        model_short_name = "-" + model_short_name
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
 
     description = DESCRIPTION_MAP[args.dataset]
 
@@ -49,7 +47,6 @@ if __name__ == "__main__":
     )
     # >>> n_questions x (3 + D)
     difficulty = np.array(item_parms)[:, 0].tolist()
-
     assert len(question_dataset) == len(difficulty)
 
     # Define the chat template
@@ -84,4 +81,4 @@ if __name__ == "__main__":
 
     # Split and push to hub
     dataset_dict = dataset.train_test_split(test_size=0.2)
-    dataset_dict.push_to_hub("stair-lab/reeval-sft", args.dataset)
+    dataset_dict.push_to_hub(f"stair-lab/reeval{model_short_name}-sft", args.dataset)

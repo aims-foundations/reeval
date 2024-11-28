@@ -26,6 +26,7 @@ if __name__ == "__main__":
     embdr = Embedder()
     embdr.load(args.embedder_name, tensor_parallel_size=num_gpus, dtype=torch.float16)
     for dataset in DATASETS[:-1]: # skipping the combined dataset at the end
+        print(f"Embedding {dataset}...")
         question_keys = pd.read_csv(f"{data_folder}/{dataset}/question_keys.csv")
         question_keys["text"] = DESCRIPTION_MAP[dataset] + ", ### PROMPT: " + question_keys["text"]
         text_dataset = Dataset.from_pandas(question_keys)
@@ -36,6 +37,19 @@ if __name__ == "__main__":
 
         item_embedding_file = io.BytesIO()
         torch.save(item_embeddings, item_embedding_file)
+        upload_api.delete_file(
+            repo_id="stair-lab/reeval_responses",
+            repo_type="dataset",
+            path_in_repo=f"{dataset}/{embedder_name}_item_embeddings.pt",
+        )
+        try:
+            upload_api.delete_file(
+                repo_id="stair-lab/reeval_responses",
+                repo_type="dataset",
+                path_in_repo=f"{dataset}/item_embeddings.pt",
+            )
+        except:
+            pass
         upload_api.upload_file(
             repo_id="stair-lab/reeval_responses",
             repo_type="dataset",
@@ -60,6 +74,20 @@ if __name__ == "__main__":
 
     item_embedding_file = io.BytesIO()
     torch.save(combined_item_embeddings, item_embedding_file)
+    upload_api.delete_file(
+        repo_id="stair-lab/reeval_responses",
+        repo_type="dataset",
+        path_in_repo=f"combined_data/{embedder_name}_item_embeddings.pt",
+    )
+    try:
+        upload_api.delete_file(
+            repo_id="stair-lab/reeval_responses",
+            repo_type="dataset",
+            path_in_repo=f"combined_data/item_embeddings.pt",
+        )
+    except:
+        pass
+
     upload_api.upload_file(
         repo_id="stair-lab/reeval_responses",
         repo_type="dataset",

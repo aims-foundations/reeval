@@ -9,12 +9,15 @@ from utils.constants import DESCRIPTION_MAP
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--ppo_size", type=int, default=1250)
-    parser.add_argument(
-        "--model", type=str, default="bayridge", choices=["bayridge", "mlp"]
-    )
     args = parser.parse_args()
-    tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3-8B-Instruct")
+    model_short_name = args.model.split("/")[-1]
+    if model_short_name == "Meta-Llama-3.1-8B-Instruct":
+        model_short_name = ""
+    else:
+        model_short_name = "-" + model_short_name
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
 
     ppo_chat = [
         {"role": "system", "content": "You are a helpful assistant."},
@@ -44,4 +47,4 @@ if __name__ == "__main__":
 
     # Split and push to hub
     dataset_dict = dataset.train_test_split(test_size=0.2)
-    dataset_dict.push_to_hub("stair-lab/reeval-ppo", args.dataset)
+    dataset_dict.push_to_hub(f"stair-lab/reeval{model_short_name}-ppo", args.dataset)

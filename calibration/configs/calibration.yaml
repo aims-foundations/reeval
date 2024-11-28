@@ -34,13 +34,9 @@ parameters:
   fitting_method:
     values: [mle, em]
   amortized_question:
-    values: [True, False]
+    values: [False, True]
   amortized_student:
-    values: [True, False]
-  n_layers:
-    values: [2, 3, 4, 5]
-  hidden_dim:
-    values: [32, 64, 128]
+    values: [False]
   report_to:
     values: [wandb]
  

@@ -1,0 +1,29 @@
+model_name_or_path: mistralai/Mistral-7B-Instruct-v0.3
+dataset_name: stair-lab/reeval-Mistral-7B-Instruct-v0.3-sft
+output_dir: ../data/sft/mistral_airbench
+overwrite_output_dir: true
+num_train_epochs: 5.0
+
+dataset_train_split: train
+dataset_test_split: test
+dataset_text_field: text
+dataset_subset: airbench
+
+# bf16: true
+ddp_timeout: 180000000
+gradient_accumulation_steps: 1
+gradient_checkpointing: true
+learning_rate: 0.0001
+lr_scheduler_type: cosine
+logging_steps: 1
+per_device_train_batch_size: 8
+report_to: wandb
+save_steps: 500
+warmup_ratio: 0.1
+
+use_peft: true
+lora_alpha: 16
+lora_r: 8
+lora_dropout: 0.1
+lora_target_modules: ["q_proj", "v_proj"]
+# use_liger: true
