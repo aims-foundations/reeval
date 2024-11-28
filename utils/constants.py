@@ -57,6 +57,7 @@ PLOT_NAME_MAP = {
     "synthetic_reasoning": "syn_reason",
     "mmlu": "mmlu",
     "airbench": "airbench",
+    "thai_exam": "thai",
 }
 
 HELM_MODEL_MAP = {
