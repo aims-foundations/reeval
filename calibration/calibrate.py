@@ -5,9 +5,9 @@ import pickle
 import pandas as pd
 import torch
 import wandb
+from amortized_irt import IRT
 from check_calibration_results import check_results
 from huggingface_hub import HfApi, snapshot_download
-from utils.irt import IRT
 from utils.utils import arg2str, set_seed, str2bool
 
 if __name__ == "__main__":
@@ -28,14 +28,21 @@ if __name__ == "__main__":
     parser.add_argument("--hidden_dim", type=int, default=None)
     parser.add_argument("--report_to", type=str, default=None)
     parser.add_argument("--force_run", type=str2bool, default=False)
-    parser.add_argument("--embedder_name", type=str, default="meta-llama/Meta-Llama-3-8B")
+    parser.add_argument(
+        "--embedder_name", type=str, default="meta-llama/Meta-Llama-3-8B"
+    )
 
     args = parser.parse_args()
 
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    embedder_short_name = args.embedder_name.split("/")[1]
+    if embedder_short_name != "Meta-Llama-3-8B":
+        embedder_short_name = "_" + embedder_short_name
+    else:
+        embedder_short_name = ""
     data_folder = snapshot_download(
-        repo_id="stair-lab/reeval_responses", repo_type="dataset"
+        repo_id=f"stair-lab/reeval_responses", repo_type="dataset"
     )
     output_dir = f"../results/calibration/" + arg2str(args)
     os.makedirs(output_dir, exist_ok=True)
@@ -142,7 +149,6 @@ if __name__ == "__main__":
         embedding=item_embeddings,
         model_features=model_features,
     )
-    wandb.finish()
 
     # save results
     abilities = irt_model.get_abilities().cpu().detach().tolist()
@@ -182,11 +188,15 @@ if __name__ == "__main__":
 
     upload_api = HfApi()
     upload_api.create_repo(
-        repo_id="stair-lab/reeval_results", repo_type="dataset", exist_ok=True
+        repo_id=f"stair-lab/reeval_results{embedder_short_name}",
+        repo_type="dataset",
+        exist_ok=True,
     )
     upload_api.upload_folder(
         folder_path=output_dir,
-        repo_id="stair-lab/reeval_results",
+        repo_id=f"stair-lab/reeval_results{embedder_short_name}",
         repo_type="dataset",
         path_in_repo=arg2str(args),
     )
+
+    wandb.finish()

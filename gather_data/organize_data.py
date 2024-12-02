@@ -43,7 +43,9 @@ if __name__ == "__main__":
     # model_ids = pd.read_csv(f"{model_info_folder}/model_id.csv", index_col=0)
     model_ids = []
     for dataset in DATASETS[:-1]:
-        model_name = pd.read_csv(f"{data_folder}/{dataset}/matrix.csv", index_col=0).index.tolist()
+        model_name = pd.read_csv(
+            f"{data_folder}/{dataset}/matrix.csv", index_col=0
+        ).index.tolist()
         model_ids.extend(model_name)
     model_ids = sorted(list(set(model_ids)))
     model_info = pd.read_csv(f"{model_info_folder}/model_id_final.csv", index_col=0)
@@ -235,7 +237,7 @@ if __name__ == "__main__":
             combined_row_keys = matrix
         else:
             combined_row_keys = pd.concat([combined_row_keys, matrix], axis=0)
-    
+
     # Remove the duplicates
     combined_row_keys = combined_row_keys.drop_duplicates(subset=["model_name"])
 
@@ -245,10 +247,11 @@ if __name__ == "__main__":
         .reset_index()
     )
     combined_row_keys = df_sorted.rename(columns={"index": "model_name"})
-    
-    assert combined_matrix.index.tolist() == combined_row_keys["model_name"].tolist(),\
-        f"{combined_matrix.index.tolist()} != {combined_row_keys['model_name'].tolist()}"
-    
+
+    assert (
+        combined_matrix.index.tolist() == combined_row_keys["model_name"].tolist()
+    ), f"{combined_matrix.index.tolist()} != {combined_row_keys['model_name'].tolist()}"
+
     # upload the response matrix as a csv file
     combined_matrix_file = io.BytesIO()
     combined_matrix.to_csv(combined_matrix_file, index_label=None)
@@ -270,7 +273,7 @@ if __name__ == "__main__":
         path_in_repo="combined_data/response_matrix.pt",
         path_or_fileobj=combined_matrix_file,
     )
-    
+
     # ds = Dataset.from_pandas(combined_row_keys)
     # ds.push_to_hub("stair-lab/reeval_responses", "combined_data")
     combined_row_file = io.BytesIO()
@@ -281,7 +284,7 @@ if __name__ == "__main__":
         path_in_repo="combined_data/model_keys.csv",
         path_or_fileobj=combined_row_file,
     )
-    
+
     # Combine column keys
     combined_search = None
     for dataset in DATASETS[:-1]:
@@ -328,5 +331,3 @@ if __name__ == "__main__":
         path_in_repo="combined_data/question_keys.csv",
         path_or_fileobj=combined_column_file,
     )
-
-    

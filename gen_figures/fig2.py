@@ -8,8 +8,8 @@ import os
 import pandas as pd
 
 from gen_figures.plot import plot_bar
-from utils.constants import PLOT_NAME_MAP, DATASETS
 from huggingface_hub import snapshot_download
+from utils.constants import DATASETS, PLOT_NAME_MAP
 
 
 if __name__ == "__main__":
@@ -21,9 +21,7 @@ if __name__ == "__main__":
     )
     question_nums, testtaker_nums = [], []
     for dataset in DATASETS:
-        y = pd.read_csv(
-            f"{data_folder}/{dataset}/matrix.csv", index_col=0
-        ).values
+        y = pd.read_csv(f"{data_folder}/{dataset}/matrix.csv", index_col=0).values
         testtaker_nums.append(y.shape[0])
         question_nums.append(y.shape[1])
 

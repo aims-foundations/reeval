@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import torch
+from amortized_irt import IRT
 from tqdm import tqdm
-from utils.irt import IRT
 from utils.utils import inverse_sigmoid, set_seed
 
 

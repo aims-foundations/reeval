@@ -27,7 +27,7 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
 
     # hrefs = ["https://crfm.stanford.edu/helm/mmlu/latest/#/leaderboard"]
-    
+
     hrefs = ["https://crfm.stanford.edu/helm/thaiexam/latest/#/leaderboard"]
 
     for url in tqdm(hrefs):

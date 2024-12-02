@@ -3,16 +3,21 @@ import os
 
 import pandas as pd
 import requests
-from tqdm import tqdm
 import wandb
+from tqdm import tqdm
 
 if __name__ == "__main__":
     # wandb.init(project="save_json")
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--leaderboard", type=str, default="classic", choices=["classic", "mmlu", "thaiexam"]
+        "--leaderboard",
+        type=str,
+        default="classic",
+        choices=["classic", "mmlu", "thaiexam"],
     )
-    parser.add_argument("--dataset", type=str, required=True)  # use wandb sweep, mmlu, thai_exam
+    parser.add_argument(
+        "--dataset", type=str, required=True
+    )  # use wandb sweep, mmlu, thai_exam
     args = parser.parse_args()
 
     output_dir = f"../../data/gather_data/crawl_real/jsons/{args.dataset}_json"

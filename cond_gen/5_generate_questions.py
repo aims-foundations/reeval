@@ -1,13 +1,15 @@
 import argparse
+import csv
 import gc
 
 import io
 import os
+import pickle
+
 import pandas as pd
 import torch
-import csv
 from datasets import load_dataset
-from huggingface_hub import snapshot_download, HfApi
+from huggingface_hub import HfApi, snapshot_download
 from ppo_reward_model import extract_score
 from transformers import AutoTokenizer, GenerationConfig
 from vllm import LLM, SamplingParams
@@ -36,20 +38,16 @@ DEFAULT_CHAT_TEMPLATE = """{{- bos_token }}
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--model", type=str, required=True
-    )
-    parser.add_argument(
-        "--question_generator", type=str, required=True
-    )
+    parser.add_argument("--model", type=str, required=True)
+    parser.add_argument("--question_generator", type=str, required=True)
     parser.add_argument("--dataset", type=str, default="airbench")
     parser.add_argument("--force_run", action="store_true")
     parser.add_argument("--smoke_test", action="store_true")
     parser.add_argument("--skip_openai", action="store_true")
     args = parser.parse_args()
-    
+
     upload_api = HfApi()
-    
+
     model_short_name = args.question_generator.split("/")[-1]
     if model_short_name == "reeval_question_generator_sft":
         model_short_name = ""
@@ -76,7 +74,7 @@ if __name__ == "__main__":
         test_question_df = pd.read_csv(
             f"{generated_questions_folder}/sft/{args.dataset}{model_short_name}/train_answers_filtered.csv"
         )
-        
+        #### BUG????####
         test_dataset = load_dataset(f"stair-lab/{args.dataset}-ppo", split="test")
         test_texts = test_dataset["text"][: len(test_question_df)]
         gt_difficulties = [extract_score(p) for p in test_texts]
@@ -87,20 +85,22 @@ if __name__ == "__main__":
     #     # Check if model name is nan
     #     if pd.isna(model_name):
     #         continue
-        
+
     #     # Check model_name in available_models
     #     if model_name not in available_models["huggingface_model_id"].values:
     #         continue
 
     model_name = args.model
-    
+
     if args.smoke_test and model_name != "meta-llama/Llama-3.1-8B-Instruct":
         exit(0)
-    
+
     if args.skip_openai and "openai" in model_name:
         exit(0)
-    
-    if not args.force_run and os.path.exists(f"{output_dir}/{model_name.replace('/', '_')}.csv"):
+
+    if not args.force_run and os.path.exists(
+        f"{output_dir}/{model_name.replace('/', '_')}.csv"
+    ):
         exit(0)
 
     # Clear memory
@@ -128,7 +128,7 @@ if __name__ == "__main__":
         gpu_memory_utilization=0.9,
         tensor_parallel_size=torch.cuda.device_count(),
         dtype=torch.float16,
-        trust_remote_code=True
+        trust_remote_code=True,
     )
 
     # Load tokenizer
@@ -160,10 +160,9 @@ if __name__ == "__main__":
             "answer": answers,
         }
     )
-
     model_name = model_name.replace("/", "_")
-    results.to_csv(f"{output_dir}/{model_name}.csv", index=False, quoting=csv.QUOTE_NONE, escapechar='\\')
-    
+    pickle.dump(results, open(f"{output_dir}/{model_name}.pkl", "wb"))
+
     results_file = io.BytesIO()
     results.to_csv(results_file, index=False)
     upload_api.upload_file(
@@ -172,7 +171,13 @@ if __name__ == "__main__":
         path_in_repo=f"sft/{args.dataset}{model_short_name}/{model_name}.csv",
         path_or_fileobj=results_file,
     )
-    
+    results.to_csv(
+        f"{output_dir}/{model_name}.csv",
+        index=False,
+        quoting=csv.QUOTE_NONE,
+        escapechar="\\",
+    )
+
     # Delete model
     destroy_model_parallel()
     del llm.llm_engine.model_executor.driver_worker

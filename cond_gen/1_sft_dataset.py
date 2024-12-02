@@ -17,7 +17,7 @@ if __name__ == "__main__":
     parser.add_argument("--PL", type=int, default=1)
     parser.add_argument("--num_workers", type=int, default=4)
     args = parser.parse_args()
-    
+
     model_short_name = args.model.split("/")[-1]
     if model_short_name == "Meta-Llama-3.1-8B-Instruct":
         model_short_name = ""

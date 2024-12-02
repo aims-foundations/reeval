@@ -10,10 +10,10 @@ import torch
 from datasets import Dataset, load_dataset
 from embed_text_package.embed_text_v2 import Embedder
 from gen_figures.plot import plot_hist
+from huggingface_hub import HfApi, snapshot_download
 from ppo_reward_model import extract_score
 from transformers import GenerationConfig
 from vllm import LLM, SamplingParams
-from huggingface_hub import snapshot_download, HfApi
 
 
 def call_diff(ds, gt_zs, reward_model, restart, batch_size, device):
@@ -38,8 +38,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model", type=str, default="stair-lab/reeval_question_generator_sft"
     )
-    
-    parser.add_argument("--embedder_name", type=str, default="meta-llama/Meta-Llama-3-8B")
+
+    parser.add_argument(
+        "--embedder_name", type=str, default="meta-llama/Meta-Llama-3-8B"
+    )
     parser.add_argument("--dataset", type=str, default="airbench")
     parser.add_argument("--num_samples", type=int, default=1000)
     parser.add_argument("--num_restarts", type=int, default=64)
@@ -50,7 +52,7 @@ if __name__ == "__main__":
 
     upload_api = HfApi()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
     model_short_name = args.model.split("/")[-1]
     ds_model_short_name = ""
     if model_short_name == "reeval_question_generator_sft":
@@ -59,14 +61,16 @@ if __name__ == "__main__":
         model_short_name = "_" + model_short_name
         if "mistral" in model_short_name:
             ds_model_short_name = "-Mistral-7B-Instruct-v0.3"
-            
+
     plot_dir = f"../plot/sft/{args.dataset}{model_short_name}"
     os.makedirs(plot_dir, exist_ok=True)
 
     generation_dir = f"../results/generated_questions/{args.dataset}{model_short_name}"
     os.makedirs(generation_dir, exist_ok=True)
 
-    train_dataset = load_dataset(f"stair-lab/reeval{ds_model_short_name}-ppo", args.dataset, split="train")
+    train_dataset = load_dataset(
+        f"stair-lab/reeval{ds_model_short_name}-ppo", args.dataset, split="train"
+    )
     train_prompts = train_dataset["text"][: args.num_samples]
 
     train_gt_zs = [extract_score(p) for p in train_prompts]
@@ -79,7 +83,11 @@ if __name__ == "__main__":
             temperature=generation_config.temperature,
             top_p=generation_config.top_p,
             max_tokens=256,
-            stop_token_ids=generation_config.eos_token_id if isinstance(generation_config.eos_token_id, list) else [generation_config.eos_token_id],
+            stop_token_ids=(
+                generation_config.eos_token_id
+                if isinstance(generation_config.eos_token_id, list)
+                else [generation_config.eos_token_id]
+            ),
         )
         llm = LLM(
             model=args.model,
@@ -115,12 +123,15 @@ if __name__ == "__main__":
         hf_folder = snapshot_download(
             repo_id="stair-lab/reeval_generated_questions", repo_type="dataset"
         )
-        train_answer_df = pd.read_csv(f"{hf_folder}/sft/{args.dataset}{model_short_name}/train_answers.csv", engine='python')
-        
+        train_answer_df = pd.read_csv(
+            f"{hf_folder}/sft/{args.dataset}{model_short_name}/train_answers.csv",
+            engine="python",
+        )
+
         train_answers = train_answer_df["text"].tolist()
         num_restarts = int(len(train_answers) / len(train_prompts))
         # num_restarts = args.num_restarts ## FOR TESTING
-        
+
         train_answers = train_answers[: args.num_samples * num_restarts]
         train_answer_dataset = Dataset.from_pandas(
             train_answer_df[: args.num_samples * num_restarts]
@@ -140,8 +151,11 @@ if __name__ == "__main__":
         result_folder = snapshot_download(
             repo_id="stair-lab/reeval_results", repo_type="dataset"
         )
-        
-        with open(f"{result_folder}/{args.dataset}/s42_mle_1pl_1d_aq_nl1/item_parameters_nn.pkl", "rb") as f:
+
+        with open(
+            f"{result_folder}/{args.dataset}/s42_mle_1pl_1d_aq_nl1/item_parameters_nn.pkl",
+            "rb",
+        ) as f:
             reward_model = pickle.load(f)
             reward_model = reward_model.to(device)
 
@@ -156,7 +170,7 @@ if __name__ == "__main__":
             batch_size=args.batch_size,
             device=device,
         )
-        
+
         # Reshape the answers to List[List[str]]
         train_answers = [
             train_answers[i : i + num_restarts]
@@ -172,7 +186,7 @@ if __name__ == "__main__":
         pickle.dump(train_diffs, open(f"{generation_dir}/train_diffs.pkl", "wb"))
         pickle.dump(train_maes, open(f"{generation_dir}/train_maes.pkl", "wb"))
         pickle.dump(train_indices, open(f"{generation_dir}/train_indices.pkl", "wb"))
-        
+
         train_diffs_file = io.BytesIO()
         pickle.dump(train_diffs, train_diffs_file)
         upload_api.upload_file(
@@ -211,9 +225,12 @@ if __name__ == "__main__":
             path_in_repo=f"sft/{args.dataset}{model_short_name}/train_answers_filtered.csv",
             path_or_fileobj=train_answer_file,
         )
-        
-        
-        train_maes = pickle.load(open(f"{hf_folder}/sft/{args.dataset}{model_short_name}/train_maes.pkl", "rb"))
+
+        train_maes = pickle.load(
+            open(
+                f"{hf_folder}/sft/{args.dataset}{model_short_name}/train_maes.pkl", "rb"
+            )
+        )
         # Plot the histograms
         plot_hist(
             data=train_maes,

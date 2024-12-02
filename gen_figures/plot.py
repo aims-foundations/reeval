@@ -1,16 +1,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+from sklearn.metrics import roc_auc_score
 from torchmetrics import SpearmanCorrCoef
 from tueplots import bundles
-from sklearn.metrics import roc_auc_score
 from utils.utils import goodness_of_fit
 
 plt.rcParams.update(bundles.iclr2024())
 plt.style.use("seaborn-v0_8-paper")
 
+from amortized_irt import IRT
 from utils.constants import PLOT_NAME_MAP
-from utils.irt import IRT
 
 
 def theta_corr_plot(
@@ -64,6 +64,7 @@ def theta_corr_plot(
 
     return corr, sample_std
 
+
 def auc_roc_plot(
     item_parms: torch.Tensor,
     theta: torch.Tensor,
@@ -83,13 +84,11 @@ def auc_roc_plot(
     y = y[y_mask]
     probs_theoretical = probs_theoretical[y_mask]
     auc_roc = roc_auc_score(y.cpu(), probs_theoretical.cpu())
-    
+
     sample_accs = []
     num_dp = len(y)
     for _ in range(bootstrap_size):
-        indices = np.random.choice(
-            num_dp, int(0.8 * num_dp), replace=False
-        )
+        indices = np.random.choice(num_dp, int(0.8 * num_dp), replace=False)
         sample_acc = roc_auc_score(y[indices].cpu(), probs_theoretical[indices].cpu())
         sample_accs.append(sample_acc)
     std_auc_roc = np.std(sample_accs)

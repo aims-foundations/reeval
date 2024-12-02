@@ -1,21 +1,20 @@
 import argparse
-import os
-from concurrent.futures import ThreadPoolExecutor
 import io
+import os
+import warnings
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 import pandas as pd
 import torch
-from huggingface_hub import snapshot_download
+from amortized_irt import IRT
+from huggingface_hub import HfApi, snapshot_download
 from scipy.stats import spearmanr
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
-from utils.irt import IRT
-from utils.utils import inverse_sigmoid, set_seed, str2bool
-from huggingface_hub import HfApi
 from utils.constants import DATASETS
-from utils.irt import IRT
-import warnings
+from utils.utils import inverse_sigmoid, set_seed, str2bool
+
 warnings.filterwarnings("ignore")
 
 
@@ -77,7 +76,7 @@ def bootstrap_z(z, single_y, subset_size, n_question_bootstrap):
                 ground_truth = single_y_valid[subset2]
             else:
                 break
-        
+
         # if grountruth is all 0 or 1, skip this iteration
         if ground_truth.sum() == 0 or ground_truth.sum() == len(ground_truth):
             continue

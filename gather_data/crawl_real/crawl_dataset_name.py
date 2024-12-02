@@ -13,13 +13,14 @@ from webdriver_manager.chrome import ChromeDriverManager
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--leaderboard", type=str, required=True, choices=["classic", "lite", "mmlu", "thaiexam"]
+        "--leaderboard",
+        type=str,
+        required=True,
+        choices=["classic", "lite", "mmlu", "thaiexam"],
     )
     args = parser.parse_args()
 
-    base_url = (
-        f"https://crfm.stanford.edu/helm/{args.leaderboard}/latest/#/runs?page="
-    )
+    base_url = f"https://crfm.stanford.edu/helm/{args.leaderboard}/latest/#/runs?page="
     output_dir = "../../data/gather_data/crawl_real"
     os.makedirs(output_dir, exist_ok=True)
     output_path = f"{output_dir}/crawl_dataset_name_{args.leaderboard}.csv"
@@ -35,7 +36,7 @@ if __name__ == "__main__":
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 
     failed_pages = []
-    for page in tqdm(range(1, total_pages+1)):
+    for page in tqdm(range(1, total_pages + 1)):
         try:
             url = f"{base_url}{page}"
             driver.get(url)

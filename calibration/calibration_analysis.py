@@ -3,18 +3,19 @@ import copy
 import itertools
 import os
 import pickle
+import warnings
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch
-from gen_figures.plot import goodness_of_fit_plot, theta_corr_plot, auc_roc_plot
+from amortized_irt import IRT
+from gen_figures.plot import auc_roc_plot, goodness_of_fit_plot, theta_corr_plot
 from huggingface_hub import snapshot_download
 from tqdm import tqdm
 from tueplots import bundles
 from utils.constants import DATASETS
-from utils.irt import IRT
 from utils.utils import arg2str
-import warnings
+
 warnings.filterwarnings("ignore")
 
 
@@ -22,19 +23,23 @@ plt.rcParams.update(bundles.iclr2024())
 
 # Turn off warnings
 import warnings
+
 warnings.filterwarnings("ignore")
+
 
 def get_amortized_questions(result_path, args):
     item_parameters_nn = pickle.load(
         open(f"{result_path}/item_parameters_nn.pkl", "rb")
     )
-    item_embeddings = torch.load(f"{data_path}/item_embeddings.pt").to(
-        device=args.device
-    )
+    embedder_short_name = args.embedder_name.split("/")[1]
+    item_embeddings = torch.load(
+        f"{data_path}/{embedder_short_name}_item_embeddings.pt"
+    ).to(device=args.device)
 
     item_parms = item_parameters_nn(item_embeddings)
     item_parms = IRT.apply_item_constrains(item_parms, D=args.D, PL=args.PL).detach()
     return item_parms
+
 
 def get_amortized_students(result_path, args):
     student_parameters_nn = pickle.load(
@@ -51,33 +56,36 @@ def get_amortized_students(result_path, args):
     # Fill nan with -1
     model_features[torch.isnan(model_features)] = -1
     abilities = student_parameters_nn(model_features).detach()
-    
+
     abilities = IRT.apply_student_constrains(abilities, model_features)
     return abilities
+
 
 def mask_student_whose_feature_missing(items):
     abilities_mask = ~torch.isnan(items[0]).any(dim=1)
     return [item[abilities_mask] for item in items]
 
 
-
 if __name__ == "__main__":
-    DATASETS = [d for d in DATASETS if d != "thai_exam"]
-    
     fig, axs = plt.subplots(4)
     D = [1, 2]
     PL = [1, 2, 3]
-    fitting_methods = ["mle"]
-    amortized_question = [True] # [False, True]
-    amortized_student = [False] # [False, True]
+    fitting_methods = ["mle", "em"]
+    amortized_question = [True]  # [False, True]
+    amortized_student = [False]  # [False, True]
     seeds = [42]
-    # nls = [1]
+    nls = [1]
+    embedder_names = ["mistralai/Mistral-7B-v0.3"]  # ["meta-llama/Meta-Llama-3-8B"]
 
-    # cartesian_product = itertools.product(
-    #     D, PL, fitting_methods, amortized_question, amortized_student, seeds, nls
-    # )
     cartesian_product = itertools.product(
-        D, PL, fitting_methods, amortized_question, amortized_student, seeds
+        D,
+        PL,
+        fitting_methods,
+        amortized_question,
+        amortized_student,
+        seeds,
+        nls,
+        embedder_names,
     )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     data_folder = snapshot_download(
@@ -86,6 +94,7 @@ if __name__ == "__main__":
     result_folder = snapshot_download(
         repo_id="stair-lab/reeval_results", repo_type="dataset"
     )
+    res_file = open("calibration_results.txt", "w")
 
     for arg_list in cartesian_product:
         parser = argparse.ArgumentParser()
@@ -96,7 +105,8 @@ if __name__ == "__main__":
         args.amortized_question = arg_list[3]
         args.amortized_student = arg_list[4]
         args.seed = arg_list[5]
-        # args.n_layers = arg_list[6]
+        args.n_layers = arg_list[6]
+        args.embedder_name = arg_list[7]
         args.n_layers = 1
         args.hidden_dim = None
         args.device = device
@@ -108,9 +118,8 @@ if __name__ == "__main__":
         auc = copy.deepcopy(metrics)
 
         list_datasets = []
+
         for dataset in tqdm(DATASETS):
-            if dataset != "airbench":
-                continue
             list_datasets.append(dataset)
 
             # Setup the arguments
@@ -119,7 +128,10 @@ if __name__ == "__main__":
             plot_dir = f"../plot/{dataset_and_method_name}"
             os.makedirs(plot_dir, exist_ok=True)
 
-            print(f"Processing {dataset_and_method_name}")
+            print(f"Processing {dataset_and_method_name} - {args.embedder_name}")
+            res_file.write(
+                f"Processing {dataset_and_method_name} - {args.embedder_name}\n"
+            )
 
             # Load the data
             data_path = f"{data_folder}/{dataset}"
@@ -165,22 +177,42 @@ if __name__ == "__main__":
                 abilities = get_amortized_students(result_path, args)
                 abilities_train = abilities[train_student_indices]
                 abilities_test = abilities[test_student_indices]
-                
+
                 response_matrix_test = response_matrix_full[test_student_indices][
                     :, test_question_indices
                 ]
-                
+
                 helm_score_test = helm_score[test_student_indices]
                 ctt_score_test = ctt_score[test_student_indices]
-                
-                # filter nan values                
-                items = [abilities_train, response_matrix_train, helm_score_train, ctt_score_train]
-                items = mask_student_whose_feature_missing(items)
-                abilities_train, response_matrix_train, helm_score_train, ctt_score_train = items
 
-                items = [abilities_test, response_matrix_test, helm_score_test, ctt_score_test]
+                # filter nan values
+                items = [
+                    abilities_train,
+                    response_matrix_train,
+                    helm_score_train,
+                    ctt_score_train,
+                ]
                 items = mask_student_whose_feature_missing(items)
-                abilities_test, response_matrix_test, helm_score_test, ctt_score_test = items
+                (
+                    abilities_train,
+                    response_matrix_train,
+                    helm_score_train,
+                    ctt_score_train,
+                ) = items
+
+                items = [
+                    abilities_test,
+                    response_matrix_test,
+                    helm_score_test,
+                    ctt_score_test,
+                ]
+                items = mask_student_whose_feature_missing(items)
+                (
+                    abilities_test,
+                    response_matrix_test,
+                    helm_score_test,
+                    ctt_score_test,
+                ) = items
 
             elif args.amortized_question and not args.amortized_student:
                 item_parms = get_amortized_questions(result_path, args)
@@ -223,17 +255,37 @@ if __name__ == "__main__":
 
                 helm_score_test = helm_score[test_student_indices]
                 ctt_score_test = ctt_score[test_student_indices]
-                
+
                 # filter nan values
                 # breakpoint()
 
-                items = [abilities_train, response_matrix_train, helm_score_train, ctt_score_train]
+                items = [
+                    abilities_train,
+                    response_matrix_train,
+                    helm_score_train,
+                    ctt_score_train,
+                ]
                 items = mask_student_whose_feature_missing(items)
-                abilities_train, response_matrix_train, helm_score_train, ctt_score_train = items       
+                (
+                    abilities_train,
+                    response_matrix_train,
+                    helm_score_train,
+                    ctt_score_train,
+                ) = items
 
-                items = [abilities_test, response_matrix_test, helm_score_test, ctt_score_test]
+                items = [
+                    abilities_test,
+                    response_matrix_test,
+                    helm_score_test,
+                    ctt_score_test,
+                ]
                 items = mask_student_whose_feature_missing(items)
-                abilities_test, response_matrix_test, helm_score_test, ctt_score_test = items
+                (
+                    abilities_test,
+                    response_matrix_test,
+                    helm_score_test,
+                    ctt_score_test,
+                ) = items
 
             else:
                 item_parms_train = pickle.load(
@@ -253,13 +305,34 @@ if __name__ == "__main__":
                 ctt_score_test = None
 
             train_test_iters = [
-                (item_parms_train, abilities_train, response_matrix_train, helm_score_train, ctt_score_train, "train"),
-                (item_parms_test, abilities_test, response_matrix_test, helm_score_test, ctt_score_test, "test")
+                (
+                    item_parms_train,
+                    abilities_train,
+                    response_matrix_train,
+                    helm_score_train,
+                    ctt_score_train,
+                    "train",
+                ),
+                (
+                    item_parms_test,
+                    abilities_test,
+                    response_matrix_test,
+                    helm_score_test,
+                    ctt_score_test,
+                    "test",
+                ),
             ]
 
             for train_test_iter in train_test_iters:
-                item_parms, abilities, response_matrix, helm_score, ctt_score, is_train = train_test_iter
-             
+                (
+                    item_parms,
+                    abilities,
+                    response_matrix,
+                    helm_score,
+                    ctt_score,
+                    is_train,
+                ) = train_test_iter
+
                 if item_parms is None and abilities is None:
                     continue
 
@@ -275,6 +348,9 @@ if __name__ == "__main__":
                 print(
                     f"{dataset_and_method_name} {is_train} GOF: {gof_mean:.4f} ± {gof_std:.4f}"
                 )
+                res_file.write(
+                    f"{dataset_and_method_name} {is_train} GOF: {gof_mean:.4f} ± {gof_std:.4f}\n"
+                )
 
                 # metric 2: correlation with CTT
                 corr_ctt_mean, corr_ctt_std = theta_corr_plot(
@@ -287,6 +363,9 @@ if __name__ == "__main__":
                 corr_ctt[is_train]["std"].append(corr_ctt_std)
                 print(
                     f"{dataset_and_method_name} {is_train} corr_ctt: {corr_ctt_mean:.4f} ± {corr_ctt_std:.4f}"
+                )
+                res_file.write(
+                    f"{dataset_and_method_name} {is_train} corr_ctt: {corr_ctt_mean:.4f} ± {corr_ctt_std:.4f}\n"
                 )
 
                 # metric 3: correlation with HELM
@@ -301,20 +380,28 @@ if __name__ == "__main__":
                 print(
                     f"{dataset_and_method_name} {is_train} corr_helm: {corr_helm_mean:.4f} ± {corr_helm_std}"
                 )
+                res_file.write(
+                    f"{dataset_and_method_name} {is_train} corr_helm: {corr_helm_mean:.4f} ± {corr_helm_std}\n"
+                )
 
                 # metric 4: AUC-ROC
-                auc_mean ,auc_std = auc_roc_plot(
+                auc_mean, auc_std = auc_roc_plot(
                     item_parms=item_parms,
                     theta=abilities,
                     y=response_matrix,
                     plot_path=f"{plot_dir}/auc_roc_{is_train}",
-                    bootstrap_size=2
+                    bootstrap_size=2,
                 )
                 auc[is_train]["mean"].append(auc_mean)
                 auc[is_train]["std"].append(auc_std)
                 print(
                     f"{dataset_and_method_name} {is_train} AUC-ROC: {auc_mean:.4f} ± {auc_std:.4f}"
                 )
+                res_file.write(
+                    f"{dataset_and_method_name} {is_train} AUC-ROC: {auc_mean:.4f} ± {auc_std}\n"
+                )
+
+            res_file.flush()
 
         # x = range(len(DATASETS))
         x = range(len(list_datasets))
@@ -351,6 +438,7 @@ if __name__ == "__main__":
                 x=x, y=auc[is_train]["mean"], yerr=auc[is_train]["std"], color=c
             )
 
+    res_file.close()
     axs[0].set_title("Goodness of Fit")
     axs[1].set_title("Correlation with CTT")
     axs[2].set_title("Correlation with HELM")

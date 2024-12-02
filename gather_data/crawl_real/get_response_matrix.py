@@ -88,9 +88,12 @@ def get_bool_answers_logprob(data, threshold):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--leaderboard", type=str, default="classic", choices=["classic", "mmlu", "thaiexam"]
+        "--leaderboard",
+        type=str,
+        default="classic",
+        choices=["classic", "mmlu", "thaiexam"],
     )
-    parser.add_argument("--dataset", type=str, required=True) 
+    parser.add_argument("--dataset", type=str, required=True)
     # use wandb sweep, mmlu, thai_exam
     args = parser.parse_args()
 
@@ -107,12 +110,12 @@ if __name__ == "__main__":
     full_strings = [
         f for f in full_strings_all if (f.split(":")[0].split(",")[0] == args.dataset)
     ]
-    
+
     if args.dataset != "commonsense":
         full_strings = [f for f in full_strings if "ablation" not in f]
     if args.dataset == "truthful_qa":
         full_strings = [f for f in full_strings if "max_train_instances=0" not in f]
-    
+
     all_model_names = list(set([extract_model_name(f) for f in full_strings]))
     all_model_names = sorted(all_model_names, key=lambda x: x[0])
     non_model_strings = list(set([delete_model_name(f) for f in full_strings]))
@@ -178,14 +181,14 @@ if __name__ == "__main__":
         single_matrix_df.columns = [f"{j}_{non_model_string}" for j in range(max_len)]
 
         assert single_matrix_df.index.tolist() == all_model_names
-        
+
         if i == 0:
             all_matrix_df = single_matrix_df
         else:
             all_matrix_df = pd.concat([all_matrix_df, single_matrix_df], axis=1)
 
     # load all the text for each question
-    search_dict = {"idx":[], "text":[], "is_deleted":[]}
+    search_dict = {"idx": [], "text": [], "is_deleted": []}
     base_idx = 0
     for i, non_model_string in enumerate(non_model_strings):
         with open(f"{input_dir}/{max_len_file_names[i]}", "r") as f:
@@ -196,7 +199,7 @@ if __name__ == "__main__":
             search_dict["text"].append(text)
             search_dict["is_deleted"].append(0)
         base_idx += max_lens[i]
-    
+
     # delete duplicate question text
     removed_indices = remove_duplicates(search_dict["text"])
     for idx in removed_indices:
@@ -208,10 +211,12 @@ if __name__ == "__main__":
             {1, -1}
         ):
             search_dict["is_deleted"][idx] = 1
-    
+
     # delete "is_deleted" indices from all_matrix_df
-    all_matrix_df = all_matrix_df.loc[:, all_matrix_df.columns[np.array(search_dict["is_deleted"]) == 0]]
-    
+    all_matrix_df = all_matrix_df.loc[
+        :, all_matrix_df.columns[np.array(search_dict["is_deleted"]) == 0]
+    ]
+
     # save data
     if args.dataset == "dyck_language_np=3":
         args.dataset = "dyck_language_np3"
@@ -220,7 +225,7 @@ if __name__ == "__main__":
     search_df = pd.DataFrame(search_dict)
     print(f"response matrix shape of {args.dataset}: {all_matrix_df.shape}")
     all_matrix_df.to_csv(f"{output_dir}/matrix.csv", index_label=None)
-    
+
     search_df.to_csv(f"{output_dir}/search.csv", index=False, escapechar="\\")
 
     # Upload the content of the lbocal folder to your remote Space
