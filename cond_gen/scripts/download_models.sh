@@ -38,9 +38,9 @@ models=(
     "meta-llama/Llama-3.1-8B-Instruct"
     "google/gemma-2b-it"
     "codellama/CodeLlama-34b-Instruct-hf"
-    "meta-llama/llama-2-7b"
+    "meta-llama/llama-2-7b-hf"
     "deepseek-ai/deepseek-coder-33b-instruct"
-    "meta-llama/llama-2-13b"
+    "meta-llama/llama-2-13b-hf"
 )
 
 for model in "${models[@]}"; do

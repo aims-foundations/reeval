@@ -26,6 +26,7 @@ parameters:
     - lsat_qa
     - bold
     - dyck_language_np3
+    - thai_exam
     - combined_data
   PL:
     values: [1, 2, 3]
@@ -39,6 +40,10 @@ parameters:
     values: [False]
   report_to:
     values: [wandb]
+  embedder_name:
+    values: [meta-llama/Meta-Llama-3-8B, mistralai/Mistral-7B-v0.3]
+  force_run:
+    values: [True]
  
 program: calibrate.py
 project: calibration
