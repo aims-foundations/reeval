@@ -103,6 +103,7 @@ def save_matrix(dataset, generator_name, response_matrix, hf_models, data_folder
     model_keys = (
         model_keys.set_index("huggingface_model_id").loc[hf_models].reset_index()
     )
+    assert len(model_keys) == response_matrix.shape[0]
 
     new_model_keys = io.BytesIO()
     model_keys.to_csv(new_model_keys, index=False)
@@ -176,6 +177,7 @@ if __name__ == "__main__":
 
     model_keys = pd.read_csv(f"{data_folder}/{args.dataset}/model_keys.csv")
     list_model_having_ability = list(model_keys["huggingface_model_id"].values)
+    # this will keep the nans
 
     train_model_idxs = []
     test_model_idxs = []
@@ -261,12 +263,13 @@ if __name__ == "__main__":
     test_response_matrix = torch.tensor(
         test_response_matrix, device=device, dtype=torch.float32
     )
-    # >>> (n_models * n_qgenerator) n_questions
+    # >>> (n_models * n_qgenerator=2, n_questions=1000)
 
     train_response_matrix = train_response_matrix.view(
         -1, n_qgenerator, train_response_matrix.shape[-1]
     )
     train_response_matrix = train_response_matrix.permute(1, 0, 2)
+    # >>> n_qgenerator=2 x n_models x n_questions=1000
     test_response_matrix = test_response_matrix.view(
         -1, n_qgenerator, test_response_matrix.shape[-1]
     )
@@ -277,9 +280,16 @@ if __name__ == "__main__":
     test_response_matrices = []
     masks = []
     for mi, mat in enumerate(train_response_matrix):
-        train_mask = (
-            (mat == 0).all(dim=0) | (mat == 1).all(dim=0) | (mat == -1).all(dim=0)
-        )
+        # mi = 0, 1, mat = n_models x n_questions
+        # train_mask = (
+        #     (mat == 0).all(dim=0) | (mat == 1).all(dim=0) | (mat == -1).all(dim=0)
+        # )
+        train_mask = []
+        for col_data in mat.T:
+            if set(col_data.unique()).issubset({0, -1}) or set(col_data.unique()).issubset({1, -1}):
+                train_mask.append(True)
+            else:
+                train_mask.append(False)
         masks.append(train_mask)
 
         train_response_matrices.append(mat[:, ~train_mask])

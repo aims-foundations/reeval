@@ -130,9 +130,9 @@ if __name__ == "__main__":
 
         train_answers = train_answer_df["text"].tolist()
         num_restarts = int(len(train_answers) / len(train_prompts))
-        # num_restarts = args.num_restarts ## FOR TESTING
+        # 128, because of the bug of vLLM, they return num_restarts instead of 64
 
-        train_answers = train_answers[: args.num_samples * num_restarts]
+        train_answers = train_answers[: args.num_samples * num_restarts] # 128000
         train_answer_dataset = Dataset.from_pandas(
             train_answer_df[: args.num_samples * num_restarts]
         )

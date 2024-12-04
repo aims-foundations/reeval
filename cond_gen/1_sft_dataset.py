@@ -82,3 +82,5 @@ if __name__ == "__main__":
     # Split and push to hub
     dataset_dict = dataset.train_test_split(test_size=0.2)
     dataset_dict.push_to_hub(f"stair-lab/reeval{model_short_name}-sft", args.dataset)
+    # stair-lab/reeval-Mistral-7B-Instruct-v0.3-sft
+    # stair-lab/reeval-sft (do not exist)
