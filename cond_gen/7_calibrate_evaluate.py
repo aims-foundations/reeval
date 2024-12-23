@@ -349,10 +349,12 @@ if __name__ == "__main__":
         model_short_name = args.question_generators[mi].split("/")[-1]
         ds_model_short_name = ""
         if "mistral" in model_short_name:
-            ds_model_short_name = "-Mistral-7B-Instruct-v0.3"
+            ds_model_short_name = "_Mistral-7B-Instruct-v0.3"
+        else:
+            ds_model_short_name = "_Meta-Llama-3.1-8B-Instruct"
 
         test_dataset = load_dataset(
-            f"stair-lab/reeval{ds_model_short_name}-ppo", args.dataset, split="train"
+            f"stair-lab/reeval-ppo", args.dataset+ds_model_short_name, split="train"
         )
         test_texts = test_dataset["text"][: args.num_samples]
         gt_difficulties = torch.tensor(
