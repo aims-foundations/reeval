@@ -34,26 +34,33 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     df.to_csv(f"{output_dir}/model_dataset_stat.csv")
 
-    data_transposed = df.T
-    plt.figure(figsize=(40, 30))
-    plt.imshow(data_transposed, cmap="Blues", interpolation="nearest")
-    plt.xticks(
-        range(data_transposed.shape[1]),
-        data_transposed.columns,
-        rotation=45,
-        ha="right",
-        fontsize=6,
-    )
-    plt.yticks(range(data_transposed.shape[0]), data_transposed.index, fontsize=6)
-    plt.grid(visible=False)
+    # Split the dataframe into two halves along the rows (models)
+    mid_point = len(df.index) // 2
+    df_top = df.iloc[:mid_point, :]
+    df_bottom = df.iloc[mid_point:, :]
 
-    # plt.gca().set_xticks([x - 0.5 for x in range(1, data_transposed.shape[1])], minor=True)
-    # plt.gca().set_yticks([y - 0.5 for y in range(1, data_transposed.shape[0])], minor=True)
-    # plt.gca().grid(which='minor', color='gray', linestyle='-', linewidth=0.5)
-    for x in range(data_transposed.shape[1] + 1):
-        plt.axvline(x - 0.5, color="gray", linestyle="--", linewidth=0.5)
-    for y in range(data_transposed.shape[0] + 1):
-        plt.axhline(y - 0.5, color="gray", linestyle="--", linewidth=0.5)
+    # Create two separate figures
+    def create_plot(data, filename):
+        data_transposed = data.T
+        plt.figure(figsize=(20, 15))
+        plt.imshow(data_transposed, cmap="Blues", interpolation="nearest")
+        plt.xticks(
+            range(data_transposed.shape[1]),
+            data_transposed.columns,
+            rotation=45,
+            ha="right",
+            fontsize=6,
+        )
+        plt.yticks(range(data_transposed.shape[0]), data_transposed.index, fontsize=6)
+        plt.grid(visible=False)
 
-    plt.savefig(f"{output_dir}/model_dataset_stat.png", dpi=300, bbox_inches="tight")
-    plt.close()
+        for x in range(data_transposed.shape[1] + 1):
+            plt.axvline(x - 0.5, color="gray", linestyle="--", linewidth=0.5)
+        for y in range(data_transposed.shape[0] + 1):
+            plt.axhline(y - 0.5, color="gray", linestyle="--", linewidth=0.5)
+
+        plt.savefig(f"{output_dir}/{filename}.png", dpi=300, bbox_inches="tight")
+        plt.close()
+
+    create_plot(df_top, "model_dataset_stat_left")
+    create_plot(df_bottom, "model_dataset_stat_right")
