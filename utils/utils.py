@@ -10,8 +10,9 @@ from tueplots import bundles
 plt.rcParams.update(bundles.icml2022())
 plt.style.use("seaborn-v0_8-paper")
 
+from amortized_irt import IRT
+
 from .constants import HELM_MODEL_MAP
-from .irt import IRT
 
 
 def arg2str(args):
