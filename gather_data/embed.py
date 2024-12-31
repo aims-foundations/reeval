@@ -23,17 +23,19 @@ if __name__ == "__main__":
     _, embedder_name = args.embedder_name.split("/")
 
     data_folder = snapshot_download(
-        repo_id="stair-lab/reeval_responses", repo_type="dataset"
+        repo_id="stair-lab/reeval_matrices", repo_type="dataset"
     )
     embdr = Embedder()
     embdr.load(args.embedder_name, tensor_parallel_size=num_gpus, dtype=torch.float16)
     for dataset in DATASETS[:-1]:  # skipping the combined dataset at the end
         print(f"Embedding {dataset}...")
         question_keys = pd.read_csv(f"{data_folder}/{dataset}/question_keys.csv")
-        question_keys["text"] = (
-            DESCRIPTION_MAP[dataset] + ", ### PROMPT: " + question_keys["text"]
-        )
-        text_dataset = Dataset.from_pandas(question_keys)
+        question_keys = {
+            "text": DESCRIPTION_MAP[dataset]
+            + ", ### PROMPT: "
+            + question_keys["raw_question"]
+        }
+        text_dataset = Dataset.from_dict(question_keys)
 
         dataloader = DataLoader(text_dataset, batch_size=args.batch_size)
         embed = embdr.get_embeddings(dataloader, args.embedder_name, ["text"])
@@ -43,7 +45,7 @@ if __name__ == "__main__":
         torch.save(item_embeddings, item_embedding_file)
         try:
             upload_api.delete_file(
-                repo_id="stair-lab/reeval_responses",
+                repo_id="stair-lab/reeval_matrices",
                 repo_type="dataset",
                 path_in_repo=f"{dataset}/{embedder_name}_item_embeddings.pt",
             )
@@ -51,14 +53,14 @@ if __name__ == "__main__":
             pass
         try:
             upload_api.delete_file(
-                repo_id="stair-lab/reeval_responses",
+                repo_id="stair-lab/reeval_matrices",
                 repo_type="dataset",
                 path_in_repo=f"{dataset}/item_embeddings.pt",
             )
         except:
             pass
         upload_api.upload_file(
-            repo_id="stair-lab/reeval_responses",
+            repo_id="stair-lab/reeval_matrices",
             repo_type="dataset",
             path_in_repo=f"{dataset}/{embedder_name}_item_embeddings.pt",
             path_or_fileobj=item_embedding_file,
@@ -69,7 +71,7 @@ if __name__ == "__main__":
 
     # Combine the embedding
     data_folder = snapshot_download(
-        repo_id="stair-lab/reeval_responses", repo_type="dataset"
+        repo_id="stair-lab/reeval_matrices", repo_type="dataset"
     )
 
     combined_item_embeddings = []
@@ -83,14 +85,18 @@ if __name__ == "__main__":
 
     item_embedding_file = io.BytesIO()
     torch.save(combined_item_embeddings, item_embedding_file)
-    upload_api.delete_file(
-        repo_id="stair-lab/reeval_responses",
-        repo_type="dataset",
-        path_in_repo=f"combined_data/{embedder_name}_item_embeddings.pt",
-    )
     try:
         upload_api.delete_file(
-            repo_id="stair-lab/reeval_responses",
+            repo_id="stair-lab/reeval_matrices",
+            repo_type="dataset",
+            path_in_repo=f"combined_data/{embedder_name}_item_embeddings.pt",
+        )
+    except:
+        pass
+
+    try:
+        upload_api.delete_file(
+            repo_id="stair-lab/reeval_matrices",
             repo_type="dataset",
             path_in_repo=f"combined_data/item_embeddings.pt",
         )
@@ -98,7 +104,7 @@ if __name__ == "__main__":
         pass
 
     upload_api.upload_file(
-        repo_id="stair-lab/reeval_responses",
+        repo_id="stair-lab/reeval_matrices",
         repo_type="dataset",
         path_in_repo=f"combined_data/{embedder_name}_item_embeddings.pt",
         path_or_fileobj=item_embedding_file,
