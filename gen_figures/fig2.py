@@ -9,7 +9,7 @@ import pandas as pd
 
 from gen_figures.plot import plot_bar
 from huggingface_hub import snapshot_download
-from utils.constants import DATASETS, PLOT_NAME_MAP
+from utils.constants import DATASETS, SHORT_NAME_MAPPING
 
 
 if __name__ == "__main__":

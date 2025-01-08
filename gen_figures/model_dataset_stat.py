@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from huggingface_hub import snapshot_download
 from tqdm import tqdm
-from utils.constants import DATASETS, PLOT_NAME_MAP
+from utils.constants import DATASETS, SHORT_NAME_MAPPING
 
 if __name__ == "__main__":
     DATASETS = [d for d in DATASETS if d != "combined_data"]
@@ -28,7 +28,7 @@ if __name__ == "__main__":
             f"{data_folder}/{dataset}/matrix.csv", index_col=0
         ).index.tolist()
         df.loc[model_name, dataset] = 1
-    df.columns = [PLOT_NAME_MAP.get(col, col) for col in df.columns]
+    df.columns = [SHORT_NAME_MAPPING.get(col, col) for col in df.columns]
 
     output_dir = "../plot/model_dataset_stat"
     os.makedirs(output_dir, exist_ok=True)

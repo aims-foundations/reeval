@@ -13,17 +13,31 @@ from gen_figures.plot import plot_hist
 from huggingface_hub import HfApi, snapshot_download
 from ppo_reward_model import extract_score
 from transformers import GenerationConfig
+
+from utils.constants import DESCRIPTION_MAP, SHORT_NAME_MAPPING
 from vllm import LLM, SamplingParams
 
 
-def call_diff(ds, gt_zs, reward_model, restart, batch_size, device):
-    dataloader = torch.utils.data.DataLoader(ds, batch_size=batch_size, shuffle=False)
-    emb = embdr.get_embeddings(dataloader, "meta-llama/Meta-Llama-3-8B", ["text"])
+def call_diff(
+    ds, gt_zs, dataset_name, embedder_name, reward_model, restart, batch_size, device
+):
+    # Format the dataset: add the description to the prompt
+    ds = ds.to_pandas()
+    new_ds = {"text": DESCRIPTION_MAP[dataset_name] + ", ### PROMPT: " + ds["text"]}
+    text_dataset = Dataset.from_dict(new_ds)
+
+    # Run the embeddings
+    dataloader = torch.utils.data.DataLoader(
+        new_ds, batch_size=batch_size, shuffle=False
+    )
+    emb = embdr.get_embeddings(dataloader, embedder_name, ["text"])
     embs = torch.tensor(emb["text"], device=device)
 
+    # Predict the difficulty scores
     pred_zs = reward_model(embs).reshape(-1, restart)
     # >>> batch_size * restart
 
+    # Calculate the MAE
     gt_zs = torch.tensor([gt_zs for _ in range(restart)], device=device).T
     mae = torch.abs(pred_zs - gt_zs).min(dim=-1)
 
@@ -36,13 +50,13 @@ def call_diff(ds, gt_zs, reward_model, restart, batch_size, device):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model", type=str, default="stair-lab/reeval_question_generator_sft"
+        "--model", type=str, default="stair-lab/reeval_Meta-Llama-3.1-8B-Instruct"
     )
 
     parser.add_argument(
         "--embedder_name", type=str, default="meta-llama/Meta-Llama-3-8B"
     )
-    parser.add_argument("--dataset", type=str, default="airbench")
+    parser.add_argument("--dataset", type=str, default="air-bench/air_bench_2024")
     parser.add_argument("--num_samples", type=int, default=1000)
     parser.add_argument("--num_restarts", type=int, default=64)
     parser.add_argument("--batch_size", type=int, default=2048)
@@ -53,26 +67,27 @@ if __name__ == "__main__":
     upload_api = HfApi()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # Fix names
     model_short_name = args.model.split("/")[-1]
-    ds_model_short_name = ""
-    if model_short_name == "reeval_question_generator_sft":
-        model_short_name = ""
-    else:
-        model_short_name = "_" + model_short_name
-        if "mistral" in model_short_name:
-            ds_model_short_name = "-Mistral-7B-Instruct-v0.3"
+    ds_model_short_name = model_short_name.split("_")[-1]
+    ds_short_name = args.dataset.replace("/", "_")
 
-    plot_dir = f"../plot/sft/{args.dataset}{model_short_name}"
+    # Create directories
+    plot_dir = f"../plot/sft/{ds_short_name}_{ds_model_short_name}"
     os.makedirs(plot_dir, exist_ok=True)
 
-    generation_dir = f"../results/generated_questions/{args.dataset}{model_short_name}"
+    generation_dir = (
+        f"../results/generated_questions/{ds_short_name}_{ds_model_short_name}"
+    )
     os.makedirs(generation_dir, exist_ok=True)
 
+    # Load the dataset
     train_dataset = load_dataset(
-        f"stair-lab/reeval{ds_model_short_name}-ppo", args.dataset, split="train"
+        f"stair-lab/reeval-ppo", f"{ds_short_name}_{ds_model_short_name}", split="train"
     )
     train_prompts = train_dataset["text"][: args.num_samples]
 
+    # Get the ground truth difficulty scores
     train_gt_zs = [extract_score(p) for p in train_prompts]
 
     if args.run_generation:
@@ -82,7 +97,7 @@ if __name__ == "__main__":
             best_of=2 * args.num_restarts,
             temperature=generation_config.temperature,
             top_p=generation_config.top_p,
-            max_tokens=256,
+            max_tokens=2048,
             stop_token_ids=(
                 generation_config.eos_token_id
                 if isinstance(generation_config.eos_token_id, list)
@@ -93,13 +108,24 @@ if __name__ == "__main__":
             model=args.model,
             gpu_memory_utilization=args.gpu_memory_utilization,
             tensor_parallel_size=torch.cuda.device_count(),
-            dtype=torch.float16,
             max_num_seqs=128,
         )
+
+        # Generate the answers
         train_outputs = llm.generate(train_prompts, sampling_params)
 
-        train_answers = [sample.text for o in train_outputs for sample in o.outputs]
-        train_answer_df = pd.DataFrame(train_answers, columns=["text"])
+        # Create the output dataset
+        train_answers = [
+            [zs, sample.text]
+            for zs, o in zip(train_gt_zs, train_outputs)
+            for sample in o.outputs
+        ]
+        train_answer_df = pd.DataFrame(
+            {
+                "text": [a[1] for a in train_answers],
+                "score": [a[0] for a in train_answers],
+            }
+        )
         train_answer_dataset = Dataset.from_pandas(train_answer_df)
 
         # Save the answers
@@ -108,23 +134,23 @@ if __name__ == "__main__":
         upload_api.upload_file(
             repo_id="stair-lab/reeval_generated_questions",
             repo_type="dataset",
-            path_in_repo=f"sft/{args.dataset}{model_short_name}/train_answers.csv",
+            path_in_repo=f"sft/{ds_short_name}_{ds_model_short_name}/train_answers.csv",
             path_or_fileobj=train_answers_file,
         )
         train_answer_df.to_csv(f"{generation_dir}/train_answers.csv", index=False)
 
+        # Clear the memory
         del llm
         torch.cuda.empty_cache()
         gc.collect()
 
     else:
         # Load the generated answers
-        # train_answer_df = pd.read_csv(f"{generation_dir}/train_answers.csv")
         hf_folder = snapshot_download(
             repo_id="stair-lab/reeval_generated_questions", repo_type="dataset"
         )
         train_answer_df = pd.read_csv(
-            f"{hf_folder}/sft/{args.dataset}{model_short_name}/train_answers.csv",
+            f"{hf_folder}/sft/{ds_short_name}_{ds_model_short_name}/train_answers.csv",
             engine="python",
         )
 
@@ -132,7 +158,7 @@ if __name__ == "__main__":
         num_restarts = int(len(train_answers) / len(train_prompts))
         # 128, because of the bug of vLLM, they return num_restarts instead of 64
 
-        train_answers = train_answers[: args.num_samples * num_restarts] # 128000
+        train_answers = train_answers[: args.num_samples * num_restarts]  # 128000
         train_answer_dataset = Dataset.from_pandas(
             train_answer_df[: args.num_samples * num_restarts]
         )
@@ -151,9 +177,9 @@ if __name__ == "__main__":
         result_folder = snapshot_download(
             repo_id="stair-lab/reeval_results", repo_type="dataset"
         )
-
+        embedder_short_name = args.embedder_name.split("/")[-1]
         with open(
-            f"{result_folder}/{args.dataset}/s42_mle_1pl_1d_aq_nl1/item_parameters_nn.pkl",
+            f"{result_folder}/{embedder_short_name}/combined_data/s42_mle_1pl_1d_aq_nl1/item_parameters_nn.pkl",
             "rb",
         ) as f:
             reward_model = pickle.load(f)
@@ -165,8 +191,10 @@ if __name__ == "__main__":
         train_diffs, train_maes, train_indices = call_diff(
             train_answer_dataset,
             train_gt_zs,
-            difficulty_predictor,
-            num_restarts,
+            dataset_name=args.dataset,
+            embedder_name=args.embedder_name,
+            reward_model=difficulty_predictor,
+            restart=num_restarts,
             batch_size=args.batch_size,
             device=device,
         )
@@ -192,7 +220,7 @@ if __name__ == "__main__":
         upload_api.upload_file(
             repo_id="stair-lab/reeval_generated_questions",
             repo_type="dataset",
-            path_in_repo=f"sft/{args.dataset}{model_short_name}/train_diffs.pkl",
+            path_in_repo=f"sft/{ds_short_name}_{ds_model_short_name}/train_diffs.pkl",
             path_or_fileobj=train_diffs_file,
         )
         train_maes_file = io.BytesIO()
@@ -200,7 +228,7 @@ if __name__ == "__main__":
         upload_api.upload_file(
             repo_id="stair-lab/reeval_generated_questions",
             repo_type="dataset",
-            path_in_repo=f"sft/{args.dataset}{model_short_name}/train_maes.pkl",
+            path_in_repo=f"sft/{ds_short_name}_{ds_model_short_name}/train_maes.pkl",
             path_or_fileobj=train_maes_file,
         )
         train_indices_file = io.BytesIO()
@@ -208,7 +236,7 @@ if __name__ == "__main__":
         upload_api.upload_file(
             repo_id="stair-lab/reeval_generated_questions",
             repo_type="dataset",
-            path_in_repo=f"sft/{args.dataset}{model_short_name}/train_indices.pkl",
+            path_in_repo=f"sft/{ds_short_name}_{ds_model_short_name}/train_indices.pkl",
             path_or_fileobj=train_indices_file,
         )
 
@@ -222,13 +250,14 @@ if __name__ == "__main__":
         upload_api.upload_file(
             repo_id="stair-lab/reeval_generated_questions",
             repo_type="dataset",
-            path_in_repo=f"sft/{args.dataset}{model_short_name}/train_answers_filtered.csv",
+            path_in_repo=f"sft/{ds_short_name}_{ds_model_short_name}/train_answers_filtered.csv",
             path_or_fileobj=train_answer_file,
         )
 
         train_maes = pickle.load(
             open(
-                f"{hf_folder}/sft/{args.dataset}{model_short_name}/train_maes.pkl", "rb"
+                f"{hf_folder}/sft/{ds_short_name}_{ds_model_short_name}/train_maes.pkl",
+                "rb",
             )
         )
         # Plot the histograms

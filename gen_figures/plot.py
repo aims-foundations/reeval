@@ -10,7 +10,7 @@ plt.rcParams.update(bundles.iclr2024())
 plt.style.use("seaborn-v0_8-paper")
 
 from amortized_irt import IRT
-from utils.constants import PLOT_NAME_MAP
+from utils.constants import SHORT_NAME_MAPPING
 
 
 def theta_corr_plot(
@@ -97,7 +97,7 @@ def auc_roc_plot(
 
 
 def error_bar_plot_single(datasets, means, stds, plot_path, xlabel, xlim_upper=1.1):
-    datasets = [PLOT_NAME_MAP[dataset] for dataset in datasets]
+    datasets = [SHORT_NAME_MAPPING[dataset] for dataset in datasets]
     sorted_data = sorted(zip(datasets, means, stds), key=lambda x: x[1])
     datasets, means, stds = zip(*sorted_data)
     stds_mul3 = [s * 3 for s in stds]
@@ -132,7 +132,7 @@ def error_bar_plot_double(
     plot_std=True,
     average_line=False,
 ):
-    datasets = [PLOT_NAME_MAP[dataset] for dataset in datasets]
+    datasets = [SHORT_NAME_MAPPING[dataset] for dataset in datasets]
     sorted_data = sorted(
         zip(datasets, means_train, stds_train, means_test, stds_test),
         key=lambda x: x[3],
@@ -275,7 +275,7 @@ def plot_corr_double(
 
 
 def plot_bar(datasets, nums, plot_path, ylabel, exp_axis=False):
-    datasets = [PLOT_NAME_MAP[dataset] for dataset in datasets]
+    datasets = [SHORT_NAME_MAPPING[dataset] for dataset in datasets]
     sorted_by_nums = sorted(zip(datasets, nums), key=lambda x: x[1])
     sorted_datasets, sorted_nums = zip(*sorted_by_nums)
     plt.figure(figsize=(25, 10))

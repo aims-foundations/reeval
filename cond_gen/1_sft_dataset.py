@@ -6,7 +6,7 @@ import pandas as pd
 from datasets import Dataset
 from huggingface_hub import snapshot_download
 from transformers import AutoTokenizer
-from utils.constants import DATASET_FOLDER, DESCRIPTION_MAP
+from utils.constants import DESCRIPTION_MAP
 from utils.utils import set_seed
 
 if __name__ == "__main__":
@@ -68,9 +68,9 @@ if __name__ == "__main__":
                 """Generate a question with a given difficulty score, which range from -5 to 5. """
                 """The lower the score is, the more difficult the question is. """
                 """Hence a model is more likely to fail the questions. """
-                """Output only the question and nothing else. """
-                f"""Dataset description: {description}. """
-                """Difficulty: %s. Question: """
+                """Output only the question and nothing else.\n"""
+                f"""Dataset description: {description}.\n"""
+                """Difficulty: %s."""
             ),
         },
         {"role": "assistant", "content": """%s"""},
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         return {"text": template % (round(difficulty, 2), text)}
 
     # Rename `prompt` to  `text`
-    question_dataset = question_dataset.rename_column("prompt", "text")
+    question_dataset = question_dataset.rename_column("raw_question", "text")
 
     # Add `difficulty` column
     question_dataset = question_dataset.add_column("difficulty", difficulty)

@@ -94,7 +94,11 @@ if __name__ == "__main__":
     if script_args.dataset_subset == "all":
         # If the dataset has a config named "all", we load all subsets (configs)
         # Then we concatenate them into a single dataset
+        model_short_name = model_config.model_name_or_path.split("/")[-1]
+        if model_short_name == "reeval_question_generator_sft":
+            model_short_name = "Llama-3.1-8B-Instruct"
         configs = get_dataset_config_names(script_args.dataset_name)
+        configs = [config for config in configs if model_short_name in config]
         sub_dataset_train = None
         sub_dataset_test = None
 
@@ -142,7 +146,7 @@ if __name__ == "__main__":
             if training_args.eval_strategy != "no"
             else None
         ),
-        processing_class=tokenizer,
+        tokenizer=tokenizer,
         peft_config=get_peft_config(model_config),
     )
 

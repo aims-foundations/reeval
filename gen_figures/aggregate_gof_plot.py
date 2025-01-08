@@ -7,7 +7,7 @@ from tueplots import bundles
 
 plt.rcParams.update(bundles.icml2022())
 plt.style.use("seaborn-v0_8-paper")
-from utils import DATASETS, PLOT_NAME_MAP
+from utils import DATASETS, SHORT_NAME_MAPPING
 
 if __name__ == "__main__":
     plot_dir = "../plot/aggregate_gof_plot"
@@ -54,7 +54,7 @@ if __name__ == "__main__":
         idx = DATASETS.index(dataset)
         dim2_1pl_amor_gof_test_aligned[idx] = gof
 
-    datasets = [PLOT_NAME_MAP[dataset] for dataset in DATASETS]
+    datasets = [SHORT_NAME_MAPPING[dataset] for dataset in DATASETS]
     sorted_data = sorted(
         zip(
             datasets,
