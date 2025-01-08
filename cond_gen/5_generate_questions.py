@@ -48,12 +48,14 @@ if __name__ == "__main__":
 
     upload_api = HfApi()
 
-    model_short_name = args.question_generator.split("/")[-1] # stair-lab/...
+    model_short_name = args.question_generator.split("/")[-1]  # stair-lab/...
     if model_short_name == "reeval_question_generator_sft":
         model_short_name = ""
         ds_model_short_name = ""
     else:
-        model_short_name = "_" + model_short_name # _reeval_question_generator_mistral_sft 
+        model_short_name = (
+            "_" + model_short_name
+        )  # _reeval_question_generator_mistral_sft
         ds_model_short_name = "-Mistral-7B-Instruct-v0.3"
     output_dir = f"../data/sft_analysis/{args.dataset}{model_short_name}"
     os.makedirs(output_dir, exist_ok=True)
@@ -75,9 +77,11 @@ if __name__ == "__main__":
         )
         test_question_df = pd.read_csv(
             f"{generated_questions_folder}/sft/{args.dataset}{model_short_name}/train_answers_filtered.csv"
-        ) # 1000
+        )  # 1000
         #### BUG????#### test_dataset = load_dataset(f"stair-lab/{args.dataset}-ppo", split="test")
-        test_dataset = load_dataset(f"stair-lab/reeval{ds_model_short_name}-ppo", split="train")
+        test_dataset = load_dataset(
+            f"stair-lab/reeval{ds_model_short_name}-ppo", split="train"
+        )
         test_texts = test_dataset["text"][: len(test_question_df)]
         gt_difficulties = [extract_score(p) for p in test_texts]
 

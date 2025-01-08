@@ -185,12 +185,14 @@ if __name__ == "__main__":
 
     upload_api = HfApi()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_short_name = args.question_generator.split("/")[-1] # stair-lab/...
+    model_short_name = args.question_generator.split("/")[-1]  # stair-lab/...
     if model_short_name == "reeval_question_generator_sft":
         model_short_name = ""
         ds_model_short_name = ""
     else:
-        model_short_name = "_" + model_short_name # _reeval_question_generator_mistral_sft 
+        model_short_name = (
+            "_" + model_short_name
+        )  # _reeval_question_generator_mistral_sft
         ds_model_short_name = "-Mistral-7B-Instruct-v0.3"
 
     data_folder = snapshot_download(

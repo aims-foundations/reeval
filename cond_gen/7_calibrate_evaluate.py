@@ -286,7 +286,9 @@ if __name__ == "__main__":
         # )
         train_mask = []
         for col_data in mat.T:
-            if set(col_data.unique()).issubset({0, -1}) or set(col_data.unique()).issubset({1, -1}):
+            if set(col_data.unique()).issubset({0, -1}) or set(
+                col_data.unique()
+            ).issubset({1, -1}):
                 train_mask.append(True)
             else:
                 train_mask.append(False)
@@ -364,7 +366,7 @@ if __name__ == "__main__":
             ds_model_short_name = "_Meta-Llama-3.1-8B-Instruct"
 
         test_dataset = load_dataset(
-            f"stair-lab/reeval-ppo", args.dataset+ds_model_short_name, split="train"
+            f"stair-lab/reeval-ppo", args.dataset + ds_model_short_name, split="train"
         )
         test_texts = test_dataset["text"][: args.num_samples]
         gt_difficulties = torch.tensor(
