@@ -12,6 +12,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, required=True)
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--ppo_size", type=int, default=1250)
+    parser.add_argument("--mocktest", action="store_true")
     args = parser.parse_args()
 
     set_seed(42)
@@ -38,8 +39,13 @@ if __name__ == "__main__":
 
     texts = []
     description = DESCRIPTION_MAP[args.dataset]
+    if args.mocktest:
+        difficulties = [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
     for i in range(args.ppo_size):
-        difficulty = np.random.normal(0, 1)
+        if args.mocktest:
+            difficulty = difficulties[i % len(difficulties)]
+        else:
+            difficulty = np.random.normal(0, 1)
         texts.append(
             template.format(description=description, difficulty=round(difficulty, 2))
         )
@@ -47,8 +53,16 @@ if __name__ == "__main__":
     dataset = Dataset.from_dict({"text": texts})
 
     # Split and push to hub
-    dataset_dict = dataset.train_test_split(test_size=0.2)
+    if args.mocktest:
+        dataset_dict = dataset
+    else:
+        dataset_dict = dataset.train_test_split(test_size=0.2)
     dataset_str = args.dataset.replace("/", "_")
-    dataset_dict.push_to_hub(
-        f"stair-lab/reeval-ppo", f"{dataset_str}_{model_short_name}"
-    )
+    if args.mocktest:
+        dataset_dict.push_to_hub(
+            f"stair-lab/reeval-ppo-mocktest", f"{dataset_str}_{model_short_name}"
+        )
+    else:
+        dataset_dict.push_to_hub(
+            f"stair-lab/reeval-ppo", f"{dataset_str}_{model_short_name}"
+        )

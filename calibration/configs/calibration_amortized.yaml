@@ -53,6 +53,7 @@ parameters:
     - safety/simple_safety_tests
     - safety/xstest
     - thaiexam/thai_exam
+    - combined_data
   PL:
     values: [1, 2, 3]
   D:
@@ -60,11 +61,13 @@ parameters:
   fitting_method:
     values: [mle, em]
   amortized_question:
-    values: [False]
+    values: [True]
   amortized_student:
     values: [False]
   report_to:
     values: [wandb]
+  embedder_name:
+    values: [meta-llama/Meta-Llama-3-8B, mistralai/Mistral-7B-v0.3]
   force_run:
     values: [True]
  

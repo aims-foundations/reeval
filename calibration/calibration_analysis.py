@@ -18,6 +18,7 @@ from utils.utils import arg2str
 
 warnings.filterwarnings("ignore")
 
+DATASETS = ["air-bench/air_bench_2024"]
 
 plt.rcParams.update(bundles.iclr2024())
 
@@ -68,10 +69,10 @@ def mask_student_whose_feature_missing(items):
 
 if __name__ == "__main__":
     fig, axs = plt.subplots(4)
-    D = [1, 2]
-    PL = [1, 2, 3]
+    D = [1]
+    PL = [1]
     fitting_methods = ["mle", "em"]
-    amortized_question = [True]  # [False, True]
+    amortized_question = [False]  # [False, True]
     amortized_student = [False]  # [False, True]
     seeds = [42]
     nls = [1]
@@ -89,12 +90,12 @@ if __name__ == "__main__":
     )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     data_folder = snapshot_download(
-        repo_id="stair-lab/reeval_responses", repo_type="dataset"
+        repo_id="stair-lab/reeval_matrices", repo_type="dataset"
     )
     result_folder = snapshot_download(
         repo_id="stair-lab/reeval_results", repo_type="dataset"
     )
-    res_file = open("calibration_results.txt", "w")
+    res_file = open("results/calibration_results.txt", "w")
 
     for arg_list in cartesian_product:
         parser = argparse.ArgumentParser()
@@ -159,15 +160,17 @@ if __name__ == "__main__":
                 :, train_question_indices
             ]
 
-            helm_score = torch.tensor(
-                model_keys["helm_score"].to_numpy(), device=device
-            ).reshape(-1, 1)
-            helm_score_train = helm_score[train_student_indices]
+            # helm_score = torch.tensor(
+            #     model_keys["helm_score"].to_numpy(), device=device
+            # ).reshape(-1, 1)
+            # helm_score_train = helm_score[train_student_indices]
+            helm_score_train = torch.zeros(len(train_student_indices), 1, device=device)
 
-            ctt_score = torch.tensor(
-                model_keys["ctt_score"].to_numpy(), device=device
-            ).reshape(-1, 1)
-            ctt_score_train = ctt_score[train_student_indices]
+            # ctt_score = torch.tensor(
+            #     model_keys["ctt_score"].to_numpy(), device=device
+            # ).reshape(-1, 1)
+            # ctt_score_train = ctt_score[train_student_indices]
+            ctt_score_train = torch.zeros(len(train_student_indices), 1, device=device)
 
             if args.amortized_question and args.amortized_student:
                 item_parms = get_amortized_questions(result_path, args)

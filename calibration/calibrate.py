@@ -21,12 +21,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--fitting_method", type=str, default="mle", choices=["mle", "mcmc", "em"]
     )
+    parser.add_argument("--train_size", type=float, default=0.8)
     parser.add_argument("--max_epoch", type=int, default=5000)
     parser.add_argument("--amortized_question", type=str2bool, default=False)
     parser.add_argument("--amortized_student", type=str2bool, default=False)
     parser.add_argument("--n_layers", type=int, default=1)
     parser.add_argument("--hidden_dim", type=int, default=None)
     parser.add_argument("--report_to", type=str, default=None)
+    parser.add_argument("--output_dir", type=str, default="../results/calibration")
+    parser.add_argument(
+        "--output_hf_repo", type=str, default="stair-lab/reeval_results"
+    )
     parser.add_argument("--force_run", type=str2bool, default=False)
     parser.add_argument(
         "--embedder_name", type=str, default="meta-llama/Meta-Llama-3-8B"
@@ -37,14 +42,13 @@ if __name__ == "__main__":
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     embedder_short_name = args.embedder_name.split("/")[1]
-    if embedder_short_name != "Meta-Llama-3-8B":
-        embedder_short_name = "_" + embedder_short_name
-    else:
+    if not args.amortized_question:
         embedder_short_name = ""
+        
     data_folder = snapshot_download(
-        repo_id=f"stair-lab/reeval_responses", repo_type="dataset"
+        repo_id="stair-lab/reeval_matrices", repo_type="dataset"
     )
-    output_dir = f"../results/calibration/" + arg2str(args)
+    output_dir = os.path.join(args.output_dir, arg2str(args))
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"Output directory: {output_dir}")
@@ -57,17 +61,25 @@ if __name__ == "__main__":
 
     print("Loading data...")
     response_matrix = torch.load(f"{data_folder}/{args.dataset}/response_matrix.pt").to(
-        device=device
+        device=device, dtype=torch.float32
     )
 
     print("Splitting data...")
     all_question_indices = torch.randperm(response_matrix.shape[1])
-    train_question_indices = all_question_indices[: int(0.8 * response_matrix.shape[1])]
-    test_question_indices = all_question_indices[int(0.8 * response_matrix.shape[1]) :]
+    train_question_indices = all_question_indices[
+        : int(args.train_size * response_matrix.shape[1])
+    ]
+    test_question_indices = all_question_indices[
+        int(args.train_size * response_matrix.shape[1]) :
+    ]
 
     all_model_indices = torch.randperm(response_matrix.shape[0])
-    train_model_indices = all_model_indices[: int(0.8 * response_matrix.shape[0])]
-    test_model_indices = all_model_indices[int(0.8 * response_matrix.shape[0]) :]
+    train_model_indices = all_model_indices[
+        : int(args.train_size * response_matrix.shape[0])
+    ]
+    test_model_indices = all_model_indices[
+        int(args.train_size * response_matrix.shape[0]) :
+    ]
 
     # select training data
     response_matrix = response_matrix[train_model_indices]
@@ -131,14 +143,8 @@ if __name__ == "__main__":
     print("Calibrating...")
     n_models, n_questions = response_matrix.shape
     irt_model = IRT(
-        n_questions=n_questions,
-        n_testtaker=n_models,
         D=args.D,
         PL=args.PL,
-        amortize_item=args.amortized_question,
-        amortize_student=args.amortized_student,
-        amortized_question_hyperparams=amortized_question_hyperparams,
-        amortized_model_hyperparams=amortized_model_hyperparams,
         device=device,
         report_to=args.report_to,
     )
@@ -148,6 +154,8 @@ if __name__ == "__main__":
         method=args.fitting_method,
         embedding=item_embeddings,
         model_features=model_features,
+        amortized_question_hyperparams=amortized_question_hyperparams,
+        amortized_model_hyperparams=amortized_model_hyperparams,
     )
 
     # save results
@@ -188,15 +196,18 @@ if __name__ == "__main__":
 
     upload_api = HfApi()
     upload_api.create_repo(
-        repo_id=f"stair-lab/reeval_results{embedder_short_name}",
+        repo_id=f"{args.output_hf_repo}",
         repo_type="dataset",
         exist_ok=True,
     )
+    
+    if embedder_short_name != "":
+        embedder_short_name += "/"
     upload_api.upload_folder(
-        folder_path=output_dir,
-        repo_id=f"stair-lab/reeval_results{embedder_short_name}",
+        repo_id=f"{args.output_hf_repo}",
+        folder_path=f"{output_dir}",
         repo_type="dataset",
-        path_in_repo=arg2str(args),
+        path_in_repo=f"{embedder_short_name}{arg2str(args)}",
     )
 
     wandb.finish()

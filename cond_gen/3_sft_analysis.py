@@ -28,8 +28,9 @@ def call_diff(
 
     # Run the embeddings
     dataloader = torch.utils.data.DataLoader(
-        new_ds, batch_size=batch_size, shuffle=False
+        text_dataset, batch_size=batch_size, shuffle=False
     )
+
     emb = embdr.get_embeddings(dataloader, embedder_name, ["text"])
     embs = torch.tensor(emb["text"], device=device)
 
@@ -60,6 +61,9 @@ if __name__ == "__main__":
     parser.add_argument("--num_samples", type=int, default=1000)
     parser.add_argument("--num_restarts", type=int, default=64)
     parser.add_argument("--batch_size", type=int, default=2048)
+    parser.add_argument(
+        "--hf_repo", type=str, default="stair-lab/reeval_generated_questions_mocktest"
+    )
     parser.add_argument("--gpu_memory_utilization", type=float, default=0.9)
     parser.add_argument("--run_generation", action="store_true")
     args = parser.parse_args()
@@ -83,7 +87,9 @@ if __name__ == "__main__":
 
     # Load the dataset
     train_dataset = load_dataset(
-        f"stair-lab/reeval-ppo", f"{ds_short_name}_{ds_model_short_name}", split="train"
+        f"stair-lab/reeval-ppo-mocktest",
+        f"{ds_short_name}_{ds_model_short_name}",
+        split="train",
     )
     train_prompts = train_dataset["text"][: args.num_samples]
 
@@ -128,16 +134,22 @@ if __name__ == "__main__":
         )
         train_answer_dataset = Dataset.from_pandas(train_answer_df)
 
+        # Create result repo
+        upload_api.create_repo(
+            repo_id=args.hf_repo,
+            repo_type="dataset",
+            exist_ok=True,
+        )
+
         # Save the answers
         train_answers_file = io.BytesIO()
         train_answer_df.to_csv(train_answers_file, index=False)
         upload_api.upload_file(
-            repo_id="stair-lab/reeval_generated_questions",
+            repo_id=args.hf_repo,
             repo_type="dataset",
             path_in_repo=f"sft/{ds_short_name}_{ds_model_short_name}/train_answers.csv",
             path_or_fileobj=train_answers_file,
         )
-        train_answer_df.to_csv(f"{generation_dir}/train_answers.csv", index=False)
 
         # Clear the memory
         del llm
@@ -146,9 +158,7 @@ if __name__ == "__main__":
 
     else:
         # Load the generated answers
-        hf_folder = snapshot_download(
-            repo_id="stair-lab/reeval_generated_questions", repo_type="dataset"
-        )
+        hf_folder = snapshot_download(repo_id=args.hf_repo, repo_type="dataset")
         train_answer_df = pd.read_csv(
             f"{hf_folder}/sft/{ds_short_name}_{ds_model_short_name}/train_answers.csv",
             engine="python",
@@ -179,7 +189,7 @@ if __name__ == "__main__":
         )
         embedder_short_name = args.embedder_name.split("/")[-1]
         with open(
-            f"{result_folder}/{embedder_short_name}/combined_data/s42_mle_1pl_1d_aq_nl1/item_parameters_nn.pkl",
+            f"{result_folder}/{embedder_short_name}/{args.dataset}/s42_em_1pl_1d_aq_nl1/item_parameters_nn.pkl",
             "rb",
         ) as f:
             reward_model = pickle.load(f)
@@ -218,7 +228,7 @@ if __name__ == "__main__":
         train_diffs_file = io.BytesIO()
         pickle.dump(train_diffs, train_diffs_file)
         upload_api.upload_file(
-            repo_id="stair-lab/reeval_generated_questions",
+            repo_id=args.hf_repo,
             repo_type="dataset",
             path_in_repo=f"sft/{ds_short_name}_{ds_model_short_name}/train_diffs.pkl",
             path_or_fileobj=train_diffs_file,
@@ -226,7 +236,7 @@ if __name__ == "__main__":
         train_maes_file = io.BytesIO()
         pickle.dump(train_maes, train_maes_file)
         upload_api.upload_file(
-            repo_id="stair-lab/reeval_generated_questions",
+            repo_id=args.hf_repo,
             repo_type="dataset",
             path_in_repo=f"sft/{ds_short_name}_{ds_model_short_name}/train_maes.pkl",
             path_or_fileobj=train_maes_file,
@@ -234,26 +244,29 @@ if __name__ == "__main__":
         train_indices_file = io.BytesIO()
         pickle.dump(train_indices, train_indices_file)
         upload_api.upload_file(
-            repo_id="stair-lab/reeval_generated_questions",
+            repo_id=args.hf_repo,
             repo_type="dataset",
             path_in_repo=f"sft/{ds_short_name}_{ds_model_short_name}/train_indices.pkl",
             path_or_fileobj=train_indices_file,
         )
 
         # Save the answers
-        train_answer_df = pd.DataFrame(train_answers, columns=["text"])
+        train_answer_df = pd.DataFrame(
+            {"text": train_answers, "difficulty": train_gt_zs}
+        )
         train_answer_df.to_csv(
             f"{generation_dir}/train_answers_filtered.csv", index=False
         )
         train_answer_file = io.BytesIO()
         train_answer_df.to_csv(train_answer_file, index=False)
         upload_api.upload_file(
-            repo_id="stair-lab/reeval_generated_questions",
+            repo_id=args.hf_repo,
             repo_type="dataset",
             path_in_repo=f"sft/{ds_short_name}_{ds_model_short_name}/train_answers_filtered.csv",
             path_or_fileobj=train_answer_file,
         )
 
+        hf_folder = snapshot_download(repo_id=args.hf_repo, repo_type="dataset")
         train_maes = pickle.load(
             open(
                 f"{hf_folder}/sft/{ds_short_name}_{ds_model_short_name}/train_maes.pkl",

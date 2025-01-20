@@ -45,10 +45,10 @@ models=(
 
 for model in "${models[@]}"; do
     echo "Running $model"
-    python 5_generate_questions.py --model $model --question_generator stair-lab/reeval_question_generator_sft --force_run
+    python 5_generate_questions.py --model $model --question_generator stair-lab/reeval_Meta-Llama-3.1-8B-Instruct --force_run
 done
 
-for model in "${models[@]}"; do
-    echo "Running $model"
-    python 5_generate_questions.py --model $model --question_generator stair-lab/reeval_question_generator_mistral_sft --force_run
-done
+# for model in "${models[@]}"; do
+#     echo "Running $model"
+#     python 5_generate_questions.py --model $model --question_generator stair-lab/reeval_question_generator_mistral_sft --force_run
+# done

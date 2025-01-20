@@ -1,0 +1,80 @@
+method: grid
+parameters:
+  dataset: 
+    values:
+    - air-bench/air_bench_2024
+    # - classic/babi_qa
+    # - classic/bbq
+    # - classic/blimp
+    # - classic/bold
+    # - classic/boolq
+    # - classic/civil_comments
+    # - classic/code
+    # - classic/commonsense
+    # - classic/copyright
+    # - classic/disinfo
+    # - classic/dyck_language_np=3
+    # - classic/entity_data_imputation
+    # - classic/entity_matching
+    # - classic/gsm
+    # - classic/ice
+    # - classic/imdb
+    # - classic/legal_support
+    # - classic/lsat_qa
+    # - classic/math
+    # - classic/mmlu
+    # - classic/msmarco
+    # - classic/narrative_qa
+    # - classic/natural_qa
+    # - classic/quac
+    # - classic/raft
+    # - classic/real_toxicity_prompts
+    # - classic/summarization_cnndm
+    # - classic/summarization_xsum
+    # - classic/synthetic_reasoning
+    # - classic/synthetic_reasoning_natural
+    # - classic/the_pile
+    # - classic/truthful_qa
+    # - classic/twitter_aae
+    # - classic/wikifact
+    # - lite/commonsense
+    # - lite/gsm
+    # - lite/legalbench
+    # - lite/math
+    # - lite/med_qa
+    # - lite/mmlu
+    # - lite/narative_qa
+    # - lite/natural_qa
+    # - lite/wmt_14
+    # - mmlu/mmlu
+    # - safety/anthropic_red_team
+    # - safety/bbq
+    # - safety/harm_bench
+    # - safety/simple_safety_tests
+    # - safety/xstest
+    # - thaiexam/thai_exam
+  PL:
+    values: [1]
+  D:
+    values: [1]
+  fitting_method:
+    values: [mle, em]
+  amortized_question:
+    values: [False]
+  amortized_student:
+    values: [False]
+  report_to:
+    values: [wandb]
+  # embedder_name:
+  #   values: [meta-llama/Meta-Llama-3-8B, mistralai/Mistral-7B-v0.3]
+  train_size:
+    values: [1.0]
+  output_dir:
+    values: [../results/calibration_helm]
+  output_hf_repo:
+    values: [stair-lab/reeval_results_helm]
+  force_run:
+    values: [False]
+ 
+program: calibrate.py
+project: calibration

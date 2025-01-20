@@ -40,7 +40,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--question_generator", type=str, required=True)
-    parser.add_argument("--dataset", type=str, default="airbench")
+    parser.add_argument("--dataset", type=str, default="air-bench/air_bench_2024")
     parser.add_argument("--force_run", action="store_true")
     parser.add_argument("--smoke_test", action="store_true")
     parser.add_argument("--skip_openai", action="store_true")
@@ -48,16 +48,11 @@ if __name__ == "__main__":
 
     upload_api = HfApi()
 
-    model_short_name = args.question_generator.split("/")[-1]  # stair-lab/...
-    if model_short_name == "reeval_question_generator_sft":
-        model_short_name = ""
-        ds_model_short_name = ""
-    else:
-        model_short_name = (
-            "_" + model_short_name
-        )  # _reeval_question_generator_mistral_sft
-        ds_model_short_name = "-Mistral-7B-Instruct-v0.3"
-    output_dir = f"../data/sft_analysis/{args.dataset}{model_short_name}"
+    generator_short_name = args.question_generator.split("/")[-1]
+    generator_short_name = generator_short_name.replace("reeval_", "")
+    ds_short_name = args.dataset.replace("/", "_")
+
+    output_dir = f"../data/sft_analysis/{ds_short_name}_{generator_short_name}"
     os.makedirs(output_dir, exist_ok=True)
 
     # Load list of model keys
@@ -76,11 +71,13 @@ if __name__ == "__main__":
             repo_id="stair-lab/reeval_generated_questions", repo_type="dataset"
         )
         test_question_df = pd.read_csv(
-            f"{generated_questions_folder}/sft/{args.dataset}{model_short_name}/train_answers_filtered.csv"
+            f"{generated_questions_folder}/sft/{ds_short_name}_{generator_short_name}/train_answers_filtered.csv"
         )  # 1000
         #### BUG????#### test_dataset = load_dataset(f"stair-lab/{args.dataset}-ppo", split="test")
         test_dataset = load_dataset(
-            f"stair-lab/reeval{ds_model_short_name}-ppo", split="train"
+            f"stair-lab/reeval-ppo",
+            f"{ds_short_name}_{generator_short_name}",
+            split="train",
         )
         test_texts = test_dataset["text"][: len(test_question_df)]
         gt_difficulties = [extract_score(p) for p in test_texts]
@@ -174,7 +171,7 @@ if __name__ == "__main__":
     upload_api.upload_file(
         repo_id="stair-lab/reeval_generated_questions",
         repo_type="dataset",
-        path_in_repo=f"sft/{args.dataset}{model_short_name}/{model_name}.csv",
+        path_in_repo=f"sft/{ds_short_name}_{generator_short_name}/{model_name}.csv",
         path_or_fileobj=results_file,
     )
     results.to_csv(

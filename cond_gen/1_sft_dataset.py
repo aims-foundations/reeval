@@ -1,4 +1,5 @@
 import argparse
+import copy
 import pickle
 
 import numpy as np
@@ -84,10 +85,33 @@ if __name__ == "__main__":
         return {"text": template % (round(difficulty, 2), text)}
 
     # Rename `prompt` to  `text`
-    question_dataset = question_dataset.rename_column("raw_question", "text")
+    if args.dataset == "classic/mmlu":
+        original_difficulty = copy.deepcopy(difficulty)
+        difficulty = []
+        list_raw_question = []
+        for i, question in enumerate(question_dataset):
+            question = question["prompt"].split("Question: ")[-1]
+            if (
+                "A." not in question
+                and "B." not in question
+                and "C." not in question
+                and "D." not in question
+            ):
+                breakpoint()
+                continue
+            question = question.replace(", True Answer:", "")
+            question = question.replace("Answer:", "")
+            list_raw_question.append(question.strip())
+            difficulty.append(original_difficulty[i])
+        question_dataset = Dataset.from_dict(
+            {"text": list_raw_question, "difficulty": difficulty}
+        )
+
+    else:
+        question_dataset = question_dataset.rename_column("raw_question", "text")
+        question_dataset = question_dataset.add_column("difficulty", difficulty)
 
     # Add `difficulty` column
-    question_dataset = question_dataset.add_column("difficulty", difficulty)
     dataset = question_dataset.map(
         process_text, input_columns=["text", "difficulty"], num_proc=args.num_workers
     )

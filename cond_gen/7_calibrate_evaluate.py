@@ -24,14 +24,8 @@ def calibrate(response_matrix, device, max_epoch=5000):
     print("Total number of models: ", n_models)
     print("Total number of questions: ", n_questions)
     irt_model = IRT(
-        n_questions=n_questions,
-        n_testtaker=n_models,
         D=1,
         PL=1,
-        amortize_item=False,
-        amortize_student=False,
-        amortized_question_hyperparams={},
-        amortized_model_hyperparams={},
         device=device,
         report_to=None,
     )
@@ -86,23 +80,27 @@ def save_matrix(dataset, generator_name, response_matrix, hf_models, data_folder
     upload_api = HfApi()
     matrix_file = io.BytesIO()
     torch.save(response_matrix, matrix_file)
+    ds_short_name = dataset.replace("/", "_")
     generator_short_name = generator_name.split("/")[-1]
+    generator_short_name.replace("reeval_", "")
+
     upload_api.upload_file(
         repo_id="stair-lab/reeval_response_generated_questions",
         repo_type="dataset",
-        path_in_repo=f"{dataset}/{generator_short_name}_response_matrix.pt",
+        path_in_repo=f"{ds_short_name}_{generator_short_name}/response_matrix.pt",
         path_or_fileobj=matrix_file,
     )
 
-    model_keys = pd.read_csv(f"{data_folder}/{args.dataset}/model_keys.csv")
+    # model_keys = pd.read_csv(f"{data_folder}/{args.dataset}/model_keys.csv")
 
     # Filter row in model_keys that have huggingface_model_id in huggingface_model_id
-    model_keys = model_keys[model_keys["huggingface_model_id"].isin(hf_models)]
+    # model_keys = model_keys[model_keys["name"].isin(hf_models)]
 
     # Sort the model_keys based on the order of `hf_models` variable
-    model_keys = (
-        model_keys.set_index("huggingface_model_id").loc[hf_models].reset_index()
-    )
+    # model_keys = (
+    #     model_keys.set_index("huggingface_model_id").loc[hf_models].reset_index()
+    # )
+    model_keys = pd.DataFrame(hf_models, columns=["huggingface_model_id"])
     assert len(model_keys) == response_matrix.shape[0]
 
     new_model_keys = io.BytesIO()
@@ -110,14 +108,14 @@ def save_matrix(dataset, generator_name, response_matrix, hf_models, data_folder
     upload_api.upload_file(
         repo_id="stair-lab/reeval_response_generated_questions",
         repo_type="dataset",
-        path_in_repo=f"{dataset}/{generator_short_name}_model_keys.csv",
+        path_in_repo=f"{dataset}_{generator_short_name}/model_keys.csv",
         path_or_fileobj=new_model_keys,
     )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="airbench")
+    parser.add_argument("--dataset", type=str, default="air-bench/air_bench_2024")
     parser.add_argument("--max_epochs", type=int, default=5000)
     parser.add_argument("--num_samples", type=int, default=1000)
     parser.add_argument("--question_generators", type=str, nargs="+", required=True)
@@ -128,9 +126,12 @@ if __name__ == "__main__":
     # Calibration
     #############
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    ds_short_name = args.dataset.replace("/", "_")
+    generator_short_name = args.question_generators[0].split("/")[-1]
+    generator_short_name = generator_short_name.replace("reeval_", "")
 
     data_folder = snapshot_download(
-        repo_id="stair-lab/reeval_responses",
+        repo_id="stair-lab/reeval_matrices",
         repo_type="dataset",
     )
 
@@ -154,7 +155,7 @@ if __name__ == "__main__":
     ].values
 
     with open(
-        f"{result_folder}/{args.dataset}/s42_mle_1pl_1d_aq_nl1/abilities.pkl", "rb"
+        f"{result_folder}/{args.dataset}/s42_mle_1pl_1d_nl1/abilities.pkl", "rb"
     ) as f:
         abilities = pickle.load(f)
         abilities = torch.tensor(abilities, device=device)
@@ -164,19 +165,27 @@ if __name__ == "__main__":
     ).to(device=device)
     train_model_indices = pickle.load(
         open(
-            f"{result_folder}/{args.dataset}/s42_mle_1pl_1d_aq_nl1/train_model_indices.pkl",
+            f"{result_folder}/{args.dataset}/s42_mle_1pl_1d_nl1/train_model_indices.pkl",
             "rb",
         )
     ).tolist()
     test_model_indices = pickle.load(
         open(
-            f"{result_folder}/{args.dataset}/s42_mle_1pl_1d_aq_nl1/test_model_indices.pkl",
+            f"{result_folder}/{args.dataset}/s42_mle_1pl_1d_nl1/test_model_indices.pkl",
             "rb",
         )
     ).tolist()
 
+    test_dataset = load_dataset(
+        f"stair-lab/reeval-ppo",
+        f"{ds_short_name}_{generator_short_name}",
+        split="train",
+    )
+    gt_difficulties = [extract_score(p) for p in test_dataset["text"]]
+
     model_keys = pd.read_csv(f"{data_folder}/{args.dataset}/model_keys.csv")
-    list_model_having_ability = list(model_keys["huggingface_model_id"].values)
+    list_model_having_ability = list(model_keys["name"].values)
+    list_model_having_ability_lower = [x.lower() for x in list_model_having_ability]
     # this will keep the nans
 
     train_model_idxs = []
@@ -190,15 +199,16 @@ if __name__ == "__main__":
     test_model_names = []
 
     for avai_model_name in available_models:
-        if avai_model_name not in list_model_having_ability:
+        if avai_model_name.lower() not in list_model_having_ability_lower:
             continue
-
-        model_raw_idx = list_model_having_ability.index(avai_model_name)
+        print(f"Processing model: {avai_model_name}")
+        model_raw_idx = list_model_having_ability_lower.index(avai_model_name.lower())
         if model_raw_idx in train_model_indices:
             model_idx = train_model_indices.index(model_raw_idx)
         elif model_raw_idx in test_model_indices:
             model_idx = test_model_indices.index(model_raw_idx)
         else:
+            print("Something went wrong")
             continue
 
         # Load the inference results
@@ -209,17 +219,15 @@ if __name__ == "__main__":
             model_name = model_name + "-Instruct"
 
         for qgi, question_generator in enumerate(args.question_generators):
-            model_short_name = question_generator.split("/")[-1]
-            if model_short_name == "reeval_question_generator_sft":
-                model_short_name = ""
-            else:
-                model_short_name = "_" + model_short_name
+            generator_short_name = question_generator.split("/")[-1]
+            generator_short_name = generator_short_name.replace("reeval_", "")
+            ds_short_name = args.dataset.replace("/", "_")
 
             if not os.path.exists(
-                f"{generated_questions_folder}/sft/{args.dataset}{model_short_name}/{model_name}_with_y.csv"
+                f"{generated_questions_folder}/sft/{ds_short_name}_{generator_short_name}/{model_name}_with_y.csv"
             ):
                 if not os.path.exists(
-                    f"{generated_questions_folder}/sft/{args.dataset}{model_short_name}/{model_name}_with_y.pkl"
+                    f"{generated_questions_folder}/sft/{ds_short_name}_{generator_short_name}/{model_name}_with_y.pkl"
                 ):
                     break
                 else:
@@ -230,13 +238,13 @@ if __name__ == "__main__":
             if using_pickle:
                 answer_df = pickle.load(
                     open(
-                        f"{generated_questions_folder}/sft/{args.dataset}{model_short_name}/{model_name}_with_y.pkl",
+                        f"{generated_questions_folder}/sft/{ds_short_name}_{generator_short_name}/{model_name}_with_y.pkl",
                         "rb",
                     )
                 )
             else:
                 answer_df = pd.read_csv(
-                    f"{generated_questions_folder}/sft/{args.dataset}{model_short_name}/{model_name}_with_y.csv"
+                    f"{generated_questions_folder}/sft/{ds_short_name}_{generator_short_name}/{model_name}_with_y.csv"
                 )
 
             if answer_df.shape[0] != args.num_samples:
@@ -270,10 +278,28 @@ if __name__ == "__main__":
     )
     train_response_matrix = train_response_matrix.permute(1, 0, 2)
     # >>> n_qgenerator=2 x n_models x n_questions=1000
+
     test_response_matrix = test_response_matrix.view(
         -1, n_qgenerator, test_response_matrix.shape[-1]
     )
     test_response_matrix = test_response_matrix.permute(1, 0, 2)
+
+    breakpoint()
+    response_matrix = torch.cat(
+        [train_response_matrix[0], test_response_matrix[0]], dim=0
+    )
+    response_matrix[response_matrix == -1] = float("nan")
+    mean_correctness = response_matrix.nanmean(dim=0).tolist()
+
+    plt.figure()
+    plt.scatter(gt_difficulties, mean_correctness)
+    plt.xlabel("Difficulty requested")
+    plt.ylabel("Mean correctness")
+    plt.savefig(
+        f"../plot/sft/{ds_short_name}/irt_difficulty.png",
+        dpi=300,
+    )
+    breakpoint()
 
     # Filter out columns in response_matrix that have all values equal 0, 1, or -1
     train_response_matrices = []
@@ -292,6 +318,7 @@ if __name__ == "__main__":
                 train_mask.append(True)
             else:
                 train_mask.append(False)
+        train_mask = torch.tensor(train_mask, device=device)
         masks.append(train_mask)
 
         train_response_matrices.append(mat[:, ~train_mask])
@@ -308,8 +335,12 @@ if __name__ == "__main__":
         joint_names = train_model_names + test_model_names
         save_matrix(args.dataset, generator, joint_mat, joint_names, data_folder)
 
-    train_original_response_matrix = original_response_matrix[global_model_train_idx]
-    test_original_response_matrix = original_response_matrix[global_model_test_idx]
+    train_original_response_matrix = original_response_matrix[
+        global_model_train_idx
+    ].float()
+    test_original_response_matrix = original_response_matrix[
+        global_model_test_idx
+    ].float()
     num_original_questions = train_original_response_matrix.shape[1]
     # >>> n_models x n_original_questions
 
@@ -354,8 +385,10 @@ if __name__ == "__main__":
 
     # Compute the MAE between the predicted and ground truth difficulties
     sm_fn = SpearmanCorrCoef()
+    ds_short_name = args.dataset.replace("/", "_")
     os.makedirs("../results/difficulty_validation", exist_ok=True)
     res_file = open(f"../results/difficulty_validation/{args.dataset}.txt", "w")
+    os.makedirs(f"../plot/sft/{ds_short_name}", exist_ok=True)
 
     for mi, new_difficulty in enumerate(new_difficulties):
         model_short_name = args.question_generators[mi].split("/")[-1]
@@ -366,7 +399,7 @@ if __name__ == "__main__":
             ds_model_short_name = "_Meta-Llama-3.1-8B-Instruct"
 
         test_dataset = load_dataset(
-            f"stair-lab/reeval-ppo", args.dataset + ds_model_short_name, split="train"
+            f"stair-lab/reeval-ppo", ds_short_name + ds_model_short_name, split="train"
         )
         test_texts = test_dataset["text"][: args.num_samples]
         gt_difficulties = torch.tensor(
@@ -398,7 +431,7 @@ if __name__ == "__main__":
             "r--",
         )
         plt.savefig(
-            f"../plot/sft/{args.dataset}/irt_difficulty_{mi}.png",
+            f"../plot/sft/{ds_short_name}/irt_difficulty_{mi}.png",
             dpi=300,
             bbox_inches="tight",
         )
@@ -419,7 +452,7 @@ if __name__ == "__main__":
         )
         plt.legend(loc="upper right")
         plt.savefig(
-            f"../plot/sft/{args.dataset}/irt_difficulty_hist_{mi}.png",
+            f"../plot/sft/{ds_short_name}/irt_difficulty_hist_{mi}.png",
             dpi=300,
             bbox_inches="tight",
         )
@@ -451,7 +484,7 @@ if __name__ == "__main__":
         "r--",
     )
     plt.savefig(
-        f"../plot/sft/{args.dataset}/irt_ability.png", dpi=300, bbox_inches="tight"
+        f"../plot/sft/{ds_short_name}/irt_ability.png", dpi=300, bbox_inches="tight"
     )
     plt.close()
 

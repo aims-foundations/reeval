@@ -40,7 +40,14 @@ datasets=(
     "thaiexam/thai_exam"
 )
 
+# Generate questions
 for dataset in "${datasets[@]}"; do
     echo "Runing SFT analysis on $dataset"
     python 3_sft_analysis.py --dataset $dataset --model stair-lab/reeval_Meta-Llama-3.1-8B-Instruct --run_generation 
+done
+
+# Choosing the most appropriate questions using amortized network for question difficulty
+for dataset in "${datasets[@]}"; do
+    echo "Runing SFT analysis on $dataset"
+    python 3_sft_analysis.py --dataset $dataset --model stair-lab/reeval_Meta-Llama-3.1-8B-Instruct
 done
