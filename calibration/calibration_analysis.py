@@ -18,7 +18,7 @@ from utils.utils import arg2str
 
 warnings.filterwarnings("ignore")
 
-DATASETS = ["air-bench/air_bench_2024"]
+DATASETS = ["mmlu/mmlu"]
 
 plt.rcParams.update(bundles.iclr2024())
 
@@ -71,12 +71,12 @@ if __name__ == "__main__":
     fig, axs = plt.subplots(4)
     D = [1]
     PL = [1]
-    fitting_methods = ["mle", "em"]
-    amortized_question = [False]  # [False, True]
-    amortized_student = [False]  # [False, True]
+    fitting_methods = ["em"]
+    amortized_question = [False, True]
+    amortized_student = [False]
     seeds = [42]
     nls = [1]
-    embedder_names = ["mistralai/Mistral-7B-v0.3"]  # ["meta-llama/Meta-Llama-3-8B"]
+    embedder_names = ["meta-llama/Meta-Llama-3-8B"] # "mistralai/Mistral-7B-v0.3"
 
     cartesian_product = itertools.product(
         D,
@@ -90,10 +90,12 @@ if __name__ == "__main__":
     )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     data_folder = snapshot_download(
-        repo_id="stair-lab/reeval_matrices", repo_type="dataset"
+        # repo_id="stair-lab/reeval_matrices", repo_type="dataset"
+        repo_id="yuhengtu/reeval_matrices_temp", repo_type="dataset"
     )
     result_folder = snapshot_download(
-        repo_id="stair-lab/reeval_results", repo_type="dataset"
+        # repo_id="stair-lab/reeval_results", repo_type="dataset"
+        repo_id="yuhengtu/reeval_results_temp", repo_type="dataset"
     )
     res_file = open("results/calibration_results.txt", "w")
 
@@ -135,8 +137,13 @@ if __name__ == "__main__":
             )
 
             # Load the data
+            if args.amortized_question:
+                embedder_short_name = args.embedder_name.split("/")[1]
+                embedder_short_name += "/"
+            else:
+                embedder_short_name = ""
             data_path = f"{data_folder}/{dataset}"
-            result_path = f"{result_folder}/{dataset_and_method_name}"
+            result_path = f"{result_folder}/{embedder_short_name}{dataset_and_method_name}"
 
             # Load the train/test indices for question and student
             train_question_indices = pickle.load(
@@ -164,13 +171,15 @@ if __name__ == "__main__":
             #     model_keys["helm_score"].to_numpy(), device=device
             # ).reshape(-1, 1)
             # helm_score_train = helm_score[train_student_indices]
-            helm_score_train = torch.zeros(len(train_student_indices), 1, device=device)
+            helm_score = torch.zeros(len(train_student_indices) + len(test_student_indices), 1, device=device)
+            helm_score_train = helm_score[train_student_indices]
 
             # ctt_score = torch.tensor(
             #     model_keys["ctt_score"].to_numpy(), device=device
             # ).reshape(-1, 1)
             # ctt_score_train = ctt_score[train_student_indices]
-            ctt_score_train = torch.zeros(len(train_student_indices), 1, device=device)
+            ctt_score = torch.zeros(len(train_student_indices) + len(test_student_indices), 1, device=device)
+            ctt_score_train = ctt_score[train_student_indices]
 
             if args.amortized_question and args.amortized_student:
                 item_parms = get_amortized_questions(result_path, args)
@@ -307,21 +316,21 @@ if __name__ == "__main__":
                 helm_score_test = None
                 ctt_score_test = None
 
-            train_test_iters = [
+            train_test_iters = [ # amor_question, traditional
                 (
-                    item_parms_train,
-                    abilities_train,
-                    response_matrix_train,
-                    helm_score_train,
-                    ctt_score_train,
+                    item_parms_train, # item_parms_train, item_parms_train
+                    abilities_train, # abilities_train, abilities_train
+                    response_matrix_train, # response_matrix_train, response_matrix_train
+                    helm_score_train, # helm_score_train, helm_score_train
+                    ctt_score_train, # ctt_score_train, ctt_score_train
                     "train",
                 ),
                 (
-                    item_parms_test,
-                    abilities_test,
-                    response_matrix_test,
-                    helm_score_test,
-                    ctt_score_test,
+                    item_parms_test, # item_parms_test, None
+                    abilities_test, # abilities_train, None
+                    response_matrix_test, # [train_student_indices, test_question_indices], None
+                    helm_score_test, # helm_score_train, None
+                    ctt_score_test, # ctt_score_train, None
                     "test",
                 ),
             ]
@@ -448,3 +457,5 @@ if __name__ == "__main__":
     axs[3].set_title("AUC-ROC")
     plt.xticks(x, list_datasets, rotation=90)
     plt.savefig(f"../plot/calibration_analysis.png", bbox_inches="tight", dpi=300)
+
+    # TODO: upload result to HF
