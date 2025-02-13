@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("--PL", type=int, default=1)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
-        "--fitting_method", type=str, default="mle", choices=["mle", "mcmc", "em"]
+        "--fitting_method", type=str, default="em", choices=["mle", "mcmc", "em"]
     )
     parser.add_argument("--train_size", type=float, default=0.8)
     parser.add_argument("--max_epoch", type=int, default=5000)
@@ -46,7 +46,8 @@ if __name__ == "__main__":
         embedder_short_name = ""
         
     data_folder = snapshot_download(
-        repo_id="stair-lab/reeval_matrices", repo_type="dataset"
+        # repo_id="stair-lab/reeval_matrices", repo_type="dataset"
+        repo_id="yuhengtu/reeval_matrices_temp", repo_type="dataset"
     )
     output_dir = os.path.join(args.output_dir, arg2str(args))
     os.makedirs(output_dir, exist_ok=True)
