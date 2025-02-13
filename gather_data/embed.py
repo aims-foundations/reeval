@@ -23,7 +23,8 @@ if __name__ == "__main__":
     _, embedder_name = args.embedder_name.split("/")
 
     data_folder = snapshot_download(
-        repo_id="stair-lab/reeval_matrices", repo_type="dataset"
+        # repo_id="stair-lab/reeval_matrices", repo_type="dataset"
+        repo_id="yuhengtu/reeval_matrices_temp", repo_type="dataset"
     )
     embdr = Embedder()
     embdr.load(args.embedder_name, tensor_parallel_size=num_gpus, dtype=torch.float16)
@@ -32,8 +33,8 @@ if __name__ == "__main__":
         question_keys = pd.read_csv(f"{data_folder}/{dataset}/question_keys.csv")
         question_keys = {
             "text": DESCRIPTION_MAP[dataset]
-            + ", ### PROMPT: "
-            + question_keys["raw_question"]
+            + ", ### QUESTION: "
+            + question_keys["zero_shot"]
         }
         text_dataset = Dataset.from_dict(question_keys)
 
@@ -43,24 +44,9 @@ if __name__ == "__main__":
 
         item_embedding_file = io.BytesIO()
         torch.save(item_embeddings, item_embedding_file)
-        try:
-            upload_api.delete_file(
-                repo_id="stair-lab/reeval_matrices",
-                repo_type="dataset",
-                path_in_repo=f"{dataset}/{embedder_name}_item_embeddings.pt",
-            )
-        except:
-            pass
-        try:
-            upload_api.delete_file(
-                repo_id="stair-lab/reeval_matrices",
-                repo_type="dataset",
-                path_in_repo=f"{dataset}/item_embeddings.pt",
-            )
-        except:
-            pass
         upload_api.upload_file(
-            repo_id="stair-lab/reeval_matrices",
+            repo_id="yuhengtu/reeval_matrices_temp",
+            # repo_id="stair-lab/reeval_matrices",
             repo_type="dataset",
             path_in_repo=f"{dataset}/{embedder_name}_item_embeddings.pt",
             path_or_fileobj=item_embedding_file,
@@ -70,42 +56,42 @@ if __name__ == "__main__":
     torch.cuda.empty_cache()
 
     # Combine the embedding
-    data_folder = snapshot_download(
-        repo_id="stair-lab/reeval_matrices", repo_type="dataset"
-    )
+    # data_folder = snapshot_download(
+    #     repo_id="stair-lab/reeval_matrices", repo_type="dataset"
+    # )
 
-    combined_item_embeddings = []
-    for dataset in DATASETS[:-1]:
-        emb_ds = torch.load(
-            f"{data_folder}/{dataset}/{embedder_name}_item_embeddings.pt"
-        )
-        combined_item_embeddings.append(emb_ds)
+    # combined_item_embeddings = []
+    # for dataset in DATASETS[:-1]:
+    #     emb_ds = torch.load(
+    #         f"{data_folder}/{dataset}/{embedder_name}_item_embeddings.pt"
+    #     )
+    #     combined_item_embeddings.append(emb_ds)
 
-    combined_item_embeddings = torch.cat(combined_item_embeddings, dim=0)
+    # combined_item_embeddings = torch.cat(combined_item_embeddings, dim=0)
 
-    item_embedding_file = io.BytesIO()
-    torch.save(combined_item_embeddings, item_embedding_file)
-    try:
-        upload_api.delete_file(
-            repo_id="stair-lab/reeval_matrices",
-            repo_type="dataset",
-            path_in_repo=f"combined_data/{embedder_name}_item_embeddings.pt",
-        )
-    except:
-        pass
+    # item_embedding_file = io.BytesIO()
+    # torch.save(combined_item_embeddings, item_embedding_file)
+    # try:
+    #     upload_api.delete_file(
+    #         repo_id="stair-lab/reeval_matrices",
+    #         repo_type="dataset",
+    #         path_in_repo=f"combined_data/{embedder_name}_item_embeddings.pt",
+    #     )
+    # except:
+    #     pass
 
-    try:
-        upload_api.delete_file(
-            repo_id="stair-lab/reeval_matrices",
-            repo_type="dataset",
-            path_in_repo=f"combined_data/item_embeddings.pt",
-        )
-    except:
-        pass
+    # try:
+    #     upload_api.delete_file(
+    #         repo_id="stair-lab/reeval_matrices",
+    #         repo_type="dataset",
+    #         path_in_repo=f"combined_data/item_embeddings.pt",
+    #     )
+    # except:
+    #     pass
 
-    upload_api.upload_file(
-        repo_id="stair-lab/reeval_matrices",
-        repo_type="dataset",
-        path_in_repo=f"combined_data/{embedder_name}_item_embeddings.pt",
-        path_or_fileobj=item_embedding_file,
-    )
+    # upload_api.upload_file(
+    #     repo_id="stair-lab/reeval_matrices",
+    #     repo_type="dataset",
+    #     path_in_repo=f"combined_data/{embedder_name}_item_embeddings.pt",
+    #     path_or_fileobj=item_embedding_file,
+    # )
