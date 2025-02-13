@@ -1,4 +1,5 @@
 import os
+import re
 import pandas as pd
 import pickle
 import torch
@@ -59,7 +60,9 @@ def process_joint_matrices(csv_dir, output_dir):
                 combined_instance_info = scenario_instance
             else:
                 combined_instance_info = pd.concat([combined_instance_info, scenario_instance])
-                
+    
+    # TODO: get column "zero_shot" for combined matrix also
+    
     os.makedirs(f"{output_dir}/combined_data", exist_ok=True)
     torch.save(matrices, f"{output_dir}/combined_data/response_matrix.pt")
     combined_instance_info.to_csv(f"{output_dir}/combined_data/question_keys.csv", index=False)
@@ -124,6 +127,16 @@ def process_split_matrices(csv_dir, output_dir):
             
             valid_model_indices = torch.where(valid_models)[0].tolist()
             scenario_model_infos = all_model_infos.iloc[valid_model_indices]
+
+            # get column "zero_shot"
+            pattern = r'(Question:)'
+            # TODO: this pattern do not work for all scenarios, but split by '\n\n' is also problemetic, should write a scenario2pattern config
+            prompt_parts = scenario_instance['prompt'].apply(lambda x: re.split(pattern, x))
+            prompt_parts = prompt_parts.apply(lambda x: [''.join(x[i:i+2]).strip() for i in range(1, len(x), 2)])
+            num_split_parts = len(prompt_parts.iloc[0])
+            assert all(len(x) == num_split_parts for x in prompt_parts), "Rows have inconsistent number of splits!"
+            print(f"  +   + number of split parts: {num_split_parts}")
+            scenario_instance['zero_shot'] = prompt_parts.str[-1]
 
             torch.save(bm_matrix, f"{result_folder}/response_matrix.pt")
             scenario_instance.to_csv(f"{result_folder}/question_keys.csv", index=False)
