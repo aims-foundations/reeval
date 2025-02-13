@@ -158,6 +158,7 @@ def process_run(run_path, MODEL_NAME2ID, scenarios, instances, instance2index):
         
     else:
         scenario_id = scenarios["name"].index(scenario_name)
+        # classic have mmlu, mmlu also have mmlu
     
     if os.path.exists(os.path.join(run_path, "instances.json")):
         if os.path.exists(os.path.join(run_path, "display_requests.json")) and os.path.exists(os.path.join(run_path, "display_predictions.json")):
@@ -235,15 +236,15 @@ def process_response_1(responses, model_id, scenario_id, scenario_name, run_path
             instances["num_prompt_tokens"].append(num_prompt_tokens)
             instances["perturbation"].append(perturbation_type)
             instances["subject"].append(subject)
-            instances["prompt"].append(request["request"]["prompt"])
+            instances["prompt"].append(request["request"]["prompt"]) # have few shot, have choices
             if per_inst["input"]["text"] == "":
                 per_inst["input"]["text"] = request["request"]["prompt"]
-            instances["raw_question"].append(per_inst["input"]["text"])
+            instances["raw_question"].append(per_inst["input"]["text"]) # no few shot, no choices
             instance2index[instance_index] = instance_id
         else:
             instance_id = instance2index[instance_index]
             
-        responses["model_id"].append(model_id)
+        responses["model_id"].append(model_id) # global model id
         responses["scenarios_id"].append(scenario_id)
         responses["instance_id"].append(instance_id)
         responses["temperature"].append(request["request"]["temperature"])
@@ -445,7 +446,7 @@ if __name__ == "__main__":
     # Create a dictionary of model name to model id
     MODEL_NAME2ID = dict(zip(model_df['name'], model_df['model_id']))
     
-    for benchmark in BENCHMARKS:
+    for benchmark in BENCHMARKS: # BENCHMARKS are HELM Classic, Lite, etc.
         # Skip the benchmarks that are already processed
         if os.path.exists(f"CSV/{benchmark}/responses.pkl"):
             print(f"Skipping {benchmark}")
@@ -465,7 +466,7 @@ if __name__ == "__main__":
         scenarios = {
             "scenarios_id": [],
             "name": [],
-        }
+        } # scenarios are babi_qa, bbq, etc. under HELM Classic
         instances = {
             "instance_id": [],
             "scenarios_id": [],
@@ -478,7 +479,12 @@ if __name__ == "__main__":
             "prompt": [],
             "raw_question": [],
         }
-        instance2index = {}
+        instance2index = {} 
+        # for mmlu under HELM MMLU, instance2index = {
+        #     "mmlu-scenario-id_id16_abstract-algebra": instance-id
+        #     ...
+        # }
+        
         for run_path in tqdm(run_paths, desc=f"Processing {benchmark}"):
             if "instructions=none" in run_path:
                 # Skip duplicate runs

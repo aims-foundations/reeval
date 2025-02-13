@@ -69,7 +69,7 @@ def process_split_matrices(csv_dir, output_dir):
     all_model_infos = pd.read_csv(f"{csv_dir}/model_df.csv")
     total_models = len(all_model_infos)
     for benchmark, scenario_metrics in TASK2METRICS.items():
-        print(f"Processing {benchmark}")
+        print(f"Processing {benchmark}") # HELM Classic, Lite, etc.
         instance_info = pd.read_csv(f"{csv_dir}/{benchmark}/instances.csv")
         all_scenario_info = pd.read_csv(f"{csv_dir}/{benchmark}/scenarios.csv")
         if os.path.exists(f"{csv_dir}/{benchmark}/responses.csv"):
@@ -78,7 +78,7 @@ def process_split_matrices(csv_dir, output_dir):
             responses = pickle.load(open(f"{csv_dir}/{benchmark}/responses.pkl", "rb"))
         
         for _, scenario_row in all_scenario_info.iterrows():
-            print(f"  + Processing {scenario_row['name']}")
+            print(f"  + Processing {scenario_row['name']}") # babi_qa, bbq, etc. under HELM Classic
             scenario_name = scenario_row["name"]
             if scenario_name not in scenario_metrics:
                 continue
@@ -94,6 +94,7 @@ def process_split_matrices(csv_dir, output_dir):
             # Filter instances row in instance_info
             scenario_instance = instance_info[instance_info["scenarios_id"] == scenario_row["scenarios_id"]]
             iid2index = {iid: index for index, iid in enumerate(scenario_instance["instance_id"])}
+            # instance_id -> index (start from 0 for a single scenario)
             
             # Filter responses row in responses
             scenario_responses = responses[responses["scenarios_id"] == scenario_row["scenarios_id"]]
