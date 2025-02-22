@@ -1,9 +1,8 @@
-import os
 import re
-import argparse
 import pandas as pd
-from huggingface_hub import HfApi, snapshot_download
 import pickle
+import argparse
+from huggingface_hub import HfApi, snapshot_download
 from sentence_transformers import SentenceTransformer
 
 scenario2pattern = {
@@ -45,6 +44,23 @@ scenario2pattern = {
     "classic/wikifact": ["\n\n", None],
 }
 
+scenario2sub = {
+    "mmlu": "subject",
+    "civil_comment": "demographics",
+}
+
+scenario2context = {
+    "mmlu": (
+            "The following is a multiple choice (A, B, C, or D) question about %s from the Massive Multitask Language Understanding (MMLU) benchmark, "
+            "designed to measure ability in knowledge-intensive question answering across 57 domains."
+        ),
+    "civil_comment": (
+            "Below is a true/false question based on a corresponding passage from the Civil Comments benchmark designed to measure the ability to identify "
+            "toxic comments. For this benchmark, a toxic comment is defined as one that attacks an individual's identity, includes insults or threats, "
+            "or contains explicit sexual content, obscene language, or other forms of severe toxicity. The question is about %s demographics group."
+    )
+}
+
 def extract_last_question(pattern, text):
     if pattern is None:
         return text
@@ -77,22 +93,12 @@ def extract_last_question(pattern, text):
             else:
                 return None
 
-context = {
-    "mmlu": """
-        The following is a multiple choice (A, B, C, or D) question about %s from the Massive Multitask Language Understanding (MMLU) benchmark, 
-        designed to measure ability in knowledge-intensive question answering across 57 domains.""",
-    "classic/civil_comment": """
-        Below is a true/false question based on a corresponding passage from the Civil Comments benchmark designed to measure the ability to identify 
-        toxic comments. For this benchmark, a toxic comment is defined as one that attacks an individual's identity, includes insults or threats, 
-        or contains explicit sexual content, obscene language, or other forms of severe toxicity. The question is about %s demographics group.
-        """
-}
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--dataset", type=str, required=True) # mmlu, classic/babi_qa
     args = parser.parse_args()
     
+    print(f"\nProcessing {args.dataset}")
     data_folder = snapshot_download(repo_id="stair-lab/reeval_csv", repo_type="dataset")
     benchmark = args.dataset.split("/")[0]
     scenario = args.dataset.split("/")[-1]
@@ -114,30 +120,23 @@ if __name__ == "__main__":
     # remove the few-shot example from prompt
     pattern = scenario2pattern[args.dataset]
     n_questions = len(question_key["prompt"])
-    print(f"dataset: {args.dataset}, number of question: {n_questions}")
+    print(f"dataset: {args.dataset}, number of question: {n_questions}\n")
     extract_example = extract_last_question(pattern, question_key["prompt"][0])
-    print(f"prompt: {question_key['prompt'][0]}\nquestion_content: {extract_example}")
+    print(f"prompt: {question_key['prompt'][0]}\n\n\n\n\n\nquestion_content: {extract_example}\n")
     breakpoint()
     last_questions = [extract_last_question(pattern, question_key["prompt"][i]) for i in range(n_questions)]
     question_key["question_content"] = last_questions
 
-    # question_contexts = []
-    # for i in range(n_questions):
-    #     if args.dataset == "mmlu":
-    #         subject_i = question_key["subject"][i]
-    #         subject_i = subject_i.replace("_", " ")
-    #         mmlu_context = context["mmlu"]
-    #         question_contexts.append(mmlu_context % subject_i)
-    #     elif args.dataset == "classic":
-    #         if scenario == "civil_comment":
-    #             breakpoint()
-    #             demographics_group_i = question_key["demographics"][i]
-    #             demographics_group_i = demographics_group_i.replace("_", " ")
-    #             civil_comment_context = context["classic/civil_comment"]
-    #             question_contexts.append(civil_comment_context % demographics_group_i)
-
-
-    # question_key["question_contexts"] = question_contexts
+    # get context+question
+    subscenario_name = scenario2sub[scenario]
+    context = scenario2context[scenario]
+    question_contexts = []
+    for i in range(n_questions):
+        subscenario = question_key[subscenario_name][i]
+        subscenario = subscenario.replace("_", " ")
+        question_contexts.append(context % subscenario)
+    question_key["question_contexts"] = question_contexts
+    print(f"question_contexts[0]: {question_key['question_contexts'][0]}\n")
 
     # merge data and instances by instance_id
     # instance_id in data is float, while in instances is int
@@ -149,65 +148,61 @@ if __name__ == "__main__":
     data["model_id"] = data["model_id"].astype(int)
     data = pd.merge(data, model_key, on="model_id")   
 
-    # save the data to parquet form
-    save_dir = f"../data/another_repo/{scenario}"
-    os.makedirs(save_dir, exist_ok=True)
-    data.to_parquet(f"{save_dir}/data.parquet")
+    # upload the data to huggingface hub
+    api = HfApi()
+    api.create_repo("stair-lab/reeval_another_repo", repo_type="dataset", exist_ok=True)
+    api.upload_file(
+        repo_id="stair-lab/reeval_another_repo",
+        path_in_repo=f"{scenario}/data.parquet",
+        path_or_fileobj="data.parquet",
+        repo_type="dataset"
+    )
 
-    # # upload the data to huggingface hub
-    # api = HfApi()
-    # # api.create_repo("stair-lab/reeval_another_repo", repo_type="dataset", exist_ok=True)
-    # api.upload_file(
-    #     repo_id="stair-lab/reeval_another_repo",
-    #     path_in_repo=f"{scenario}/data.parquet",
-    #     path_or_fileobj="data.parquet",
-    #     repo_type="dataset"
-    # )
+    # add a column for embedding (each embedding is a list of 4096 floats)
+    model_name = "Alibaba-NLP/gte-Qwen2-7B-instruct" # "intfloat/e5-mistral-7b-instruct"
+    # model = LLM(model=model_name, enforce_eager=True)
+    model = SentenceTransformer(model_name, trust_remote_code=True)
+    pool = model.start_multi_process_pool()
 
-    # # add a column for embedding (each embedding is a list of 4096 floats)
-    # model_name = "Alibaba-NLP/gte-Qwen2-7B-instruct" # "intfloat/e5-mistral-7b-instruct"
-    # # model = LLM(model=model_name, enforce_eager=True)
-    # model = SentenceTransformer(model_name, trust_remote_code=True)
+    embed_context_and_question_together = True
+    if embed_context_and_question_together:
+        # TODO: shall we use "#### CONTEXT: " + context + "\n### QUESTION: " + question
+        content_to_embed = [context + question for context, question in zip(question_contexts, last_questions)]
+        print(f"content_to_embed[0]: {content_to_embed[0]}\n")
+        embeddings = model.encode_multi_process(content_to_embed, pool, show_progress_bar=True, batch_size=32)
+        model.stop_multi_process_pool(pool)
 
-    # pool = model.start_multi_process_pool()
+        embeddings = [emb.outputs.embedding for emb in embeddings]
+        question_key[f"embeddings_{model_name.replace('/', '_')}"] = embeddings
+        question_key.to_parquet("question.parquet")
 
-    # embed_context_and_question_together = True
-    # if embed_context_and_question_together:
-    #     content_to_embed = [context + question for context, question in zip(question_contexts, last_questions)]
-    #     embeddings = model.encode_multi_process(content_to_embed, pool, show_progress_bar=True, batch_size=32)
-    #     model.stop_multi_process_pool(pool)
+        api.upload_file(
+            repo_id="stair-lab/reeval_another_repo",
+            path_in_repo=f"{scenario}/question.parquet",
+            path_or_fileobj="question.parquet",
+            repo_type="dataset"
+        )
 
-    #     embeddings = [emb.outputs.embedding for emb in embeddings]
-    #     question_key[f"embeddings_{model_name.replace('/', '_')}"] = embeddings_last_questions
-    #     question_key.to_parquet("question.parquet")
+    else:
+        embeddings_question_contexts = model.encode_multi_process(question_contexts, pool, show_progress_bar=True, batch_size=32)
+        embeddings_last_questions = model.encode_multi_process(last_questions, pool, show_progress_bar=True, batch_size=32)
+        model.stop_multi_process_pool(pool)
 
-    #     api.upload_file(
-    #         repo_id="stair-lab/reeval_another_repo",
-    #         path_in_repo="mmlu/question.parquet",
-    #         path_or_fileobj="question.parquet",
-    #         repo_type="dataset"
-    #     )
+        embeddings_question_contexts = [emb.tolist() for emb in embeddings_question_contexts]
+        embeddings_last_questions = [emb.tolist() for emb in embeddings_last_questions]
+        question_key[f"embeddings_question_contexts_{model_name.replace('/', '_')}"] = embeddings_question_contexts
+        question_key[f"embeddings_last_questions_{model_name.replace('/', '_')}"] = embeddings_last_questions
+        question_key.to_parquet("question_separated_emb.parquet")
 
-    # else:
-    #     embeddings_question_contexts = model.encode_multi_process(question_contexts, pool, show_progress_bar=True, batch_size=32)
-    #     embeddings_last_questions = model.encode_multi_process(last_questions, pool, show_progress_bar=True, batch_size=32)
-    #     model.stop_multi_process_pool(pool)
+        api.upload_file(
+            repo_id="stair-lab/reeval_another_repo",
+            path_in_repo=f"{scenario}/question_separated_emb.parquet",
+            path_or_fileobj="question_separated_emb.parquet",
+            repo_type="dataset"
+        )
 
-    #     embeddings_question_contexts = [emb.tolist() for emb in embeddings_question_contexts]
-    #     embeddings_last_questions = [emb.tolist() for emb in embeddings_last_questions]
-    #     question_key[f"embeddings_question_contexts_{model_name.replace('/', '_')}"] = embeddings_question_contexts
-    #     question_key[f"embeddings_last_questions_{model_name.replace('/', '_')}"] = embeddings_last_questions
-    #     question_key.to_parquet("question_separated_emb.parquet")
-
-    #     api.upload_file(
-    #         repo_id="stair-lab/reeval_another_repo",
-    #         path_in_repo="mmlu/question_separated_emb.parquet",
-    #         path_or_fileobj="question_separated_emb.parquet",
-    #         repo_type="dataset"
-    #     )
-
-    # # load the data from huggingface
-    # data_folder = snapshot_download(repo_id="stair-lab/reeval_another_repo", repo_type="dataset")
-    # data = pd.read_parquet(f"{data_folder}/mmlu/data.parquet", engine="fastparquet")
-    # question_key = pd.read_parquet(f"{data_folder}/mmlu/question.parquet", engine="fastparquet")
-    # question_key = pd.read_parquet(f"{data_folder}/mmlu/question_separated_emb.parquet", engine="fastparquet")
+    # load the data from huggingface
+    data_folder = snapshot_download(repo_id="stair-lab/reeval_another_repo", repo_type="dataset")
+    data = pd.read_parquet(f"{data_folder}/{scenario}/data.parquet", engine="fastparquet")
+    question_key = pd.read_parquet(f"{data_folder}/{scenario}/question.parquet", engine="fastparquet")
+    question_key = pd.read_parquet(f"{data_folder}/{scenario}/question_separated_emb.parquet", engine="fastparquet")

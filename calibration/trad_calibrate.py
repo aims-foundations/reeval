@@ -4,13 +4,12 @@ import pandas as pd
 import argparse
 import torch
 import numpy as np
-from copy import deepcopy
 from torchmetrics.functional import spearman_corrcoef
 from torch.distributions import Bernoulli
 from huggingface_hub import HfApi, snapshot_download
 
 scenario2metric = {
-    "thai_exam": "exact_match",
+    # "thai_exam": "exact_match",
     "mmlu": "exact_match",
     "babi_qa": "quasi_exact_match",
     "bbq": "quasi_exact_match",
@@ -31,7 +30,7 @@ scenario2metric = {
     "legal_support": "quasi_exact_match",
     "lsat_qa": "exact_match",
     # "math": ["math_equiv", "math_equiv_chain_of_thought"],
-    "mmlu": "exact_match",
+    # "mmlu": "exact_match",
     # "msmarco": ["RR@10", "NDCG@10"],
     # "narrative_qa": "f1_score",
     # "natural_qa": "f1_score",
@@ -52,12 +51,12 @@ scenario2metric = {
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--scenario", type=str, required=True)
+    parser.add_argument("--em_sample", type=int, default=500)
     args = parser.parse_args()
     
     torch.manual_seed(0)
     
-    # data_folder = snapshot_download(repo_id="stair-lab/reeval_another_repo", repo_type="dataset")
-    data_folder = f"../data/another_repo"
+    data_folder = snapshot_download(repo_id="stair-lab/reeval_another_repo", repo_type="dataset")
     data = pd.read_parquet(f"{data_folder}/{args.scenario}/data.parquet", engine="fastparquet")
     metric = scenario2metric[args.scenario]
     # create a pivot table with model_id as index, instance_id as columns, and exact_match as values
@@ -67,27 +66,30 @@ if __name__ == "__main__":
     matrix = raw_matrix.drop(columns=invalid_instance_ids)
     matrix = torch.tensor(matrix.values).float()
     print(f"scenario: {args.scenario}, before drop: {raw_matrix.shape}, after drop: {matrix.shape}")
+    save_dir = f"../data/trad_calibrate/{args.scenario}"
+    os.makedirs(save_dir, exist_ok=True)
+    torch.save(matrix, f"{save_dir}/matrix.pt")
+    
     n_test_takers, n_items = matrix.shape
-    # TODO: better way is 80% of non-missing data turn into nan, also assert no one column/row is pure nan
+    # TODO: a better way is turn 80% of non-missing data into nan
     train_mask = torch.bernoulli(torch.full((n_test_takers, n_items), 0.8)).bool()
     train_matrix = matrix.clone()
     train_matrix[~train_mask] = torch.nan
-    save_dir = f"../data/trad_calibrate/{args.scenario}"
-    os.makedirs(save_dir, exist_ok=True)
+    assert not torch.any(torch.all(torch.isnan(train_matrix), dim=1)) and not torch.any(torch.all(torch.isnan(train_matrix), dim=0))
     torch.save(train_mask, f"{save_dir}/train_mask.pt")
 
     # fit z
     def closure():
         optim.zero_grad()
         probs = torch.sigmoid(thetas[:, :, None] + z[None, None, :])
-        mask = ~torch.isnan(train_matrix)[None, :, :].repeat(500, 1, 1)
-        repeat_train_matrix = train_matrix[None, :, :].repeat(500, 1, 1)
+        mask = ~torch.isnan(train_matrix)[None, :, :].repeat(args.em_sample, 1, 1)
+        repeat_train_matrix = train_matrix[None, :, :].repeat(args.em_sample, 1, 1)
         loss = -Bernoulli(probs=probs[mask]).log_prob(repeat_train_matrix[mask]).mean()
         loss.backward()
         return loss
     z = torch.zeros(n_items, requires_grad=True)
     optim = torch.optim.LBFGS([z], lr=0.1, max_iter=20, history_size=10, line_search_fn="strong_wolfe")
-    thetas = torch.randn(500, n_test_takers)
+    thetas = torch.randn(args.em_sample, n_test_takers)
 
     pbar = tqdm(range(100))
     for iteration in pbar:
@@ -106,9 +108,9 @@ if __name__ == "__main__":
                 break
     
     torch.save(z, f"{save_dir}/z.pt")
-    print("z spearman with CTT: ", spearman_corrcoef(z, matrix.mean(0)))
+    print(f"z spearman with CTT: {spearman_corrcoef(z, matrix.nanmean(0))}")
     
-     # fit theta
+    # fit theta
     def closure():
         optim.zero_grad()
         probs = torch.sigmoid(theta[:, None] + z[None, :])
@@ -136,4 +138,4 @@ if __name__ == "__main__":
                 break
             
     torch.save(theta, f"{save_dir}/theta.pt")
-    print("theta spearman with CTT: ", spearman_corrcoef(theta, matrix.mean(1)))
+    print(f"theta spearman with CTT: {spearman_corrcoef(theta, matrix.nanmean(1))}")
