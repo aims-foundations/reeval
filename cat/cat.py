@@ -7,12 +7,12 @@ import wandb
 if __name__ == "__main__":
     wandb.init(project="cat")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--scenario", type=str, required=True)
     args = parser.parse_args()
 
-    output_dir = f"../data/cat/{args.dataset}"
+    output_dir = f"cat_result/{args.scenario}"
     os.makedirs(output_dir, exist_ok=True)
 
     subprocess.run(
-        f"conda run -n cat Rscript cat.R {args.dataset}", shell=True, check=True
+        f"conda run -n cat Rscript cat.R {args.scenario}", shell=True, check=True
     )

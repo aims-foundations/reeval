@@ -109,8 +109,8 @@ func.visualize.differences.validate.all <- function(df.compare){
   df.plot_curve <- df.compare %>%
     group_by(variant, trialNumTotal) %>%
     dplyr::summarise(
-      truetrueEstimate = trueEstimate,
-      thetaEstimate = thetaEstimate,
+      # truetrueEstimate = trueEstimate,
+      # thetaEstimate = thetaEstimate,
       sem = mean(thetaSE), 
       reliability = empirical_rxx(as.matrix(tibble(F1 = thetaEstimate, SE_F1 = thetaSE))),
       mse = Metrics :: rmse(trueEstimate, thetaEstimate), 
@@ -126,13 +126,13 @@ iter <- 5
 args <- commandArgs(trailingOnly = TRUE)
 arg <- args[1]
 
-thata.path <- glue("../data/nonamor_calibration/{arg}/nonamor_theta.csv")
+thata.path <- glue("../calibration/calibration_result/theta_{arg}.csv")
 df.theta <- read_csv(thata.path, col_select = 1)
 theta_mean <- mean(df.theta$theta)
 theta_std <- sd(df.theta$theta)
 theta <- rnorm(np, mean = theta_mean, sd = theta_std)
 
-b.path <- glue("../data/nonamor_calibration/{arg}/nonamor_z.csv")
+b.path <- glue("../calibration/calibration_result/z_{arg}.csv")
 df.b <- read_csv(b.path, col_select = 1)
 b <- df.b$z
 b <- b * -1
@@ -140,7 +140,7 @@ b <- b * -1
 # Fisher Large & Random
 stop.size.full <- 50
 ni.full <- length(b)
-save.path.full <- glue("../data/cat/{arg}/cat_full.csv")
+save.path.full <- glue("cat_result/{arg}/cat_full.csv")
 stop.size.full <- min(stop.size.full, ni.full)
 
 item.bank.full <- data.frame(
@@ -176,7 +176,7 @@ b.sub <- c(b.first, b.rest)
 ni.sub <- length(b.sub)
 stop.size.sub <- length(b.sub)
 
-save.path.sub <- glue("../data/cat/{arg}/cat_sub.csv")
+save.path.sub <- glue("cat_result/{arg}/cat_sub.csv")
 
 item.bank.sub <- data.frame(
   a = rep(1, ni.sub),
@@ -204,37 +204,37 @@ df.aggregrate.learning.curve.all.sub <- func.visualize.differences.validate.all(
 
 write.csv(df.aggregrate.learning.curve.all.sub, save.path.sub, row.names = FALSE)
 
-# gif data
-np.gif <- 2
-iter.gif <- 1
-theta.gif <- rep(0.5, np.gif)
-stop.size.gif <- 100
-ni.gif <- length(b)
-save.path.gif <- glue("../data/cat/{arg}/cat_gif.csv")
-stop.size.gif <- min(stop.size.gif, ni.gif)
+# # gif data
+# np.gif <- 2
+# iter.gif <- 1
+# theta.gif <- rep(0.5, np.gif)
+# stop.size.gif <- 100
+# ni.gif <- length(b)
+# save.path.gif <- glue("cat_result/{arg}/cat_gif.csv")
+# stop.size.gif <- min(stop.size.gif, ni.gif)
 
-item.bank.gif <- data.frame(
-  a = rep(1, ni.gif),
-  b = b,
-  c = rep(0, ni.gif),
-  d = rep(1, ni.gif)
-)
+# item.bank.gif <- data.frame(
+#   a = rep(1, ni.gif),
+#   b = b,
+#   c = rep(0, ni.gif),
+#   d = rep(1, ni.gif)
+# )
 
-df.monte.carlo.results.v2.gif <- monte.carlo.cat.simulation(theta.gif, item.bank.gif, iter.gif, stop.size.gif, ni.gif)
+# df.monte.carlo.results.v2.gif <- monte.carlo.cat.simulation(theta.gif, item.bank.gif, iter.gif, stop.size.gif, ni.gif)
 
-df.true.theta.gif <- data.frame(
-  pid = sprintf("sim_%03d", 1:np.gif), 
-  trueEstimate = theta.gif  
-)
+# df.true.theta.gif <- data.frame(
+#   pid = sprintf("sim_%03d", 1:np.gif), 
+#   trueEstimate = theta.gif  
+# )
 
-df.monte.carlo.simulation.compare.gif <- df.true.theta.gif %>%
-  left_join(df.monte.carlo.results.v2.gif, by = "pid")
+# df.monte.carlo.simulation.compare.gif <- df.true.theta.gif %>%
+#   left_join(df.monte.carlo.results.v2.gif, by = "pid")
 
-df.compare.all.gif <- df.monte.carlo.simulation.compare.gif %>%
-  select(pid, variant, trialNumTotal, thetaEstimate, iteration, thetaSE, trueEstimate) %>%
-  mutate(variant = ifelse(variant == "adaptive", "CAT", "Random"))
+# df.compare.all.gif <- df.monte.carlo.simulation.compare.gif %>%
+#   select(pid, variant, trialNumTotal, thetaEstimate, iteration, thetaSE, trueEstimate) %>%
+#   mutate(variant = ifelse(variant == "adaptive", "CAT", "Random"))
 
-df.aggregrate.learning.curve.all.gif <- func.visualize.differences.validate.all(df.compare.all.gif) %>% 
-  mutate(bias = abs(bias))
+# df.aggregrate.learning.curve.all.gif <- func.visualize.differences.validate.all(df.compare.all.gif) %>% 
+#   mutate(bias = abs(bias))
 
-write.csv(df.aggregrate.learning.curve.all.gif, save.path.gif, row.names = FALSE)
+# write.csv(df.aggregrate.learning.curve.all.gif, save.path.gif, row.names = FALSE)
