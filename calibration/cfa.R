@@ -13,69 +13,49 @@ library(lavaan)
 library(MASS)
 set.seed(42)
 
-K <- 2 # factors
-Jper <- 30 # items per factor
-J <- K * Jper
-N <- 400 # people
-
-# fac_names <- c("Prp","Prm","Cnc","Abs","Frm","Sys","Met")
-fac_names <- c("Fac1","Fac2")
-
-df <- read.csv("U.csv", header = TRUE) 
-item_names <- unlist(lapply(seq_len(K), function(k)
-  sprintf("%s%02d", fac_names[k], 1:Jper)))
-
-# map each item to its factor
-item2fac <- rep(fac_names, each = Jper)
-
-# loadings (simple structure)
-lambda <- runif(J, 0.6, 0.9)     # moderately strong loadings
-
-R <- matrix(0.5, K, K); diag(R) <- 1
-Sigma_eta <- R                   # SDs = 1
-
-# residual variance so that Var(y*) = 1 for ordered-probit link
-theta <- 1 - lambda^2            # ensures identification for simulation
-
-# ---------- simulate latent and continuous responses y* ----------
-eta <- mvrnorm(N, mu = rep(0, K), Sigma = Sigma_eta)
-
-Ystar <- matrix(NA, N, J)
-
-colnames(Ystar) <- item_names
-
-for (j in seq_len(J)) {
-  k <- match(item2fac[j], fac_names)
-  e <- rnorm(N, 0, sqrt(theta[j]))
-  # for each job, we find Ystar
-  # lambda * factor
-  Ystar[, j] <- lambda[j] * eta[, k] + e
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) < 2) {
+  stop("Usage: Rscript script.R <path_to_Y.csv> <number_of_factors>")
 }
+y_path <- args[1]   # path to CSV file
+K <- as.numeric(args[2])   # number of factors
 
+# ---------- load data ----------
+Y <- read.csv(y_path, header = FALSE)
+item_names <- names(Y)
+J <- length(item_names)  # total number of items
 
-# thresholds (single cut at 0 -> dichotomous)
-Y <- 1 * (Ystar > 0)
-Y <- as.data.frame(Y)
-write.table(Y, "Y.csv", row.names = FALSE, col.names = TRUE, sep = ",")
-for (nm in names(Y)) Y[[nm]] <- ordered(Y[[nm]], levels = c(0,1))
+# ---------- generate factor names ----------
+fac_names <- paste0("Fac", 1:K)
 
 # ------------------cfa the Y ----------------
-model <- paste(
-  sprintf("%s =~ %s", fac_names,
-          sapply(fac_names, function(f)
-            paste(sprintf("%s%02d", f, 1:Jper), collapse = " + "))),
-  collapse = "\n"
-)
+all_items_string <- paste(item_names, collapse = " + ")
+model_parts <- paste(fac_names, "=~", all_items_string)
+model <- paste(model_parts, collapse = "\n")
+
+# model <- paste(
+#   sprintf("%s =~ %s", fac_names,
+#           sapply(fac_names, function(f)
+#             paste(sprintf("%s%02d", f, 1:30), collapse = " + "))),
+#   collapse = "\n"
+# )
+
+
+cat("CFA Model:\n")
+cat(model, "\n\n")
+
 fit <- cfa(
   model,
   data = Y,
   ordered = names(Y),
   estimator = "WLSMV",
-  std.lv = TRUE
+  std.lv = TRUE,
+  missing = "pairwise"
 )
 U <- lavPredict(fit, type = "lv")         # N x k latent scores (eta-hat)
 # write.csv(U, "U.csv", row.names = TRUE)
 write.table(U, "U.csv", row.names = FALSE, col.names = TRUE, sep = ",")
 Lambda <- lavInspect(fit, "est")$lambda   # p x k loadings, V
 write.table(Lambda, "V.csv", row.names = FALSE, col.names = TRUE, sep = ",")
+write.table(Lambda, "lambda.csv", row.names = FALSE, col.names = TRUE, sep = ",")
 
