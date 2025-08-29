@@ -73,8 +73,8 @@ if __name__ == "__main__":
                 torch.manual_seed(i)
                 if torch.cuda.is_available():
                     torch.cuda.manual_seed_all(i)
-                # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_new_benchmark(i)
-                data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = load_old_benchmark(i)
+                data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_new_benchmark(i)
+                # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = load_old_benchmark(i)
                 Y = data_with0
                 N, M = Y.shape[0], Y.shape[1]
                 
@@ -104,5 +104,5 @@ if __name__ == "__main__":
             print("*"*20)
             
             
-            # np.savetxt("results/train_auc_table.csv", train_auc_table, delimiter=",", fmt="%.6f")
-            # np.savetxt("results/test_auc_table.csv",  test_auc_table,  delimiter=",", fmt="%.6f")
+            # np.savetxt("results/train_auc_table_new.csv", train_auc_table, delimiter=",", fmt="%.6f")
+            # np.savetxt("results/test_auc_table_new.csv",  test_auc_table,  delimiter=",", fmt="%.6f")

@@ -59,68 +59,61 @@ def fit_logistic_mf(Y, K, mask=None, steps=1000, lr=1e-2, verbose=True, device=N
 
 if __name__ == "__main__":
     
-    print("running experiment")
-    factors = [i for i in range(1,16)]
-    num_trials = 100
-    train_auc_table = np.zeros((len(factors), num_trials), dtype=np.float64)
-    test_auc_table  = np.zeros((len(factors), num_trials), dtype=np.float64)
-    print("running experiment")
-    os.makedirs("results", exist_ok=True)
-    K_fit = 2
-    i  = 0
-    print(f"running rank:{K_fit} at trial: {i} ")
-    torch.manual_seed(i)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(i)
-    # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_new_benchmark(i)
-    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = load_old_benchmark(i)
-    Y = data_with0
-    N, M = Y.shape[0], Y.shape[1]
-    
-    Y_missing = Y.clone().float()
-    
-    Y_missing[~train_idtor.bool()] = float("nan")
+    # --- setup 4x4 grid ---
+    fig, axes = plt.subplots(4, 4, figsize=(16, 16))
+    axes = axes.flatten()
+    i=0
+    for idx, K_fit in enumerate(range(1, 17)):
+        ax = axes[idx]
 
-    model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:3")
-    with torch.no_grad():
-        auroc = AUROC(task="binary")
-        P_hat = torch.sigmoid(model.forward())
+        print(f"running rank:{K_fit} at trial: {i} ")
+        torch.manual_seed(i)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(i)
 
-        train_auc = auroc(P_hat[train_idtor].cpu(), Y[train_idtor].cpu())
-        print(f"factor {K_fit} train auc: {train_auc}")
-
-        test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, cat = load_old_benchmark(i)
+        Y = data_with0
+        N, M = Y.shape[0], Y.shape[1]
         
-        print(f"factor {K_fit} test auc: {test_auc}")
+        Y_missing = Y.clone().float()
+        Y_missing[~train_idtor.bool()] = float("nan")
 
-        mask_test = test_idtor
-        # Predicted and true values
-        P_sel = P_hat * mask_test       # zero out masked entries
-        Y_sel = Y * mask_test
-        
-        counts = mask_test.sum(dim=1)
-        
-        
+        model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:3")
+        with torch.no_grad():
+            auroc = AUROC(task="binary")
+            P_hat = torch.sigmoid(model.forward())
 
-        # Mean across columns, ignoring masked-out entries
-        testtaker_mean_score_pred = P_sel.sum(dim=1) / counts
-        testtaker_mean_score_true = Y_sel.sum(dim=1) / counts
-    
-    x = testtaker_mean_score_true.cpu().numpy()
-    y = testtaker_mean_score_pred.cpu().numpy()
-    
-    plt.figure(figsize=(6, 6))
-    plt.scatter(x, y, alpha=0.6)
+            test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
+            mask_test = test_idtor
 
-    # Add a diagonal line for reference (perfect prediction)
-    plt.plot([0, 1], [0, 1], 'r--', linewidth=1)
+            # Predicted and true values
+            P_sel = P_hat * mask_test
+            Y_sel = Y * mask_test
+            counts = mask_test.sum(dim=1)
+            testtaker_mean_score_pred = P_sel.sum(dim=1) / counts
+            testtaker_mean_score_true = Y_sel.sum(dim=1) / counts
 
-    plt.xlabel("True mean score (per test-taker)")
-    plt.ylabel("Predicted mean score (per test-taker)")
-    plt.title("Predicted vs True Mean Scores")
-    plt.grid(True)
-    plt.axis("square")
-    plt.show()    
+        x = testtaker_mean_score_true.cpu().numpy()
+        y = testtaker_mean_score_pred.cpu().numpy()
 
-    plt.savefig("pred_vs_true_means.png", dpi=300, bbox_inches="tight")
-    plt.close()  
+        valid = np.isfinite(x) & np.isfinite(y)
+        if valid.sum() >= 2 and np.std(x[valid]) > 0 and np.std(y[valid]) > 0:
+            r = np.corrcoef(x[valid], y[valid])[0, 1]
+        else:
+            r = np.nan
+        title_r = f"{r:.3f}" if np.isfinite(r) else "NA"
+
+        # scatter plot
+        ax.scatter(x, y, alpha=0.6, s=10)
+        ax.plot([0, 1], [0, 1], 'r--', linewidth=1)
+
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.set_aspect('equal')
+        ax.set_title(f"Rank={K_fit}, r={title_r}")
+        ax.tick_params(labelsize=8)
+
+    # Adjust layout
+    plt.tight_layout()
+    plt.savefig("plot/test_set_mean/all_ranks_1to16.png", dpi=300, bbox_inches="tight")
+    plt.show()

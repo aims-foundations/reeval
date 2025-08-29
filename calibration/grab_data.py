@@ -162,6 +162,12 @@ def load_old_benchmark(seed):
     # data_withnan, missing=nan
     # data_withneg1, missing=-1
     # data_with0, missing=0
+    
+    all_items = list(results.columns)
+    cat1 = [i[1] for i in all_items]
+    cat2 = [i[2] for i in all_items]
+    model_names = list(results.index)
+
     torch.manual_seed(seed)
     data_withnan = torch.tensor(results.values, dtype=torch.float, device=device)
     data_withneg1 = data_withnan.nan_to_num(nan=-1.0)
@@ -177,7 +183,7 @@ def load_old_benchmark(seed):
         trial += 1
     
 
-    return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool()
+    return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,cat2,model_names)
 
 
 def get_new_benchmark(seed):
