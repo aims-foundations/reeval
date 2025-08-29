@@ -26,7 +26,7 @@ warnings.filterwarnings("ignore")
 
 torch.manual_seed(0)
 
-device = "cuda:7"
+device = "cuda:0"
 
 def visualize_response_matrix(results, value, filename):
     # Extract the groups labels in the order of the columns
@@ -166,12 +166,17 @@ def load_old_benchmark():
     data_withneg1 = data_withnan.nan_to_num(nan=-1.0)
     data_idtor = (data_withneg1 != -1).to(float)
     data_with0 = data_withneg1 * data_idtor # -1 -> 0
-    n_test_takers, n_items = data_with0.shape
-    scenarios = results.columns.get_level_values("scenario").unique()
+    valid_condition = False
+    trial = 0
+    while not valid_condition:
+        train_idtor = torch.bernoulli(data_idtor * 0.8).int()
+        test_idtor = data_idtor - train_idtor
+        valid_condition = (train_idtor.sum(axis=1) != 0).all() and (train_idtor.sum(axis=0) != 0).all()
+        print(f"trial {trial} valid condition: {valid_condition}")
+        trial += 1
+    
 
-    # save dict
-    metric_results = defaultdict(dict)
-    return data_withneg1, data_with0
+    return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool()
 
 
 def get_new_benchmark():
@@ -197,4 +202,16 @@ def get_new_benchmark():
     data_withneg1 = data_withnan.nan_to_num(nan=-1.0)
     data_idtor = (data_withneg1 != -1).to(float)
     data_with0 = data_withneg1 * data_idtor # -1 -> 0
-    return data_withneg1, data_with0
+    trial = 0
+    valid_condition = False
+    while not valid_condition:
+        train_idtor = torch.bernoulli(data_idtor * 0.8).int()
+        test_idtor = data_idtor - train_idtor
+        valid_condition = (train_idtor.sum(axis=1) != 0).all() and (train_idtor.sum(axis=0) != 0).all()
+        print(f"trial {trial} valid condition: {valid_condition}")
+        trial += 1
+    
+    
+    
+    
+    return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool()

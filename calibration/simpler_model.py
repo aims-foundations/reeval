@@ -57,44 +57,26 @@ if __name__ == "__main__":
     
     auroc = AUROC(task="binary")
     torch.manual_seed(0)
-    N, M, K_true, K_fit = 4000, 20000, 10, 10
 
-    # Create a small synthetic dataset
-    U_true = torch.randn(N, K_true)
-    V_true = torch.randn(M, K_true)
-    logits = U_true @ V_true.T
-    P = torch.sigmoid(logits)
-    Y = torch.bernoulli(P)
-    # data_withneg1, data_with0 = get_new_benchmark()
-    data_withneg1, data_with0 = load_old_benchmark()
-    # data_with0 = data_with0[:,40000:]
-    print(data_with0[:5,:5])
-    print(data_with0.shape)
-    # print(data_withneg1[:5,:5])
-    print(data_withneg1.shape)
-    # print("count of missing val per test taker",(data_withneg1 == -1).sum(axis=1))
-    # print("count of valid val per test taker",(data_withneg1 != -1).sum(axis=1))
-    # print("total missing val",(data_withneg1 == -1).sum())
-    # print("total valid val",(data_withneg1 != -1).sum())
-
+    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = load_old_benchmark()
+    # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_new_benchmark()
     Y = data_with0
-    N, M = Y.shape[0], Y.shape[1]
-    K_fit = 2
-    
-    mask = torch.rand(N, M) > 0.1  # 10% missing
+    N, M, K_fit= Y.shape[0], Y.shape[1], 2
+
     Y_missing = Y.clone().float()
-    Y_missing[~mask] = float("nan")
+    
+    Y_missing[~train_idtor.bool()] = float("nan")
 
-    # print("bayes AUC: ", auroc(P[mask], Y[mask].int()))
-    # print("bayes MAE: ", torch.mean(abs(P - P)))
 
-    model = fit_logistic_mf(Y_missing, K=K_fit, mask=mask, steps=50, lr=5e-3, device="cuda:0")
+    model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:0")
     with torch.no_grad():
         P_hat = torch.sigmoid(model.forward())
-        train_auc = auroc(P_hat[mask].cpu(), Y[mask].cpu())
+
+        train_auc = auroc(P_hat[train_idtor].cpu(), Y[train_idtor].cpu())
         print(f"train auc: {train_auc}")
-        train_auc = auroc(P_hat[~mask].cpu(), Y[~mask].cpu())
-        print(f"test auc: {train_auc}")
+
+        test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
+        print(f"test auc: {test_auc}")
 
         # mae = torch.mean(abs(P_hat.cpu() - P))
         # print(f"MSE on P: {mae}")
