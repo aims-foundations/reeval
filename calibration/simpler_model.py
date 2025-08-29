@@ -6,6 +6,8 @@ from torchmetrics import AUROC
 from grab_data import load_old_benchmark, get_new_benchmark
 import numpy as np
 import os
+import matplotlib.pyplot as plt
+
 print("running experiment")
 class LogisticMF(nn.Module):
     def __init__(self, N, M, K):
@@ -102,5 +104,5 @@ if __name__ == "__main__":
             print("*"*20)
             
             
-            np.savetxt("results/train_auc_table.csv", train_auc_table, delimiter=",", fmt="%.6f")
-            np.savetxt("results/test_auc_table.csv",  test_auc_table,  delimiter=",", fmt="%.6f")
+            # np.savetxt("results/train_auc_table.csv", train_auc_table, delimiter=",", fmt="%.6f")
+            # np.savetxt("results/test_auc_table.csv",  test_auc_table,  delimiter=",", fmt="%.6f")

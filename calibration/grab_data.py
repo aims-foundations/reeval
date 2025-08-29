@@ -26,7 +26,7 @@ warnings.filterwarnings("ignore")
 
 
 
-device = "cuda:1"
+device = "cuda:3"
 
 def visualize_response_matrix(results, value, filename):
     # Extract the groups labels in the order of the columns
