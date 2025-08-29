@@ -9,15 +9,25 @@ torch.manual_seed(0)
 def estimate_theta(theta, asked_ys, asked_zs):
     def closure():
         optim.zero_grad()
-        probs = torch.sigmoid(theta @ asked_zs.T)
+        # theta: taker * fac
+        # asked_zs: step * taker * fac
+        # y.shape: item
+        # probs = torch.sigmoid(theta @ asked_zs.T) # test_taker * step
+        # print("theta.shape",theta.shape)
+        # print("asked_zs.shape",asked_zs.shape)
+        probs = torch.sigmoid(torch.einsum('nk,ink->in',theta,asked_zs)) # step * testtaker
         loss = -Bernoulli(probs=probs).log_prob(asked_ys).mean()
         loss.backward()
         return loss
+    # list of shape= test_taker
+    # want: step * test_taker
     asked_ys = torch.stack(asked_ys)
     
+    # step * test_taker * k
     asked_zs = torch.stack(asked_zs)
-    
+    # test_taker * k
     theta = theta.clone().requires_grad_(True)
+    
     optim = torch.optim.LBFGS([theta], lr=0.1, max_iter=20, history_size=10, line_search_fn="strong_wolfe")
     
     for iteration in range(100):
@@ -74,10 +84,10 @@ if __name__ == "__main__":
 
     # Create a small synthetic dataset
     # theta
-    U_true = torch.randn(K_true)
+    U_true = torch.randn(num_test_taker, K_true)
     # zs
     V_true = torch.randn(num_item_pool, K_true)  
-    # 2 @ 2*  num_item_pool 
+    # num_taker * 2 @ 2*  num_item_pool 
     logits = U_true @ V_true.T
     P = torch.sigmoid(logits)
     # for that unknown test taker, its true Y
@@ -88,37 +98,39 @@ if __name__ == "__main__":
     # ys = Bernoulli(probs=torch.sigmoid(theta_true + zs)).sample()
 
     # random
-    random_thata_hat = torch.zeros((K_fit,))
+    random_thata_hat = torch.zeros((num_test_taker,K_fit))
     random_thata_hats = [random_thata_hat]
     random_asked_zs = []
     random_asked_ys = []
-
-    for i in tqdm(range(num_steps)):
-        random_asked_zs.append(V_true[i])
-        random_asked_ys.append(Y[i])
-        # random_thata_hat: K_fit
-        # random_asked_ys: num_item_pool
-        # random_asked_zs: 
+    # breakpoint()
+    # for i in tqdm(range(num_steps)):
+    #     random_asked_zs.append(V_true[i].repeat(num_test_taker, 1))
+    #     random_asked_ys.append(Y[:,i])
+    #     # random_thata_hat: K_fit
+    #     # random_asked_ys: num_item_pool
+    #     # random_asked_zs: 
         
-        random_thata_hat = estimate_theta(random_thata_hat, random_asked_ys, random_asked_zs)
-        random_thata_hats.append(random_thata_hat)
+    #     random_thata_hat = estimate_theta(random_thata_hat, random_asked_ys, random_asked_zs)
+    #     random_thata_hats.append(random_thata_hat)
 
     
     # adaptive
-    adaptive_thata_hat = torch.ones((K_fit,))
+    
+    adaptive_thata_hat = torch.ones((K_fit))
     adaptive_thata_hats = [adaptive_thata_hat]
     adaptive_asked_zs = []
     adaptive_asked_ys = []
     remain_zs = V_true.clone()
     remain_ys = Y.clone()
-    
+    breakpoint()
     for i in tqdm(range(num_steps)):
         if i == 40:
             breakpoint()
         fisher_info = compute_fisher_info(adaptive_thata_hat, remain_zs)
-        next_item = torch.argmax(fisher_info)
+        next_item = torch.argmax(fisher_info,axis=1)
+        
         adaptive_asked_zs.append(remain_zs[next_item])
-        adaptive_asked_ys.append(remain_ys[next_item])
+        adaptive_asked_ys.append(remain_ys[:,next_item]) 
         adaptive_thata_hat = estimate_theta(adaptive_thata_hat, adaptive_asked_ys, adaptive_asked_zs)
         adaptive_thata_hats.append(adaptive_thata_hat)
         remain_zs = torch.cat([remain_zs[:next_item], remain_zs[next_item + 1:]])
