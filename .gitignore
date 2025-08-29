@@ -28,3 +28,4 @@ __pycache__/
 a.py
 a.ipynb
 *.csv
+*.log

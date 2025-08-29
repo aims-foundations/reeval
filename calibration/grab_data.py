@@ -24,9 +24,9 @@ auroc = AUROC(task="binary")
 import warnings
 warnings.filterwarnings("ignore")
 
-torch.manual_seed(0)
 
-device = "cuda:0"
+
+device = "cuda:1"
 
 def visualize_response_matrix(results, value, filename):
     # Extract the groups labels in the order of the columns
@@ -155,13 +155,14 @@ def compute_cttcorr(probs, data, train_idtor, test_idtor):
 
     return train_cttcorr, test_cttcorr
 
-def load_old_benchmark():
+def load_old_benchmark(seed):
     with open(f"/lfs/skampere1/0/sttruong/reeval/data/resmat.pkl", "rb") as f:
         results = pickle.load(f)
         
     # data_withnan, missing=nan
     # data_withneg1, missing=-1
     # data_with0, missing=0
+    torch.manual_seed(seed)
     data_withnan = torch.tensor(results.values, dtype=torch.float, device=device)
     data_withneg1 = data_withnan.nan_to_num(nan=-1.0)
     data_idtor = (data_withneg1 != -1).to(float)
@@ -179,7 +180,8 @@ def load_old_benchmark():
     return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool()
 
 
-def get_new_benchmark():
+def get_new_benchmark(seed):
+    torch.manual_seed(seed)
     all_benchmark_data = pd.read_csv("/lfs/skampere1/0/sttruong/reeval/calibration/all_benchmarks_joined.csv")
     
     data_clean = all_benchmark_data.drop('model_name', axis=1)

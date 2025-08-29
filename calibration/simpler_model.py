@@ -4,7 +4,9 @@ import torch.nn.functional as F
 from torch.optim import LBFGS
 from torchmetrics import AUROC
 from grab_data import load_old_benchmark, get_new_benchmark
-
+import numpy as np
+import os
+print("running experiment")
 class LogisticMF(nn.Module):
     def __init__(self, N, M, K):
         super().__init__()
@@ -47,39 +49,58 @@ def fit_logistic_mf(Y, K, mask=None, steps=1000, lr=1e-2, verbose=True, device=N
     for t in range(steps):
         loss = opt.step(closure)
         last_loss = float(loss.detach())
-        if verbose and (t % 5 == 0 or t == steps - 1):
-            print(f"step {t:3d} | nll = {last_loss:.6f}")
+        if verbose and (t % 25 == 0 or t == steps - 1):
+            # print(f"step {t:3d} | nll = {last_loss:.6f}")
+            pass
 
     return model
 
 if __name__ == "__main__":
     
-    
-    auroc = AUROC(task="binary")
-    torch.manual_seed(0)
+    print("running experiment")
+    factors = [i for i in range(1,16)]
+    num_trials = 100
+    train_auc_table = np.zeros((len(factors), num_trials), dtype=np.float64)
+    test_auc_table  = np.zeros((len(factors), num_trials), dtype=np.float64)
+    print("running experiment")
+    os.makedirs("results", exist_ok=True)
+    for K_fit in factors:
+        for i in range(num_trials):
+            try:
+                print(f"running rank:{K_fit} at trial: {i} ")
+                torch.manual_seed(i)
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed_all(i)
+                # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_new_benchmark(i)
+                data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = load_old_benchmark(i)
+                Y = data_with0
+                N, M = Y.shape[0], Y.shape[1]
+                
+                Y_missing = Y.clone().float()
+                
+                Y_missing[~train_idtor.bool()] = float("nan")
 
-    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = load_old_benchmark()
-    # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_new_benchmark()
-    Y = data_with0
-    N, M, K_fit= Y.shape[0], Y.shape[1], 2
+                model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:1")
+                with torch.no_grad():
+                    auroc = AUROC(task="binary")
+                    P_hat = torch.sigmoid(model.forward())
 
-    Y_missing = Y.clone().float()
-    
-    Y_missing[~train_idtor.bool()] = float("nan")
+                    train_auc = auroc(P_hat[train_idtor].cpu(), Y[train_idtor].cpu())
+                    print(f"factor {K_fit} train auc: {train_auc}")
 
-
-    model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:0")
-    with torch.no_grad():
-        P_hat = torch.sigmoid(model.forward())
-
-        train_auc = auroc(P_hat[train_idtor].cpu(), Y[train_idtor].cpu())
-        print(f"train auc: {train_auc}")
-
-        test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
-        print(f"test auc: {test_auc}")
-
-        # mae = torch.mean(abs(P_hat.cpu() - P))
-        # print(f"MSE on P: {mae}")
-        
-        
-    print("*"*20)
+                    test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
+                    print(f"factor {K_fit} test auc: {test_auc}")
+                    train_auc_table[K_fit-1][i] = train_auc.item()
+                    test_auc_table[K_fit-1][i] = test_auc.item()
+                    # mae = torch.mean(abs(P_hat.cpu() - P))
+                    # print(f"MSE on P: {mae}")
+            except:
+                print(f"crahsed at rank:{K_fit} trial {i}")
+                continue
+                    
+                
+            print("*"*20)
+            
+            
+            np.savetxt("results/train_auc_table.csv", train_auc_table, delimiter=",", fmt="%.6f")
+            np.savetxt("results/test_auc_table.csv",  test_auc_table,  delimiter=",", fmt="%.6f")
