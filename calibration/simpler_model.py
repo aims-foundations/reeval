@@ -8,7 +8,6 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-print("running experiment")
 class LogisticMF(nn.Module):
     def __init__(self, N, M, K):
         super().__init__()
@@ -59,12 +58,11 @@ def fit_logistic_mf(Y, K, mask=None, steps=1000, lr=1e-2, verbose=True, device=N
 
 if __name__ == "__main__":
     
-    print("running experiment")
     factors = [i for i in range(1,16)]
     num_trials = 100
     train_auc_table = np.zeros((len(factors), num_trials), dtype=np.float64)
     test_auc_table  = np.zeros((len(factors), num_trials), dtype=np.float64)
-    print("running experiment")
+
     os.makedirs("results", exist_ok=True)
     for K_fit in factors:
         for i in range(num_trials):
@@ -73,8 +71,8 @@ if __name__ == "__main__":
                 torch.manual_seed(i)
                 if torch.cuda.is_available():
                     torch.cuda.manual_seed_all(i)
-                data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_new_benchmark(i)
-                # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = load_old_benchmark(i)
+                data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_new_benchmark(i)
+                # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = load_old_benchmark(i)
                 Y = data_with0
                 N, M = Y.shape[0], Y.shape[1]
                 

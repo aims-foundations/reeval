@@ -96,23 +96,6 @@ if __name__ == "__main__":
         
         print(f"factor {K_fit} test auc: {test_auc}")
 
-        mask_test = test_idtor
-        # Predicted and true values
-        P_sel = P_hat * mask_test       # zero out masked entries
-        Y_sel = Y * mask_test
-        
-        counts = mask_test.sum(dim=1)
-        
-        
-
-        # Mean across columns, ignoring masked-out entries
-        testtaker_mean_score_pred = P_sel.sum(dim=1) / counts
-        testtaker_mean_score_true = Y_sel.sum(dim=1) / counts
-    
-    x = testtaker_mean_score_true.cpu().numpy()
-    y = testtaker_mean_score_pred.cpu().numpy()
-    
-    
     
     V = model.V.detach().cpu().numpy()   # shape (78712, 2)
     labels = np.array(cat[cat_level])            # convert list to numpy array
@@ -148,7 +131,7 @@ if __name__ == "__main__":
         plt.title(f"Scatter of model.V colored by category seed={i} level = {cat_level} Old Dataset")
         plt.tight_layout()
         plt.show()
-        save_path = f"plot/visualize_factor_matrix_seed{i}_lvl{cat_level}.png"
+        save_path = f"plot/visualize_factor_matrix_seed{i}_lvl{cat_level}_test.png"
         plt.savefig(save_path, dpi=600, bbox_inches="tight")
         plt.close()  
         print(f"save to {save_path}")
