@@ -8,53 +8,20 @@ from grab_data import get_new_benchmark
 from torchmetrics import AUROC
 torch.manual_seed(0)
 
-def estimate_theta(theta, asked_ys, asked_zs):
-    def closure():
-        optim.zero_grad()
-        # theta: taker * fac
-        # asked_zs: step * taker * fac
-        # y.shape: item
-        # probs = torch.sigmoid(theta @ asked_zs.T) # test_taker * step
-        # print("theta.shape",theta.shape)
-        # print("asked_zs.shape",asked_zs.shape)
-        probs = torch.sigmoid(torch.einsum('nk,ink->in',theta,asked_zs)) # step * testtaker
-        loss = -Bernoulli(probs=probs).log_prob(asked_ys).mean()
-        loss.backward()
-        return loss
-    # list of shape= test_taker
-    # want: step * test_taker
-    asked_ys = torch.stack(asked_ys)
-    
-    # step * test_taker * k
-    asked_zs = torch.stack(asked_zs)
-    # test_taker * k
-    theta = theta.clone().requires_grad_(True)
-    
-    optim = torch.optim.LBFGS([theta], lr=0.1, max_iter=20, history_size=10, line_search_fn="strong_wolfe")
-    
-    for iteration in range(100):
-        if iteration > 0:
-            previous_theta = theta.clone()
-            previous_loss = loss.clone()
-        
-        loss = optim.step(closure)
-        
-        if iteration > 0:
-            d_loss = previous_loss - loss
-            d_theta = torch.norm(previous_theta - theta, p=2)
-            grad_norm = torch.norm(optim.param_groups[0]["params"][0].grad, p=2)
-            if d_loss < 1e-5 and d_theta < 1e-5 and grad_norm < 1e-5:
-                break
-    
-    return theta.detach()
 
 
-def estimate_theta_adap(theta, asked_ys, asked_zs):
+def estimate_theta_adap(theta, asked_ys, asked_zs, device=None, idtor=None):
     def closure():
         optim.zero_grad()
 
-        probs = torch.sigmoid(torch.einsum('nk,nik->ni',theta,asked_zs)) # step * testtaker
-        loss = -Bernoulli(probs=probs).log_prob(asked_ys).mean()
+        # print(asked_zs)
+        # step * testtaker
+        probs = torch.sigmoid(torch.einsum('nk,nik->ni',theta,asked_zs)) 
+        if idtor is not None:
+
+            loss = -Bernoulli(probs=probs[idtor]).log_prob(asked_ys[idtor]).mean()        
+        else:
+            loss = -Bernoulli(probs=probs).log_prob(asked_ys).mean()
         loss.backward()
         return loss
 
@@ -63,11 +30,18 @@ def estimate_theta_adap(theta, asked_ys, asked_zs):
     asked_ys = [torch.stack(test_taker_y) for test_taker_y in asked_ys]
     asked_ys = torch.stack(asked_ys)
     
+    
     # test_taker * obs * fac
     asked_zs = [torch.stack(test_taker_z) for test_taker_z in asked_zs]
     asked_zs = torch.stack(asked_zs)
     # test_taker * fac
     theta = theta.clone().requires_grad_(True)
+
+    if device:
+        asked_ys = asked_ys.to(device)
+        asked_zs = asked_zs.to(device)
+        theta = theta.to(device)
+    
     
     optim = torch.optim.LBFGS([theta], lr=0.1, max_iter=20, history_size=10, line_search_fn="strong_wolfe")
     
@@ -75,6 +49,7 @@ def estimate_theta_adap(theta, asked_ys, asked_zs):
         if iteration > 0:
             previous_theta = theta.clone()
             previous_loss = loss.clone()
+        print(f"training at iteration {iteration}")
         
         loss = optim.step(closure)
         
@@ -122,66 +97,43 @@ if __name__ == "__main__":
     torch.manual_seed(seed)
     num_item_pool = 1000
     # num_steps = 50
-    num_steps = 500
+    num_steps = 10
     k = 2
-    num_test_taker, num_item_pool, K_true, K_fit = 100, 20000, k, k
+    device = "cuda:1"
     data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_new_benchmark(seed)
-    idx_split = int(data_withneg1.shape[0] * 0.8)
+    idx_split = int(data_withneg1.shape[0] * 0.99)
     train_data = data_withneg1[:idx_split,:]
     data_idtor_train = data_idtor[:idx_split,:]
     
     train_data_missing = train_data.clone().float()
     train_data_missing[~data_idtor_train] = float("nan")
     
-    test_data = data_withneg1[:idx_split,:]
+    test_data = data_withneg1[idx_split:,:]
+    data_idtor_test = data_idtor[idx_split:,:]
+    num_test_taker, num_item_pool, K_fit = test_data.shape[0], test_data.shape[1], k
     
-    model = fit_logistic_mf(train_data_missing, K=K_fit, mask=data_idtor_train, steps=50, lr=5e-3, device="cuda:1")
-   
+    model = fit_logistic_mf(train_data_missing, K=K_fit, mask=data_idtor_train, steps=10, lr=5e-3, device=device)
+    
+    P_hat = torch.sigmoid(model.forward())
+    auroc = AUROC(task="binary")
+    train_auc = auroc(P_hat[data_idtor_train].cpu(), train_data_missing[data_idtor_train].cpu())
+    print(f"factor {K_fit} train auc: {train_auc}")
     # Create a small synthetic dataset
     # theta
-    U_true = torch.randn(num_test_taker, K_true)
-    # zs
-    V_true = torch.randn(num_item_pool, K_true)  
-    # num_taker * 2 @ 2*  num_item_pool 
-    logits = U_true @ V_true.T
-    P = torch.sigmoid(logits)
-    # for that unknown test taker, its true Y
-    Y = torch.bernoulli(P)
     
-    
-    # zs = torch.randn(num_item_pool)
-    # ys = Bernoulli(probs=torch.sigmoid(theta_true + zs)).sample()
+    V_true = model.V
+    Y = test_data.clone()
 
-    # random
-    random_thata_hat = torch.zeros((num_test_taker,K_fit))
-    random_thata_hats = [random_thata_hat]
-    random_asked_zs = []
-    random_asked_ys = []
-    # breakpoint()
-    # for i in tqdm(range(num_steps)):
-    #     random_asked_zs.append(V_true[i].repeat(num_test_taker, 1))
-    #     random_asked_ys.append(Y[:,i])
-    #     # random_thata_hat: K_fit
-    #     # random_asked_ys: num_item_pool
-    #     # random_asked_zs: 
-        
-    #     random_thata_hat = estimate_theta(random_thata_hat, random_asked_ys, random_asked_zs)
-    #     random_thata_hats.append(random_thata_hat)
+    # ceiling_asked_ys = [list(Y[i].clone()) for i in  range(num_test_taker)]
+    # ceiling_asked_zs = [list(V_true.clone()) for _ in  range(num_test_taker)]
+    # ceiling_thata_hat = torch.ones((num_test_taker,K_fit),device = device)
 
-    
-    # adaptive
-    
-    
-    ceiling_asked_ys = [list(Y[i].clone()) for i in  range(num_test_taker)]
-    ceiling_asked_zs = [list(V_true.clone()) for _ in  range(num_test_taker)]
-    ceiling_thata_hat = torch.ones((num_test_taker,K_fit))
+    # random_thata_hat = estimate_theta_adap(ceiling_thata_hat, ceiling_asked_ys, ceiling_asked_zs,device = device, idtor=data_idtor_test)
+    # auc_ceiling  = auc_for_list_Uhat([random_thata_hat],V_true,Y)
+    # print("ceiling auc:",auc_ceiling)
 
-    random_thata_hat = estimate_theta_adap(ceiling_thata_hat, ceiling_asked_ys, ceiling_asked_zs)
-    auc_ceiling  = auc_for_list_Uhat([random_thata_hat],V_true,Y)
-    print("ceiling auc:",auc_ceiling)
-
-    
-    random_thata_hat = torch.ones((num_test_taker,K_fit))
+    breakpoint()
+    random_thata_hat = torch.ones((num_test_taker,K_fit),device = device)
     random_thata_hats = [random_thata_hat]
     random_asked_zs = [[] for _ in range(num_test_taker)]
     random_asked_ys = [[] for _ in range(num_test_taker)]

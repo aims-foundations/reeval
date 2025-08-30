@@ -15,8 +15,10 @@ def estimate_theta(theta, asked_ys, asked_zs):
         # probs = torch.sigmoid(theta @ asked_zs.T) # test_taker * step
         # print("theta.shape",theta.shape)
         # print("asked_zs.shape",asked_zs.shape)
-        probs = torch.sigmoid(torch.einsum('nk,ink->in',theta,asked_zs)) # step * testtaker
+        # step * testtaker
+        probs = torch.sigmoid(torch.einsum('nk,ink->in',theta,asked_zs)) 
         loss = -Bernoulli(probs=probs).log_prob(asked_ys).mean()
+        
         loss.backward()
         return loss
     # list of shape= test_taker
