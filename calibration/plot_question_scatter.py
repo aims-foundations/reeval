@@ -7,8 +7,9 @@ from grab_data import load_old_benchmark, get_new_benchmark
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+from tueplots import bundles
+bundles.iclr2024()
 
-print("running experiment")
 class LogisticMF(nn.Module):
     def __init__(self, N, M, K):
         super().__init__()
@@ -59,16 +60,15 @@ def fit_logistic_mf(Y, K, mask=None, steps=1000, lr=1e-2, verbose=True, device=N
 
 if __name__ == "__main__":
     
-    print("running experiment")
     factors = [i for i in range(1,16)]
     num_trials = 100
     train_auc_table = np.zeros((len(factors), num_trials), dtype=np.float64)
     test_auc_table  = np.zeros((len(factors), num_trials), dtype=np.float64)
-    print("running experiment")
+
     os.makedirs("results", exist_ok=True)
     K_fit = 2
-    i  = 1
-    cat_level = 0
+    i  = 0
+    cat_level = 1
     
     print(f"running rank:{K_fit} at trial: {i} ")
     torch.manual_seed(i)
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     
     Y_missing[~train_idtor.bool()] = float("nan")
 
-    model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:3")
+    model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:4")
 
     with torch.no_grad():
         auroc = AUROC(task="binary")
@@ -123,20 +123,32 @@ if __name__ == "__main__":
 
     label_to_idx = {label: i for i, label in enumerate(unique_labels)}
     color_indices = [label_to_idx[l] for l in labels]
+    with plt.rc_context(bundles.iclr2024(usetex=True, family="serif")):
+        # Plot scatter
+        
+        plt.rcParams.update({
+            "font.size": 12,       # default font size
+            "axes.titlesize": 16,  # title
+            "axes.labelsize": 14,  # x and y labels
+            "xtick.labelsize": 12,
+            "ytick.labelsize": 12,
+            "legend.fontsize": 12
+        })    
+        
+        plt.figure(figsize=(8, 8))
+        scatter = plt.scatter(V[:, 0], V[:, 1], c=color_indices, cmap=colors, s=2, alpha=0.7)
 
-    # Plot scatter
-    plt.figure(figsize=(8, 8))
-    scatter = plt.scatter(V[:, 0], V[:, 1], c=color_indices, cmap=colors, s=2, alpha=0.7)
+        # Add legend
+        handles = [plt.Line2D([], [], marker="o", linestyle="", color=colors(i)) 
+                for i in range(len(unique_labels))]
+        plt.legend(handles, unique_labels, title="Category", bbox_to_anchor=(1.05, 1), frameon=True)
 
-    # Add legend
-    handles = [plt.Line2D([], [], marker="o", linestyle="", color=colors(i)) 
-            for i in range(len(unique_labels))]
-    plt.legend(handles, unique_labels, title="Category", bbox_to_anchor=(1.05, 1), loc="upper left")
-
-    plt.xlabel("V[:, 0]")
-    plt.ylabel("V[:, 1]")
-    plt.title(f"Scatter of model.V colored by category seed={i} level = {cat_level}")
-    plt.tight_layout()
-    plt.show()
-    plt.savefig(f"plot/visualize_factor_matrix_seed{i}_lvl{cat_level}.png", dpi=300, bbox_inches="tight")
-    plt.close()  
+        plt.xlabel("V[:, 0]")
+        plt.ylabel("V[:, 1]")
+        plt.title(f"Scatter of model.V colored by category seed={i} level = {cat_level} Old Dataset")
+        plt.tight_layout()
+        plt.show()
+        save_path = f"plot/visualize_factor_matrix_seed{i}_lvl{cat_level}.png"
+        plt.savefig(save_path, dpi=600, bbox_inches="tight")
+        plt.close()  
+        print(f"save to {save_path}")

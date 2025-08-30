@@ -157,6 +157,16 @@ if __name__ == "__main__":
     
     # adaptive
     
+    
+    ceiling_asked_ys = [list(Y[i].clone()) for i in  range(num_test_taker)]
+    ceiling_asked_zs = [list(V_true.clone()) for _ in  range(num_test_taker)]
+    ceiling_thata_hat = torch.ones((num_test_taker,K_fit))
+
+    random_thata_hat = estimate_theta_adap(ceiling_thata_hat, ceiling_asked_ys, ceiling_asked_zs)
+    auc_ceiling  = auc_for_list_Uhat([random_thata_hat],V_true,Y)
+    print("ceiling auc:",auc_ceiling)
+
+    
     random_thata_hat = torch.ones((num_test_taker,K_fit))
     random_thata_hats = [random_thata_hat]
     random_asked_zs = [[] for _ in range(num_test_taker)]
