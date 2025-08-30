@@ -50,7 +50,7 @@ def load_old_benchmark(seed, is_adap_testing=False):
 
 def get_new_benchmark(seed, is_adap_testing=False):
     torch.manual_seed(seed)
-    all_benchmark_data = pd.read_csv("/lfs/skampere1/0/sttruong/reeval/calibration/all_benchmarks_joined.csv")
+    all_benchmark_data = pd.read_csv("/lfs/skampere1/0/sttruong/reeval/calibration/grab_dataset/data/all_benchmarks_joined.csv")
     
     data_clean = all_benchmark_data.drop('model_name', axis=1)
 
