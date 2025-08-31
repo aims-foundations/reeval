@@ -100,4 +100,25 @@ def get_everything_data(seed, is_adap_testing=False):
     breakpoint()
     return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,None,model_names)
 
-# get_everything_data(0)
+
+
+def get_everything_data_sk2(seed, is_adap_testing=False):
+    torch.manual_seed(seed)
+    print("loading pd")
+    results = pd.read_parquet("/lfs/skampere2/0/sttruong/reeval/data/benchmark_data_open_llm.parquet")
+    print(results.shape)
+    print("loaded pd")
+
+    print("loaded")
+    all_items = list(results.columns)
+    cat1 = [i[0] for i in all_items]
+
+    model_names = list(results.index)
+
+    torch.manual_seed(seed)
+    data_withnan = torch.tensor(results.astype("boolean").astype(float).to_numpy())
+    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan, is_adap_testing)
+    
+
+    return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,None,model_names)
+

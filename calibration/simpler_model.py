@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import LBFGS
 from torchmetrics import AUROC
-from util import load_old_benchmark, get_new_benchmark
+from util import load_old_benchmark, get_new_benchmark, get_everything_data_sk2, get_mask_and_data
 import numpy as np
 import os
 import matplotlib.pyplot as plt
@@ -58,11 +58,12 @@ def fit_logistic_mf(Y, K, mask=None, steps=1000, lr=1e-2, verbose=True, device=N
 
 if __name__ == "__main__":
     
-    factors = [i for i in range(1,16)]
+    factors = [i for i in range(2,30)]
     num_trials = 100
     train_auc_table = np.zeros((len(factors), num_trials), dtype=np.float64)
     test_auc_table  = np.zeros((len(factors), num_trials), dtype=np.float64)
-
+    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_data_sk2(0)
+    
     os.makedirs("results", exist_ok=True)
     for K_fit in factors:
         for i in range(num_trials):
@@ -71,9 +72,12 @@ if __name__ == "__main__":
                 torch.manual_seed(i)
                 if torch.cuda.is_available():
                     torch.cuda.manual_seed_all(i)
-                data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_new_benchmark(i)
+                data_withneg1[~data_idtor] = float("nan")
+                data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withneg1)
+                # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_new_benchmark(i)
+                
                 # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = load_old_benchmark(i)
-                Y = data_with0
+                Y = data_with0.clone()
                 N, M = Y.shape[0], Y.shape[1]
                 
                 Y_missing = Y.clone().float()
@@ -92,6 +96,13 @@ if __name__ == "__main__":
                     print(f"factor {K_fit} test auc: {test_auc}")
                     train_auc_table[K_fit-1][i] = train_auc.item()
                     test_auc_table[K_fit-1][i] = test_auc.item()
+                    print("*"*30)
+                    
+                    np.savetxt("results/train_auc_table_everything.csv", train_auc_table, delimiter=",", fmt="%.6f")
+                    np.savetxt("results/test_auc_table_everything.csv",  test_auc_table,  delimiter=",", fmt="%.6f")
+                    
+                    
+
                     # mae = torch.mean(abs(P_hat.cpu() - P))
                     # print(f"MSE on P: {mae}")
             except:
@@ -99,8 +110,6 @@ if __name__ == "__main__":
                 continue
                     
                 
-            print("*"*20)
-            
-            
-            # np.savetxt("results/train_auc_table_new.csv", train_auc_table, delimiter=",", fmt="%.6f")
-            # np.savetxt("results/test_auc_table_new.csv",  test_auc_table,  delimiter=",", fmt="%.6f")
+    
+    
+                
