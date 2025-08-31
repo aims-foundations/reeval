@@ -2,10 +2,43 @@ import pandas as pd
 import numpy as np
 import torch
 import pickle
-
+from huggingface_hub import snapshot_download
 
 import warnings
 warnings.filterwarnings("ignore")
+
+def get_all_model_meta_info():
+    local_path = snapshot_download(
+        repo_id="stair-lab/reeval_llm_leaderbord", repo_type="dataset"
+    )
+    df = pd.read_csv(f"{local_path}/data/openllm_all_model_info.csv")
+
+    return df
+
+def get_all_model_benchmark():
+    local_path = snapshot_download(
+        repo_id="stair-lab/reeval_llm_leaderbord", repo_type="dataset"
+    )
+    df = pd.read_parquet(f"{local_path}/benchmark_data_open_llm.parquet")
+
+    return df
+
+def get_official_provider_model_benchmark():
+    local_path = snapshot_download(
+        repo_id="stair-lab/reeval_llm_leaderbord", repo_type="dataset"
+    )
+    df = pd.read_parquet(f"{local_path}/data/official_provider_benchmark.csv")
+
+    return df
+
+def get_HELM_model_benchmark():
+    local_path = snapshot_download(
+        repo_id="stair-lab/reeval_llm_leaderbord", repo_type="dataset"
+    )
+    with open(f"{local_path}/data/resmat.pkl", "rb") as f:
+        results = pickle.load(f)
+    
+    return results
 
 
 def get_mask_and_data(data_withnan, is_adap_testing=False):
@@ -14,20 +47,20 @@ def get_mask_and_data(data_withnan, is_adap_testing=False):
     data_with0 = data_withneg1 * data_idtor # -1 -> 0
     trial = 0
     valid_condition = False
-    print(1)
+
     if is_adap_testing:
         idx_split = int(data_withneg1.shape[0] * 0.8)
         train_idtor = data_idtor[:idx_split,:]
         test_idtor = data_idtor[idx_split:,:]    
     else:
         while not valid_condition:
-            print(2)
+
             train_idtor = torch.bernoulli(data_idtor * 0.8).int()
             test_idtor = data_idtor - train_idtor
             valid_condition = (train_idtor.sum(axis=1) != 0).all() and (train_idtor.sum(axis=0) != 0).all()
             print(f"trial {trial} valid condition: {valid_condition}")
             trial += 1
-    print(3)
+
     return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool()
 
 def load_old_benchmark(seed, is_adap_testing=False):
