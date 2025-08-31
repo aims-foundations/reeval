@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import LBFGS
 from torchmetrics import AUROC
-from grab_data import load_old_benchmark, get_new_benchmark
+from util import load_old_benchmark, get_new_benchmark
 import numpy as np
 import os
 import matplotlib.pyplot as plt
@@ -85,7 +85,8 @@ if __name__ == "__main__":
             if torch.cuda.is_available():
                 torch.cuda.manual_seed_all(i)
 
-            data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, cat = load_old_benchmark(i)
+            # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, cat = load_old_benchmark(i)
+            data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, cat = get_new_benchmark(i)
             Y = data_with0
             N, M = Y.shape[0], Y.shape[1]
             model_names = cat[2]
@@ -96,7 +97,7 @@ if __name__ == "__main__":
             with torch.no_grad():
                 auroc = AUROC(task="binary")
                 P_hat = torch.sigmoid(model.forward())
-
+                P_hat = P_hat.cpu()
                 test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
                 mask_test = test_idtor
 
@@ -147,5 +148,5 @@ if __name__ == "__main__":
 
         # Adjust layout
         plt.tight_layout()
-        plt.savefig("plot/test_set_mean/all_ranks_1to16.png", dpi=600, bbox_inches="tight")
+        plt.savefig("plot/test_set_mean/all_ranks_1to16_official_openllm.png", dpi=600, bbox_inches="tight")
         plt.show()
