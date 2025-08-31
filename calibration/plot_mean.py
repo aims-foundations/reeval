@@ -61,7 +61,7 @@ def fit_logistic_mf(Y, K, mask=None, steps=1000, lr=1e-2, verbose=True, device=N
 if __name__ == "__main__":
     
     # --- setup 4x4 grid ---
-    fig, axes = plt.subplots(1, 6, figsize=(24*1.5,4*1.5))
+    fig, axes = plt.subplots(1, 6, figsize=(24,4))
     axes = axes.flatten()
     i=0
     factors = [1,2,3,5,10,15]

@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import LBFGS
 from torchmetrics import AUROC
-from grab_data import load_old_benchmark, get_new_benchmark
+from util import load_old_benchmark, get_new_benchmark
 import numpy as np
 import os
 import matplotlib.pyplot as plt

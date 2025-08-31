@@ -4,7 +4,8 @@ from torch.distributions import Bernoulli
 import matplotlib.pyplot as plt
 import numpy as np
 from simpler_model import fit_logistic_mf
-from grab_data import get_new_benchmark
+from util import get_new_benchmark
+import argparse
 from torchmetrics import AUROC
 torch.manual_seed(0)
 
@@ -59,7 +60,7 @@ def grab_V_y(k):
     device = "cuda:1"
     
     
-    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_new_benchmark(seed)
+    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_new_benchmark(seed)
     idx_split = int(data_withneg1.shape[0] * 0.8)
     train_data = data_withneg1[:idx_split,:]
     data_idtor_train = data_idtor[:idx_split,:]
@@ -81,8 +82,19 @@ def grab_V_y(k):
 
 if __name__ == "__main__":
     k = 2
-    V_true , test_data, data_idtor_test = grab_V_y(k)
+    # V_true , test_data, data_idtor_test = grab_V_y(k)
+    # torch.save(V_true, "data/cat/V_true.pt")
+    # torch.save(test_data, "data/cat/test_data.pt")
+    # torch.save(data_idtor_test, "data/cat/data_idtor_test.pt")
     
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--test_taker_id", type=int, default=0, help="which test taker to simulate")
+    
+    V_true = torch.load("data/cat/V_true.pt")
+    test_data = torch.load("data/cat/test_data.pt")
+    data_idtor_test = torch.load("data/cat/data_idtor_test.pt")
+    breakpoint()
+    exit(0)
     #------------ test taker
     V_true = V_true.detach()
     
