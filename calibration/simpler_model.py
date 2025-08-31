@@ -3,10 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import LBFGS
 from torchmetrics import AUROC
-from util import load_old_benchmark, get_new_benchmark, get_everything_data_sk2, get_mask_and_data
+from util import load_old_benchmark, get_new_benchmark, get_everything_data_sk2, get_mask_and_data,get_everything_benchmark
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import argparse
 
 class LogisticMF(nn.Module):
     def __init__(self, N, M, K):
@@ -57,59 +58,47 @@ def fit_logistic_mf(Y, K, mask=None, steps=1000, lr=1e-2, verbose=True, device=N
     return model
 
 if __name__ == "__main__":
-    
-    factors = [i for i in range(2,30)]
-    num_trials = 100
-    train_auc_table = np.zeros((len(factors), num_trials), dtype=np.float64)
-    test_auc_table  = np.zeros((len(factors), num_trials), dtype=np.float64)
-    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_data_sk2(0)
-    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--factor", type=int, default=2)
+    parser.add_argument("--trial_id", type=int, default=0)
+    parser.add_argument("--masking_method", type=int, default=0)
+    parser.add_argument("--dataset", type=int, default=0)
+    args = parser.parse_args()
+    K_fit = args.factor
+    i = args.trial_id
+    masking_method = args.masking_method
+    dataset = args.dataset
     os.makedirs("results", exist_ok=True)
-    for K_fit in factors:
-        for i in range(num_trials):
-            try:
-                print(f"running rank:{K_fit} at trial: {i} ")
-                torch.manual_seed(i)
-                if torch.cuda.is_available():
-                    torch.cuda.manual_seed_all(i)
-                data_withneg1[~data_idtor] = float("nan")
-                data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withneg1)
-                # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_new_benchmark(i)
-                
-                # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = load_old_benchmark(i)
-                Y = data_with0.clone()
-                N, M = Y.shape[0], Y.shape[1]
-                
-                Y_missing = Y.clone().float()
-                
-                Y_missing[~train_idtor.bool()] = float("nan")
-
-                model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:1")
-                with torch.no_grad():
-                    auroc = AUROC(task="binary")
-                    P_hat = torch.sigmoid(model.forward())
-
-                    train_auc = auroc(P_hat[train_idtor].cpu(), Y[train_idtor].cpu())
-                    print(f"factor {K_fit} train auc: {train_auc}")
-
-                    test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
-                    print(f"factor {K_fit} test auc: {test_auc}")
-                    train_auc_table[K_fit-1][i] = train_auc.item()
-                    test_auc_table[K_fit-1][i] = test_auc.item()
-                    print("*"*30)
-                    
-                    np.savetxt("results/train_auc_table_everything.csv", train_auc_table, delimiter=",", fmt="%.6f")
-                    np.savetxt("results/test_auc_table_everything.csv",  test_auc_table,  delimiter=",", fmt="%.6f")
-                    
-                    
-
-                    # mae = torch.mean(abs(P_hat.cpu() - P))
-                    # print(f"MSE on P: {mae}")
-            except:
-                print(f"crahsed at rank:{K_fit} trial {i}")
-                continue
-                    
-                
+    print(f"running rank:{K_fit} at trial: {i} ")
+    torch.manual_seed(i)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(i)
+        
+    # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, filter_method= "random_mask")
+    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_new_benchmark(i)
     
+    # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = load_old_benchmark(i)
+    Y = data_with0.clone()
+    N, M = Y.shape[0], Y.shape[1]
     
-                
+    Y_missing = Y.clone().float()
+    
+    Y_missing[~train_idtor.bool()] = float("nan")
+
+    model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:1")
+    with torch.no_grad():
+        auroc = AUROC(task="binary")
+        P_hat = torch.sigmoid(model.forward())
+
+        train_auc = auroc(P_hat[train_idtor].cpu(), Y[train_idtor].cpu())
+        print(f"factor {K_fit} train auc: {train_auc}")
+
+        test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
+        print(f"factor {K_fit} test auc: {test_auc}")
+        print("*"*30)
+        
+        # np.savetxt("results/train_auc_table_everything.csv", train_auc_table, delimiter=",", fmt="%.6f")
+        # np.savetxt("results/test_auc_table_everything.csv",  test_auc_table,  delimiter=",", fmt="%.6f")
+                    
+                    
+

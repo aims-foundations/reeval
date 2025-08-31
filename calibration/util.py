@@ -75,7 +75,7 @@ def get_HELM_model_benchmark():
     local_path = snapshot_download(
         repo_id="stair-lab/reeval_llm_leaderbord", repo_type="dataset"
     )
-    with open(f"{local_path}/data/resmat.pkl", "rb") as f:
+    with open(f"{local_path}/data/HELM_benchmark.pkl", "rb") as f:
         results = pickle.load(f)
     
     return results
@@ -138,8 +138,8 @@ def get_mask_and_data(data_withnan, is_random_row=False, custom_train_row = None
 
 
 def load_old_benchmark(seed, is_adap_testing=False):
-    with open(f"/lfs/skampere1/0/sttruong/reeval/data/resmat.pkl", "rb") as f:
-        results = pickle.load(f)
+    # with open(f"/lfs/skampere1/0/sttruong/reeval/data/resmat.pkl", "rb") as f:
+    results = get_HELM_model_benchmark()
         
     print("loaded")
     all_items = list(results.columns)
@@ -170,7 +170,7 @@ def attatch_meta(model_names_df, model_meta_info):
 
 
 
-def get_new_benchmark(seed,filter_method = 'date'):
+def get_new_benchmark(seed,filter_method = 'random_mask'):
     torch.manual_seed(seed)
     
     all_benchmark_data = get_official_provider_model_benchmark()
