@@ -87,65 +87,73 @@ if __name__ == "__main__":
     # torch.save(test_data, "data/cat/test_data.pt")
     # torch.save(data_idtor_test, "data/cat/data_idtor_test.pt")
     
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--test_taker_id", type=int, default=0, help="which test taker to simulate")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--test_taker_id", type=int, default=0, help="which test taker to simulate")
+    args = parser.parse_args()
     
-    V_true = torch.load("data/cat/V_true.pt")
+    V = torch.load("data/cat/V_true.pt")
     test_data = torch.load("data/cat/test_data.pt")
     data_idtor_test = torch.load("data/cat/data_idtor_test.pt")
-    breakpoint()
-    exit(0)
+
     #------------ test taker
-    V_true = V_true.detach()
     
     # theta_true = 1.5
-    num_item_pool = V_true.shape[0]
+    num_item_pool = V.shape[0]
     num_steps = 50
     # zs = torch.randn(num_item_pool)
     # ys = Bernoulli(probs=torch.sigmoid(theta_true + zs)).sample()
-    test_taker_id = 0
-    idtor = data_idtor_test[test_taker_id]
-    ys = test_data[test_taker_id][idtor].cpu()
-    V_true = V_true[idtor]
-    
-    # random
-    random_thata_hat = torch.zeros((k,))
-    random_thata_hats = [random_thata_hat]
-    random_asked_zs = []
-    random_asked_ys = []
 
-    for i in tqdm(range(num_steps)):
-        random_asked_zs.append(V_true[i])
-        random_asked_ys.append(ys[i])
-        random_thata_hat = estimate_theta(random_thata_hat, random_asked_ys, random_asked_zs)
-        random_thata_hats.append(random_thata_hat)
-    
-    # adaptive
-    adaptive_thata_hat = torch.zeros((k,))
-    adaptive_thata_hats = [adaptive_thata_hat]
-    adaptive_asked_zs = []
-    adaptive_asked_ys = []
-    remain_zs = V_true.clone()
-    remain_ys = ys.clone()
-    for _ in tqdm(range(num_steps)):
-        fisher_info = compute_fisher_info(adaptive_thata_hat, remain_zs)
-        next_item = torch.argmax(fisher_info)
-        adaptive_asked_zs.append(remain_zs[next_item])
-        adaptive_asked_ys.append(remain_ys[next_item])
-        adaptive_thata_hat = estimate_theta(adaptive_thata_hat, adaptive_asked_ys, adaptive_asked_zs)
-        adaptive_thata_hats.append(adaptive_thata_hat)
-        remain_zs = torch.cat([remain_zs[:next_item], remain_zs[next_item + 1:]])
-        remain_ys = torch.cat([remain_ys[:next_item], remain_ys[next_item + 1:]])
-    
-    plt.figure(figsize=(6, 5))
-    # plt.plot(np.arange(num_steps+1), (np.array(random_thata_hats) - theta_true) ** 2, label="random")
-    # plt.plot(np.arange(num_steps+1), (np.array(adaptive_thata_hats) - theta_true) ** 2, label="adaptive")
-    
-    plt.plot(np.arange(num_steps+1), auc_for_list_Uhat(random_thata_hats,V_true,ys), label="random")
-    plt.plot(np.arange(num_steps+1), auc_for_list_Uhat(adaptive_thata_hats,V_true,ys), label="adaptive")
-    
-    plt.ylabel("auc")
-    plt.ylim(0, 1)
-    plt.legend()
-    plt.show()
-    plt.savefig(f"plot/auc_adap_testing_{num_steps}.png", dpi=600)
+
+    for test_taker_id in range(test_data.shape[0]):
+        print("test_taker_id",test_taker_id)
+
+        idtor = data_idtor_test[test_taker_id]
+        ys = test_data[test_taker_id][idtor].cpu()
+        V_true = V.clone().detach()
+        V_true = V_true[idtor]
+        
+        # random
+        random_thata_hat = torch.zeros((k,))
+        random_thata_hats = [random_thata_hat]
+        random_asked_zs = []
+        random_asked_ys = []
+
+        for i in tqdm(range(num_steps)):
+            random_asked_zs.append(V_true[i])
+            random_asked_ys.append(ys[i])
+            random_thata_hat = estimate_theta(random_thata_hat, random_asked_ys, random_asked_zs)
+            random_thata_hats.append(random_thata_hat)
+        
+        # adaptive
+        adaptive_thata_hat = torch.zeros((k,))
+        adaptive_thata_hats = [adaptive_thata_hat]
+        adaptive_asked_zs = []
+        adaptive_asked_ys = []
+        remain_zs = V_true.clone()
+        remain_ys = ys.clone()
+        for _ in tqdm(range(num_steps)):
+            fisher_info = compute_fisher_info(adaptive_thata_hat, remain_zs)
+            next_item = torch.argmax(fisher_info)
+            adaptive_asked_zs.append(remain_zs[next_item])
+            adaptive_asked_ys.append(remain_ys[next_item])
+            adaptive_thata_hat = estimate_theta(adaptive_thata_hat, adaptive_asked_ys, adaptive_asked_zs)
+            adaptive_thata_hats.append(adaptive_thata_hat)
+            remain_zs = torch.cat([remain_zs[:next_item], remain_zs[next_item + 1:]])
+            remain_ys = torch.cat([remain_ys[:next_item], remain_ys[next_item + 1:]])
+        
+        
+        torch.save(random_thata_hats, f"results/cat/random_thata_hats_official_data_{test_taker_id}.pt")
+        torch.save(adaptive_thata_hats, f"results/cat/adaptive_thata_hats_official_data_{test_taker_id}.pt")
+        
+        # plt.figure(figsize=(6, 5))
+        # # plt.plot(np.arange(num_steps+1), (np.array(random_thata_hats) - theta_true) ** 2, label="random")
+        # # plt.plot(np.arange(num_steps+1), (np.array(adaptive_thata_hats) - theta_true) ** 2, label="adaptive")
+        
+        # plt.plot(np.arange(num_steps+1), auc_for_list_Uhat(random_thata_hats,V_true,ys), label="random")
+        # plt.plot(np.arange(num_steps+1), auc_for_list_Uhat(adaptive_thata_hats,V_true,ys), label="adaptive")
+        
+        # plt.ylabel("auc")
+        # plt.ylim(0, 1)
+        # plt.legend()
+        # plt.show()
+        # plt.savefig(f"plot/auc_adap_testing_{num_steps}.png", dpi=600)
