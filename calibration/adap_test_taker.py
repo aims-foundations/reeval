@@ -4,7 +4,7 @@ from torch.distributions import Bernoulli
 import matplotlib.pyplot as plt
 import numpy as np
 from simpler_model import fit_logistic_mf
-from util import get_new_benchmark
+from util import get_official_provider_benchmark
 import argparse
 from torchmetrics import AUROC
 torch.manual_seed(0)
@@ -60,7 +60,7 @@ def grab_V_y(k):
     device = "cuda:1"
     
     
-    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_new_benchmark(seed)
+    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(seed)
     idx_split = int(data_withneg1.shape[0] * 0.8)
     train_data = data_withneg1[:idx_split,:]
     data_idtor_train = data_idtor[:idx_split,:]

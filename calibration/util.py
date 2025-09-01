@@ -55,7 +55,7 @@ def get_all_model_meta_info():
 
     return df
 
-def get_everything_benchmark():
+def get_everything_benchmark_raw():
     local_path = snapshot_download(
         repo_id="stair-lab/reeval_llm_leaderbord", repo_type="dataset"
     )
@@ -90,7 +90,6 @@ def random_mask(data_idtor, pct = 0.8):
 def model_mask(data_idtor):
 
     train_row_idtor = torch.bernoulli(data_idtor.max(axis=1).values * 0.8).bool()
-    
     train_idtor = torch.zeros_like(data_idtor).int()
     train_idtor[train_row_idtor, :] = data_idtor[train_row_idtor, :]
     
@@ -105,8 +104,9 @@ def row_mask(data_idtor,custom_train_row):
     train_row_idtor = custom_train_row
     
     train_idtor = torch.zeros_like(data_idtor).int()
+    data_idtor = data_idtor.int()
     train_idtor[train_row_idtor, :] = data_idtor[train_row_idtor, :]
-    
+
     train_idtor[~train_row_idtor, :],_ = random_mask(data_idtor[~train_row_idtor, :],0.1)
     test_idtor = data_idtor - train_idtor
     
@@ -121,7 +121,7 @@ def get_mask_and_data(data_withnan, is_random_row=False, custom_train_row = None
     valid_condition = False
     while not valid_condition:
 
-        if custom_train_row:
+        if custom_train_row is not None:
 
             train_idtor, test_idtor = row_mask(data_idtor, custom_train_row)
         elif is_random_row:
@@ -137,7 +137,7 @@ def get_mask_and_data(data_withnan, is_random_row=False, custom_train_row = None
 
 
 
-def load_old_benchmark(seed, is_adap_testing=False):
+def get_helm_benchmark(seed, filter_method = 'random_mask'):
     # with open(f"/lfs/skampere1/0/sttruong/reeval/data/resmat.pkl", "rb") as f:
     results = get_HELM_model_benchmark()
         
@@ -149,7 +149,10 @@ def load_old_benchmark(seed, is_adap_testing=False):
 
     torch.manual_seed(seed)
     data_withnan = torch.tensor(results.values, dtype=torch.float)
-    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan, is_adap_testing)
+    if filter_method == 'random_mask':
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan, False)
+    elif filter_method == 'random_row':
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan, True)
     
 
     return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,cat2,model_names)
@@ -170,7 +173,7 @@ def attatch_meta(model_names_df, model_meta_info):
 
 
 
-def get_new_benchmark(seed,filter_method = 'random_mask'):
+def get_official_provider_benchmark(seed, filter_method = 'random_mask'):
     torch.manual_seed(seed)
     
     all_benchmark_data = get_official_provider_model_benchmark()
@@ -182,6 +185,7 @@ def get_new_benchmark(seed,filter_method = 'random_mask'):
     sel_train_row = None
     if filter_method == 'date':
         sel_train_row = uploaded_before(model_meta_info, "2024-10-01")
+
     elif filter_method == 'size':
         sel_train_row = size_smaller(model_meta_info, 30)
     elif filter_method == 'random_row':
@@ -215,7 +219,7 @@ def get_new_benchmark(seed,filter_method = 'random_mask'):
 def get_everything_benchmark(seed, filter_method = 'date'):
     torch.manual_seed(seed)
 
-    results = get_everything_benchmark()
+    results = get_everything_benchmark_raw()
     results_model_name_df = results.reset_index().rename(columns={"index": "model_name"})
     
     model_meta_info = attatch_meta(results_model_name_df[['model_name']], get_all_model_meta_info())
@@ -269,7 +273,7 @@ def get_everything_data(seed, is_adap_testing=False):
     data_withnan = torch.tensor(results.values, dtype=torch.float)
     data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan, is_adap_testing)
     
-    breakpoint()
+
     return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,None,model_names)
 
 

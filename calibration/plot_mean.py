@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import LBFGS
 from torchmetrics import AUROC
-from util import load_old_benchmark, get_new_benchmark
+from util import get_helm_benchmark, get_official_provider_benchmark
 import numpy as np
 import os
 import matplotlib.pyplot as plt
@@ -86,7 +86,7 @@ if __name__ == "__main__":
                 torch.cuda.manual_seed_all(i)
 
             # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, cat = load_old_benchmark(i)
-            data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, cat = get_new_benchmark(i)
+            data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, cat = get_official_provider_benchmark(i)
             Y = data_with0
             N, M = Y.shape[0], Y.shape[1]
             model_names = cat[2]

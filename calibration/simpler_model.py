@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import LBFGS
 from torchmetrics import AUROC
-from util import load_old_benchmark, get_new_benchmark, get_everything_data_sk2, get_mask_and_data,get_everything_benchmark
+from util import get_helm_benchmark, get_official_provider_benchmark, get_everything_data_sk2, get_mask_and_data,get_everything_benchmark
 import numpy as np
 import os
 import matplotlib.pyplot as plt
@@ -61,8 +61,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--factor", type=int, default=2)
     parser.add_argument("--trial_id", type=int, default=0)
-    parser.add_argument("--masking_method", type=int, default=0)
-    parser.add_argument("--dataset", type=int, default=0)
+    parser.add_argument("--masking_method", type=str, default='random_mask')
+    parser.add_argument("--dataset", type=str, default="HELM")
     args = parser.parse_args()
     K_fit = args.factor
     i = args.trial_id
@@ -75,7 +75,12 @@ if __name__ == "__main__":
         torch.cuda.manual_seed_all(i)
         
     # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, filter_method= "random_mask")
-    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_new_benchmark(i)
+    if args.dataset == "HELM":
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_helm_benchmark(i, masking_method)
+    elif args.dataset == "everything":
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, masking_method)
+    elif args.dataset == "official_provider":
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(i, masking_method)
     
     # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = load_old_benchmark(i)
     Y = data_with0.clone()
@@ -96,7 +101,10 @@ if __name__ == "__main__":
         test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
         print(f"factor {K_fit} test auc: {test_auc}")
         print("*"*30)
+
         
+        torch.save(train_auc, f"results/auc/train_auc_{dataset}_{masking_method}_k{K_fit}_i{i}.pt")
+        torch.save(test_auc, f"results/auc/test_auc_{dataset}_{masking_method}_k{K_fit}_i{i}.pt")
         # np.savetxt("results/train_auc_table_everything.csv", train_auc_table, delimiter=",", fmt="%.6f")
         # np.savetxt("results/test_auc_table_everything.csv",  test_auc_table,  delimiter=",", fmt="%.6f")
                     
