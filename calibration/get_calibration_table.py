@@ -24,7 +24,8 @@ def summarize_distr(distr):
 
 
 metrics = ['auc','corr']
-datasets = ["HELM","official_provider","everything"]
+# datasets = ["HELM","official_provider","everything"]
+datasets = ["HELM","official_provider"]
 masking_methods = ["random_mask","random_row","date","size"]
 factors = [i for i in range(1,51)]
 potential_trial = [i for i in range(100)]
@@ -89,7 +90,12 @@ df = pd.DataFrame(flat_records)
 # if you want to set a useful index:
 # df.set_index(["metric", "dataset", "masking_method", "K_fit", "split"], inplace=True)
 
-print(df.head())
+# print(df.head())
 
-pd.DataFrame(flat_records).to_csv("results/summary/partial_results_auc_corr.csv", index=False)
+# pd.DataFrame(flat_records).to_csv("results/summary/partial_results_auc_corr.csv", index=False)
+# breakpoint()
+df_2 = pd.read_csv("results/summary/partial_results_auc_corr_everything.csv")
+df_combined = pd.concat([df, df_2], ignore_index=True)
+
+df_combined.to_csv("results/summary/partial_results_auc_corr_all.csv", index=False)
 
