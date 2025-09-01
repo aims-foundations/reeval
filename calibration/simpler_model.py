@@ -8,7 +8,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import argparse
-import wandb
+# import wandb
 class LogisticMF(nn.Module):
     def __init__(self, N, M, K):
         super().__init__()
@@ -99,10 +99,16 @@ if __name__ == "__main__":
     config_name = f"{dataset}_{masking_method}_k{K_fit}_i{i}"
         
     run_name = f"wandb5_{config_name}"
-    wandb.login(key="575119bcea40be5839a138fbe59d95326bbeb2db")
-    wandb.init(project="info-ga-2", name=run_name)  # good name here
-    wandb.run.log_code(".")
-        
+    # wandb.login(key="575119bcea40be5839a138fbe59d95326bbeb2db")
+    # wandb.init(
+    #     project="info-ga-2",
+    #     name=run_name,
+    #     settings=wandb.Settings(
+    #         save_code=False,     # already minimal
+    #         init_timeout=300     # avoid 90s handshake timeout
+    #     )
+    #     # mode="offline",       # uncomment if your cluster egress is flaky; later `wandb sync`
+    # )   
         
     print(f"running rank:{K_fit} at trial: {i} ")
     torch.manual_seed(i)
@@ -163,5 +169,13 @@ if __name__ == "__main__":
         
         torch.save(r_train, f"results/corr/train_corr_{config_name}.pt")
         torch.save(r_test, f"results/corr/test_corr_{config_name}.pt")
-        run_results = {"train_auc": train_auc, "test_auc": test_auc, "train_corr":r_train ,"test_corr":r_test }
-        wandb.log(run_results)
+        
+        # run_results = {
+        #     "train_auc": float(train_auc),
+        #     "test_auc": float(test_auc),
+        #     "train_corr": float(r_train) if r_train == r_train else None,  # None if NaN
+        #     "test_corr": float(r_test) if r_test == r_test else None,
+        # }   
+        
+        # wandb.log(run_results)
+        # wandb.finish()

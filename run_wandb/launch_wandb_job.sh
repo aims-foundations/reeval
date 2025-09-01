@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Sweep ID
-SWEEP_ID="dml/info-ga-2/vhxkwx1q"
+SWEEP_ID="dml/info-ga-2/8h4rycbh"
 
 # List of GPU groups to use (comma-separated for multi-GPU jobs)
 GPU_LIST=("0" "1" "2" "3" "4" "5" "6" "7" "8" "9")
