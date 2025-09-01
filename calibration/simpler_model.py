@@ -115,8 +115,12 @@ if __name__ == "__main__":
             exit(0)
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_helm_benchmark(i, masking_method)
     elif args.dataset == "everything":
+        if masking_method in ['date','size'] and i > 0:
+            exit(0)
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, masking_method)
     elif args.dataset == "official_provider":
+        if masking_method in ['date','size'] and i > 0:
+            exit(0)
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(i, masking_method)
     else:
         assert False

@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Sweep ID
-SWEEP_ID="dml/info-ga-2/i0sat8h7"
+SWEEP_ID="dml/info-ga-2/vhxkwx1q"
 
 # List of GPU groups to use (comma-separated for multi-GPU jobs)
 GPU_LIST=("0" "1" "2" "3" "4" "5" "6" "7" "8" "9")
 
 # How many agents per GPU group
-AGENTS_PER_GROUP=2   # adjust as needed
+AGENTS_PER_GROUP=15   # adjust as needed
 
 # Create log directory if it doesn't exist
 LOG_DIR="wandb_server_log"
