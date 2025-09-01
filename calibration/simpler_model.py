@@ -59,28 +59,43 @@ def fit_logistic_mf(Y, K, mask=None, steps=1000, lr=1e-2, verbose=True, device=N
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", type=str, default="HELM")
+    parser.add_argument("--masking_method", type=str, default='random_mask')
     parser.add_argument("--factor", type=int, default=2)
     parser.add_argument("--trial_id", type=int, default=0)
-    parser.add_argument("--masking_method", type=str, default='random_mask')
-    parser.add_argument("--dataset", type=str, default="HELM")
     args = parser.parse_args()
     K_fit = args.factor
     i = args.trial_id
     masking_method = args.masking_method
     dataset = args.dataset
-    os.makedirs("results", exist_ok=True)
+    
+    os.makedirs("results/auc", exist_ok=True)
+    
+    
+    train_file = f"results/auc/train_auc_{dataset}_{masking_method}_k{K_fit}_i{i}.pt"
+    test_file  = f"results/auc/test_auc_{dataset}_{masking_method}_k{K_fit}_i{i}.pt"
+
+    # ✅ Exit early if both files exist
+    # if os.path.exists(train_file) and os.path.exists(test_file):
+    #     print(f"Skipping trial {i}, results already exist.")
+    #     exit(0)
+        
     print(f"running rank:{K_fit} at trial: {i} ")
     torch.manual_seed(i)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(i)
-        
+    
     # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, filter_method= "random_mask")
     if args.dataset == "HELM":
+        if masking_method in ['date','size']:
+            exit(0)
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_helm_benchmark(i, masking_method)
     elif args.dataset == "everything":
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, masking_method)
     elif args.dataset == "official_provider":
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(i, masking_method)
+    else:
+        assert False
     
     # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = load_old_benchmark(i)
     Y = data_with0.clone()
@@ -90,7 +105,7 @@ if __name__ == "__main__":
     
     Y_missing[~train_idtor.bool()] = float("nan")
 
-    model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:1")
+    model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:0")
     with torch.no_grad():
         auroc = AUROC(task="binary")
         P_hat = torch.sigmoid(model.forward())
