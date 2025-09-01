@@ -8,6 +8,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import argparse
+import sys
 # import wandb
 class LogisticMF(nn.Module):
     def __init__(self, N, M, K):
@@ -77,7 +78,6 @@ def compute_r(probs, Y, idtor):
         r = np.corrcoef(x[valid], y[valid])[0, 1]
     else:
         r = np.nan
-    return r
 
 
 
@@ -109,6 +109,14 @@ if __name__ == "__main__":
     #     )
     #     # mode="offline",       # uncomment if your cluster egress is flaky; later `wandb sync`
     # )   
+    
+    train_corr_path = f"results/corr/train_corr_{config_name}.pt"
+    test_corr_path = f"results/corr/test_corr_{config_name}.pt"
+
+    # ---- check if both files exist ----
+    if os.path.exists(train_corr_path) and os.path.exists(test_corr_path):
+        print(f"[Skip] Both {train_corr_path} and {test_corr_path} already exist. Exiting.")
+        sys.exit(0)
         
     print(f"running rank:{K_fit} at trial: {i} ")
     torch.manual_seed(i)
