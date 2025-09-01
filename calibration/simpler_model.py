@@ -133,17 +133,12 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
             return
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_helm_benchmark(i, masking_method)
     elif dataset == "everything":
-        if masking_method in ['date','size'] and i > 0:
-            return
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, masking_method)
     elif dataset == "official_provider":
-        if masking_method in ['date','size'] and i > 0:
-            return
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(i, masking_method)
     else:
         assert False
     
-    # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = load_old_benchmark(i)
     Y = data_with0.clone()
     N, M = Y.shape[0], Y.shape[1]
     
@@ -163,20 +158,14 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
         print(f"factor {K_fit} test auc: {test_auc}")
 
 
-        
         torch.save(train_auc, f"results/auc/train_auc_{config_name}.pt")
         torch.save(test_auc, f"results/auc/test_auc_{config_name}.pt")
-        # np.savetxt("results/train_auc_table_everything.csv", train_auc_table, delimiter=",", fmt="%.6f")
-        # np.savetxt("results/test_auc_table_everything.csv",  test_auc_table,  delimiter=",", fmt="%.6f")
-        #------------ compute correlation
-
-        # Predicted and true values
 
         r_train = compute_r(P_hat.cpu(), Y.cpu(), train_idtor.cpu())
         r_test = compute_r(P_hat.cpu(), Y.cpu(), test_idtor.cpu())
         
-        print(f"{dataset} factor {K_fit} train corr: {r_train}")
-        print(f"{dataset} factor {K_fit} test corr: {r_test}")
+        print(f"{dataset} {masking_method} factor {K_fit} train corr: {r_train}")
+        print(f"{dataset} {masking_method} factor {K_fit} test corr: {r_test}")
         print("*"*30)
         
         torch.save(r_train, f"results/corr/train_corr_{config_name}.pt")
@@ -238,11 +227,12 @@ if __name__ == "__main__":
     parser.add_argument("--trial_id", type=int, default=0)
     args = parser.parse_args()
     # parallelize this part
-    mask_list = ["random_mask","random_row","date","size"]
-    dataset_list = ["official_provider","HELM"]
-    factor_list = [1, 2, 3, 4, 6, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+    mask_list = ["date","size","random_mask","random_row"] #"random_mask","random_row",
+    dataset_list = ["official_provider"] #,"HELM"
+    factor_list = [1, 2, 3, 8, 15, 30, 50]
+    # simple_model_job("official_provider", "date", 2, 1)
     # parallelize the part below
-    
+    # sequential_job(0, 1, dataset_list, mask_list)
     # sequential_job(1, args.trial_id,dataset_list,mask_list)
     run_parallel_pool(args.trial_id, dataset_list, mask_list, factor_list)
     
