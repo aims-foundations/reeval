@@ -8,6 +8,8 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 from tueplots import bundles
+import argparse
+
 bundles.iclr2024()
 print("running experiment")
 class LogisticMF(nn.Module):
@@ -59,94 +61,63 @@ def fit_logistic_mf(Y, K, mask=None, steps=1000, lr=1e-2, verbose=True, device=N
     return model
 
 if __name__ == "__main__":
+    # factor
+    # dateset
+    # masking
+    # trial
     
-    # --- setup 4x4 grid ---
-    fig, axes = plt.subplots(1, 6, figsize=(24,4))
-    axes = axes.flatten()
-    i=0
-    factors = [1,2,3,5,10,15]
-    # factors = [1,]
-    with plt.rc_context(bundles.iclr2024(usetex=True, family="serif")):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", type=str, default="HELM")
+    parser.add_argument("--masking_method", type=str, default='random_mask')
+    parser.add_argument("--factor", type=int, default=2)
+    parser.add_argument("--trial_id", type=int, default=0)
+    args = parser.parse_args()
+    K_fit = args.factor
+    i = args.trial_id
+    masking_method = args.masking_method
+    dataset = args.dataset
+    
+    os.makedirs("results/auc", exist_ok=True)
+    
+
+
+    print(f"running rank:{K_fit} at trial: {i} ")
+    torch.manual_seed(i)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(i)
+
+    # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, cat = load_old_benchmark(i)
+    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, cat = get_official_provider_benchmark(i)
+    Y = data_with0
+    N, M = Y.shape[0], Y.shape[1]
+    model_names = cat[2]
+    Y_missing = Y.clone().float()
+    Y_missing[~train_idtor.bool()] = float("nan")
+
+    model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:3")
+    with torch.no_grad():
+        auroc = AUROC(task="binary")
+        P_hat = torch.sigmoid(model.forward())
+        P_hat = P_hat.cpu()
+        test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
         
-        # plt.rcParams.update({
-        #     "font.size": 100,       # default font size
-        #     # "axes.titlesize": 16,  # title
-        #     # "axes.labelsize": 14,  # x and y labels
-        #     # "xtick.labelsize": 30,
-        #     # "ytick.labelsize": 60,
-        #     # "legend.fontsize": 12
-        # })    
-        
-        for idx, K_fit in enumerate(factors):
-            ax = axes[idx]
+        mask_test = test_idtor
 
-            print(f"running rank:{K_fit} at trial: {i} ")
-            torch.manual_seed(i)
-            if torch.cuda.is_available():
-                torch.cuda.manual_seed_all(i)
+        # Predicted and true values
+        P_sel = P_hat * mask_test
+        Y_sel = Y * mask_test
+        counts = mask_test.sum(dim=1)
+        testtaker_mean_score_pred = P_sel.sum(dim=1) / counts
+        testtaker_mean_score_true = Y_sel.sum(dim=1) / counts
 
-            # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, cat = load_old_benchmark(i)
-            data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, cat = get_official_provider_benchmark(i)
-            Y = data_with0
-            N, M = Y.shape[0], Y.shape[1]
-            model_names = cat[2]
-            Y_missing = Y.clone().float()
-            Y_missing[~train_idtor.bool()] = float("nan")
+    x = testtaker_mean_score_true.cpu().numpy()
+    y = testtaker_mean_score_pred.cpu().numpy()
 
-            model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:3")
-            with torch.no_grad():
-                auroc = AUROC(task="binary")
-                P_hat = torch.sigmoid(model.forward())
-                P_hat = P_hat.cpu()
-                test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
-                mask_test = test_idtor
+    valid = np.isfinite(x) & np.isfinite(y)
+    if valid.sum() >= 2 and np.std(x[valid]) > 0 and np.std(y[valid]) > 0:
+        r = np.corrcoef(x[valid], y[valid])[0, 1]
+    else:
+        r = np.nan
 
-                # Predicted and true values
-                P_sel = P_hat * mask_test
-                Y_sel = Y * mask_test
-                counts = mask_test.sum(dim=1)
-                testtaker_mean_score_pred = P_sel.sum(dim=1) / counts
-                testtaker_mean_score_true = Y_sel.sum(dim=1) / counts
-
-            x = testtaker_mean_score_true.cpu().numpy()
-            y = testtaker_mean_score_pred.cpu().numpy()
-
-            valid = np.isfinite(x) & np.isfinite(y)
-            if valid.sum() >= 2 and np.std(x[valid]) > 0 and np.std(y[valid]) > 0:
-                r = np.corrcoef(x[valid], y[valid])[0, 1]
-            else:
-                r = np.nan
-            title_r = f"{r:.3f}" if np.isfinite(r) else "NA"
-
-            # scatter plot
-            ax.scatter(x, y, alpha=0.6, s=10)
-            
-            abs_err = np.abs(y - x)
-            valid_idx = np.where(valid)[0]
-            order = np.argsort(abs_err[valid_idx])[::-1]
-            k = min(5, order.size)
-            top_idx = valid_idx[order[:k]]
-            ax.scatter(x[top_idx], y[top_idx],
-               facecolors='none', edgecolors='r',
-               linewidths=1.2, s=36, zorder=3)
-            for j in top_idx:
-                # fall back to index if names missing/misaligned
-                lbl = model_names[j] if j < len(model_names) else str(j)
-                ax.annotate(lbl,
-                            (x[j], y[j]),
-                            xytext=(5, -4),
-                            textcoords='offset points',
-                            fontsize=5, alpha=0.9, zorder=4)
-            
-            ax.plot([0, 1], [0, 1], 'r--', linewidth=1)
-
-            ax.set_xlim(0, 1)
-            ax.set_ylim(0, 1)
-            ax.set_aspect('equal')
-            ax.set_title(f"Rank={K_fit}, r={title_r}",fontsize=12)
-            ax.tick_params(labelsize=12)
-
-        # Adjust layout
-        plt.tight_layout()
-        plt.savefig("plot/test_set_mean/all_ranks_1to16_official_openllm.png", dpi=600, bbox_inches="tight")
-        plt.show()
+    torch.save(train_auc, f"results/auc/train_auc_{dataset}_{masking_method}_k{K_fit}_i{i}.pt")
+    torch.save(test_auc, f"results/auc/test_auc_{dataset}_{masking_method}_k{K_fit}_i{i}.pt")

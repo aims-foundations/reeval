@@ -297,3 +297,51 @@ def get_everything_data_sk2(seed, is_adap_testing=False):
     
 
     return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,None,model_names)
+
+# df = get_all_model_meta_info()
+
+
+# # your dataset date mapping
+# dataset_dates = {
+#     "IFEVAL": "2023-11-15",
+#     "BBH": "2022-10-17",
+#     "MATH": "2021-11-08",
+#     "GPQA": "2023-11-20",
+#     "MUSR": "2024-03-23",
+#     "MMLU": "2024-11-06",
+#     "arc_challenge": "2024-11-17"
+# }
+
+# # convert to datetime
+# dataset_dates = {k: pd.to_datetime(v) for k,v in dataset_dates.items()}
+
+# # ensure Upload To Hub Date is datetime
+# df["Upload To Hub Date"] = pd.to_datetime(df["Upload To Hub Date"], errors="coerce")
+
+# # build result matrix
+# result = pd.DataFrame(index=df["fullname"])
+
+
+# # # merge the upload date into result
+# # result = result.drop(columns=["Upload To Hub Date"], errors="ignore") \
+# #                .assign(upload_date=df["Upload To Hub Date"].values)
+
+# # build new index: "<model>_<date>"
+# result.index = [
+#     f"{name}_{date.date() if pd.notna(date) else 'NaT'}"
+#     for name, date in zip(df["fullname"], df["Upload To Hub Date"])
+# ]
+
+
+# for dataset, d_time in dataset_dates.items():
+#     col = f"{dataset}_{d_time.date()}"
+#     series = df["Upload To Hub Date"].apply(
+#         lambda x: np.nan if pd.isna(x) else (1 if x > d_time else 0)
+#     )
+#     # assign by position (ignore index) to avoid alignment
+#     result[col] = series.to_numpy()
+
+# # result["Upload To Hub Date"]=df["Upload To Hub Date"].to_numpy()
+# result.to_csv("model_dataset_date_compare.csv")
+
+# breakpoint()

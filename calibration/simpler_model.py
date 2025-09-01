@@ -8,7 +8,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import argparse
-
+import wandb
 class LogisticMF(nn.Module):
     def __init__(self, N, M, K):
         super().__init__()
@@ -57,6 +57,30 @@ def fit_logistic_mf(Y, K, mask=None, steps=1000, lr=1e-2, verbose=True, device=N
 
     return model
 
+
+def compute_r(probs, Y, idtor):
+
+    counts = idtor.sum(dim=1)
+    keep = counts > 0
+    
+    P_sel = (probs * idtor)[keep]
+    Y_sel = (Y * idtor)[keep]
+    counts = counts[keep]
+    mean_score_pred = P_sel.sum(dim=1) / counts
+    mean_score_true = Y_sel.sum(dim=1) / counts
+
+    x = mean_score_true.cpu().numpy()
+    y = mean_score_pred.cpu().numpy()
+
+    valid = np.isfinite(x) & np.isfinite(y)
+    if valid.sum() >= 2 and np.std(x[valid]) > 0 and np.std(y[valid]) > 0:
+        r = np.corrcoef(x[valid], y[valid])[0, 1]
+    else:
+        r = np.nan
+    return r
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="HELM")
@@ -70,15 +94,15 @@ if __name__ == "__main__":
     dataset = args.dataset
     
     os.makedirs("results/auc", exist_ok=True)
+    os.makedirs("results/corr", exist_ok=True)
     
-    
-    train_file = f"results/auc/train_auc_{dataset}_{masking_method}_k{K_fit}_i{i}.pt"
-    test_file  = f"results/auc/test_auc_{dataset}_{masking_method}_k{K_fit}_i{i}.pt"
-
-    # ✅ Exit early if both files exist
-    # if os.path.exists(train_file) and os.path.exists(test_file):
-    #     print(f"Skipping trial {i}, results already exist.")
-    #     exit(0)
+    config_name = f"{dataset}_{masking_method}_k{K_fit}_i{i}"
+        
+    run_name = f"wandb5_{config_name}"
+    wandb.login(key="575119bcea40be5839a138fbe59d95326bbeb2db")
+    wandb.init(project="info-ga-2", name=run_name)  # good name here
+    wandb.run.log_code(".")
+        
         
     print(f"running rank:{K_fit} at trial: {i} ")
     torch.manual_seed(i)
@@ -109,19 +133,31 @@ if __name__ == "__main__":
     with torch.no_grad():
         auroc = AUROC(task="binary")
         P_hat = torch.sigmoid(model.forward())
-
+        P_hat = P_hat.cpu()
         train_auc = auroc(P_hat[train_idtor].cpu(), Y[train_idtor].cpu())
         print(f"factor {K_fit} train auc: {train_auc}")
 
         test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
         print(f"factor {K_fit} test auc: {test_auc}")
-        print("*"*30)
+
 
         
-        torch.save(train_auc, f"results/auc/train_auc_{dataset}_{masking_method}_k{K_fit}_i{i}.pt")
-        torch.save(test_auc, f"results/auc/test_auc_{dataset}_{masking_method}_k{K_fit}_i{i}.pt")
+        torch.save(train_auc, f"results/auc/train_auc_{config_name}.pt")
+        torch.save(test_auc, f"results/auc/test_auc_{config_name}.pt")
         # np.savetxt("results/train_auc_table_everything.csv", train_auc_table, delimiter=",", fmt="%.6f")
         # np.savetxt("results/test_auc_table_everything.csv",  test_auc_table,  delimiter=",", fmt="%.6f")
-                    
-                    
+        #------------ compute correlation
 
+        # Predicted and true values
+
+        r_train = compute_r(P_hat.cpu(), Y.cpu(), train_idtor.cpu())
+        r_test = compute_r(P_hat.cpu(), Y.cpu(), test_idtor.cpu())
+        
+        print(f"factor {K_fit} train corr: {r_train}")
+        print(f"factor {K_fit} test corr: {r_test}")
+        print("*"*30)
+        
+        torch.save(r_train, f"results/corr/train_corr_{config_name}.pt")
+        torch.save(r_test, f"results/corr/test_corr_{config_name}.pt")
+        run_results = {"train_auc": train_auc, "test_auc": test_auc, "train_corr":r_train ,"test_corr":r_test }
+        wandb.log(run_results)

@@ -2,6 +2,7 @@ import math
 import torch
 from torch import nn
 from itertools import permutations
+from factor_analyzer import Rotator
 
 @torch.no_grad()
 def _canonicalize(L):
@@ -264,106 +265,119 @@ def align_to_target(V_est: torch.Tensor, V_ref: torch.Tensor):
 # ---------------------------
 # Example
 if __name__ == "__main__":
-    # torch.manual_seed(0)
-    # p, m = 12, 3
-    # # make a simple structure loading matrix then scramble it with an oblique transform
-    # L_true = torch.zeros(p, m, dtype=torch.float64)
-    # L_true[:4, 0] = torch.tensor([0.8, 0.7, 0.6, 0.65], dtype=torch.float64)
-    # L_true[4:8, 1] = torch.tensor([0.75, 0.7, 0.55, 0.6], dtype=torch.float64)
-    # L_true[8:, 2] = torch.tensor([0.9, 0.6, 0.55, 0.5], dtype=torch.float64)
-    # # oblique scramble
-    # A = torch.tensor([[1.0, 0.2, 0.1],
-    #                   [0.1, 1.0, 0.25],
-    #                   [0.15, 0.2, 1.0]], dtype=torch.float64)
-    # T_scramble = torch.linalg.cholesky(A)  # PD
-    # R_scramble = torch.linalg.solve(T_scramble, torch.eye(m, dtype=torch.float64))
-    # L_unrot = L_true @ R_scramble  # what EFA would estimate before rotation
-    # V_unrot = L_unrot
-    # device = V_unrot.device
-    # dtype = V_unrot.dtype
-    # res = geomin_oblique(L_unrot, epsilon=1e-3, rstarts=10, max_iter=2000, lr=0.05, verbose=False)
-    # print("Objective:", res["objective"])
-    # print("Phi:\n", res["Phi"])
-    # print("Rotated loadings:\n", torch.round(res["L_rot"], decimals=3))
-    # Phi_hat = res["Phi"]     # factor correlation after rotation (T_hat T_hat^T)
+    torch.manual_seed(0)
+    p, m = 12, 3
+    # make a simple structure loading matrix then scramble it with an oblique transform
+    L_true = torch.zeros(p, m, dtype=torch.float64)
+    L_true[:4, 0] = torch.tensor([0.8, 0.7, 0.6, 0.65], dtype=torch.float64)
+    L_true[4:8, 1] = torch.tensor([0.75, 0.7, 0.55, 0.6], dtype=torch.float64)
+    L_true[8:, 2] = torch.tensor([0.9, 0.6, 0.55, 0.5], dtype=torch.float64)
+    # oblique scramble
+    A = torch.tensor([[1.0, 0.2, 0.1],
+                      [0.1, 1.0, 0.25],
+                      [0.15, 0.2, 1.0]], dtype=torch.float64)
+    T_scramble = torch.linalg.cholesky(A)  # PD
+    R_scramble = torch.linalg.solve(T_scramble, torch.eye(m, dtype=torch.float64))
+    L_unrot = L_true @ R_scramble  # what EFA would estimate before rotation
+    V_unrot = L_unrot
+    device = V_unrot.device
+    dtype = V_unrot.dtype
+    res = geomin_oblique(L_unrot, epsilon=1e-3, rstarts=10, max_iter=2000, lr=0.05, verbose=False)
+    print("Objective:", res["objective"])
+    print("Phi:\n", res["Phi"])
+    print("Rotated loadings:\n", torch.round(res["L_rot"], decimals=3))
+    Phi_hat = res["Phi"]     # factor correlation after rotation (T_hat T_hat^T)
 
         
-    # R = res["R"]                             # (m × m) right-side transform (includes perm/sign)
-    # V_rot = V_unrot @ R                      # V' = V_unrot R
+    R = res["R"]                             # (m × m) right-side transform (includes perm/sign)
+    V_rot = V_unrot @ R                      # V' = V_unrot R
 
-    # # 2) Make some synthetic factor scores U (no special distribution required)
-    # N = 500
-    # U = torch.randn(N, m, dtype=dtype, device=device)
+    # 2) Make some synthetic factor scores U (no special distribution required)
+    N = 500
+    U = torch.randn(N, m, dtype=dtype, device=device)
 
-    # # 3) Rotate U properly so the product is invariant: U' = U R^{-T}
-    # I = torch.eye(m, dtype=dtype, device=device)
-    # U_rot = U @ torch.linalg.solve(R.T, I)
+    # 3) Rotate U properly so the product is invariant: U' = U R^{-T}
+    I = torch.eye(m, dtype=dtype, device=device)
+    U_rot = U @ torch.linalg.solve(R.T, I)
 
-    # # 4) Check invariance: U V_unrot^T == U' V'^T (up to numerical precision)
-    # orig = U @ V_unrot.T
-    # rot  = U_rot @ V_rot.T
-    # max_abs_err = (orig - rot).abs().max().item()
-    # print("max |U V^T - U' V'^T| =", max_abs_err) 
-    # breakpoint()   
+    # 4) Check invariance: U V_unrot^T == U' V'^T (up to numerical precision)
+    orig = U @ V_unrot.T
+    rot  = U_rot @ V_rot.T
+    max_abs_err = (orig - rot).abs().max().item()
+    print("max |U V^T - U' V'^T| =", max_abs_err) 
+        
+        # L: unrotated loadings, shape (p, m)
+    rot = Rotator(method="geomin_obl", delta=0.001, max_iter=2000, tol=1e-6)
+    V_rot_2 = rot.fit_transform(V_unrot)   # rotated loadings
+    R_2 = rot.rotation_              # right-multiplier so that L_rot = L @ R
+    Phi_2 = rot.phi_                 # factor correlation matrix (oblique only)
     
-    torch.manual_seed(0)
-    dtype = torch.float64
-
-    p, m = 12, 3
-
-    # 1) Simple-structure loadings (this is your ground-truth V)
-    V_true = torch.zeros(p, m, dtype=dtype)
-    V_true[:4, 0] = torch.tensor([0.8, 0.7, 0.6, 0.65], dtype=dtype)
-    V_true[4:8, 1] = torch.tensor([0.75, 0.7, 0.55, 0.6], dtype=dtype)
-    V_true[8:, 2]  = torch.tensor([0.9, 0.6, 0.55, 0.5], dtype=dtype)
-
-    # 2) Build two different oblique scrambles.
-    #    Use lower-triangular T with positive diagonal so A = T T^T is PD, and R = T^{-1}.
-    T1 = torch.tensor([[1.0, 0.0, 0.0],
-                       [0.20, 1.0, 0.0],
-                       [0.10, 0.25, 1.0]], dtype=dtype)
-    A1 = T1 @ T1.T
-    R1 = torch.linalg.solve(T1, torch.eye(m, dtype=dtype))
-
-    T2 = torch.tensor([[1.0, 0.0, 0.0],
-                       [-0.30, 1.0, 0.0],
-                       [0.25, 0.20, 1.0]], dtype=dtype)
-    A2 = T2 @ T2.T
-    R2 = torch.linalg.solve(T2, torch.eye(m, dtype=dtype))
-
-    # 3) Apply first scramble, then second scramble
-    V1 = V_true @ R1              # once-scrambled
-    V2 = V_true @ (R1 @ R2)       # twice-scrambled
-    print("get first R")
-    # 4) Rotate each scrambled matrix with geomin oblique
-    res1 = geomin_oblique(V1, epsilon=1e-3, rstarts=20, max_iter=2000, lr=0.05, verbose=False)
-    Rhat1 = res1["R"]; Phi1 = res1["Phi"]; V1_rot = V1 @ Rhat1
-    print("get second R")
-    res2 = geomin_oblique(V2, epsilon=1e-3, rstarts=20, max_iter=2000, lr=0.05, verbose=False)
-    Rhat2 = res2["R"]; Phi2 = res2["Phi"]; V2_rot = V2 @ Rhat2
     
-    print("align")
-    # Align each rotated solution to V_true
-    V1_aligned, err1, perm1, sgn1 = align_to_target(V1_rot, V_true)
-    V2_aligned, err2, perm2, sgn2 = align_to_target(V2_rot, V_true)
-    breakpoint()
-    print("max |V_true - align(V1_rot)| =", err1)
-    print("max |V_true - align(V2_rot)| =", err2)
+    
+    
+    
+    breakpoint()   
+    
+    
+    #==============
+    # torch.manual_seed(0)
+    # dtype = torch.float64
 
-    # Or align V1_rot directly to V2_rot
-    V2_to_V1, err12, perm12, sgn12 = align_to_target(V2_rot, V1_rot)
-    print("max |V1_rot - align(V2_rot->V1)| =", err12)
+    # p, m = 12, 3
 
-    # Covariance invariance check (both should match Sigma_true)
-    I = torch.eye(m, dtype=dtype)
-    Sigma_true = V_true @ V_true.T
-    Sigma1_hat = V1 @ Rhat1 @ Phi1 @ Rhat1.T @ V1.T
-    Sigma2_hat = V2 @ Rhat2 @ Phi2 @ Rhat2.T @ V2.T
-    print("max |Σ_true - Σ_hat (1 scramble)| =", (Sigma_true - Sigma1_hat).abs().max().item())
-    print("max |Σ_true - Σ_hat (2 scrambles)| =", (Sigma_true - Sigma2_hat).abs().max().item())
+    # # 1) Simple-structure loadings (this is your ground-truth V)
+    # V_true = torch.zeros(p, m, dtype=dtype)
+    # V_true[:4, 0] = torch.tensor([0.8, 0.7, 0.6, 0.65], dtype=dtype)
+    # V_true[4:8, 1] = torch.tensor([0.75, 0.7, 0.55, 0.6], dtype=dtype)
+    # V_true[8:, 2]  = torch.tensor([0.9, 0.6, 0.55, 0.5], dtype=dtype)
 
-    # Optional: see that Rhat1 and Rhat2 invert your scrambles up to signed permutation
-    M1 = Rhat1 @ R1              # ≈ signed permutation
-    M2 = Rhat2 @ (R1 @ R2)       # ≈ signed permutation
-    print("Rhat1 @ R1:\n", torch.round(M1, 3))
-    print("Rhat2 @ (R1 @ R2):\n", torch.round(M2, 3))
+    # # 2) Build two different oblique scrambles.
+    # #    Use lower-triangular T with positive diagonal so A = T T^T is PD, and R = T^{-1}.
+    # T1 = torch.tensor([[1.0, 0.0, 0.0],
+    #                    [0.20, 1.0, 0.0],
+    #                    [0.10, 0.25, 1.0]], dtype=dtype)
+    # A1 = T1 @ T1.T
+    # R1 = torch.linalg.solve(T1, torch.eye(m, dtype=dtype))
+
+    # T2 = torch.tensor([[1.0, 0.0, 0.0],
+    #                    [-0.30, 1.0, 0.0],
+    #                    [0.25, 0.20, 1.0]], dtype=dtype)
+    # A2 = T2 @ T2.T
+    # R2 = torch.linalg.solve(T2, torch.eye(m, dtype=dtype))
+
+    # # 3) Apply first scramble, then second scramble
+    # V1 = V_true @ R1              # once-scrambled
+    # V2 = V_true @ (R1 @ R2)       # twice-scrambled
+    # print("get first R")
+    # # 4) Rotate each scrambled matrix with geomin oblique
+    # res1 = geomin_oblique(V1, epsilon=1e-3, rstarts=20, max_iter=2000, lr=0.05, verbose=False)
+    # Rhat1 = res1["R"]; Phi1 = res1["Phi"]; V1_rot = V1 @ Rhat1
+    # print("get second R")
+    # res2 = geomin_oblique(V2, epsilon=1e-3, rstarts=20, max_iter=2000, lr=0.05, verbose=False)
+    # Rhat2 = res2["R"]; Phi2 = res2["Phi"]; V2_rot = V2 @ Rhat2
+    
+    # print("align")
+    # # Align each rotated solution to V_true
+    # V1_aligned, err1, perm1, sgn1 = align_to_target(V1_rot, V_true)
+    # V2_aligned, err2, perm2, sgn2 = align_to_target(V2_rot, V_true)
+    # breakpoint()
+    # print("max |V_true - align(V1_rot)| =", err1)
+    # print("max |V_true - align(V2_rot)| =", err2)
+
+    # # Or align V1_rot directly to V2_rot
+    # V2_to_V1, err12, perm12, sgn12 = align_to_target(V2_rot, V1_rot)
+    # print("max |V1_rot - align(V2_rot->V1)| =", err12)
+
+    # # Covariance invariance check (both should match Sigma_true)
+    # I = torch.eye(m, dtype=dtype)
+    # Sigma_true = V_true @ V_true.T
+    # Sigma1_hat = V1 @ Rhat1 @ Phi1 @ Rhat1.T @ V1.T
+    # Sigma2_hat = V2 @ Rhat2 @ Phi2 @ Rhat2.T @ V2.T
+    # print("max |Σ_true - Σ_hat (1 scramble)| =", (Sigma_true - Sigma1_hat).abs().max().item())
+    # print("max |Σ_true - Σ_hat (2 scrambles)| =", (Sigma_true - Sigma2_hat).abs().max().item())
+
+    # # Optional: see that Rhat1 and Rhat2 invert your scrambles up to signed permutation
+    # M1 = Rhat1 @ R1              # ≈ signed permutation
+    # M2 = Rhat2 @ (R1 @ R2)       # ≈ signed permutation
+    # print("Rhat1 @ R1:\n", torch.round(M1, 3))
+    # print("Rhat2 @ (R1 @ R2):\n", torch.round(M2, 3))
