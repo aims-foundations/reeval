@@ -9,6 +9,12 @@ import os
 import matplotlib.pyplot as plt
 import argparse
 import sys
+from multiprocessing import Pool
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import functools
+import traceback
+
+
 # import wandb
 class LogisticMF(nn.Module):
     def __init__(self, N, M, K):
@@ -78,26 +84,23 @@ def compute_r(probs, Y, idtor):
         r = np.corrcoef(x[valid], y[valid])[0, 1]
     else:
         r = np.nan
+    return r
 
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="HELM")
-    parser.add_argument("--masking_method", type=str, default='random_mask')
-    parser.add_argument("--factor", type=int, default=2)
-    parser.add_argument("--trial_id", type=int, default=0)
-    args = parser.parse_args()
-    K_fit = args.factor
-    i = args.trial_id
-    masking_method = args.masking_method
-    dataset = args.dataset
+
+    
+def simple_model_job(dataset, masking_method, factor, trial_id):
+
+    K_fit = factor
+    i = trial_id
+    masking_method = masking_method
+    dataset = dataset
     
     os.makedirs("results/auc", exist_ok=True)
     os.makedirs("results/corr", exist_ok=True)
-    
     config_name = f"{dataset}_{masking_method}_k{K_fit}_i{i}"
-        
+
     run_name = f"wandb5_{config_name}"
     # wandb.login(key="575119bcea40be5839a138fbe59d95326bbeb2db")
     # wandb.init(
@@ -109,14 +112,15 @@ if __name__ == "__main__":
     #     )
     #     # mode="offline",       # uncomment if your cluster egress is flaky; later `wandb sync`
     # )   
-    
     train_corr_path = f"results/corr/train_corr_{config_name}.pt"
     test_corr_path = f"results/corr/test_corr_{config_name}.pt"
 
     # ---- check if both files exist ----
-    if os.path.exists(train_corr_path) and os.path.exists(test_corr_path):
-        print(f"[Skip] Both {train_corr_path} and {test_corr_path} already exist. Exiting.")
-        sys.exit(0)
+    if os.path.exists(train_corr_path) and os.path.exists(test_corr_path):      
+        if torch.load(train_corr_path) is not None and torch.load(test_corr_path) is not None:
+            print(f"[Skip] Both {train_corr_path} and {test_corr_path} already exist. Exiting.")
+        
+            return
         
     print(f"running rank:{K_fit} at trial: {i} ")
     torch.manual_seed(i)
@@ -124,17 +128,17 @@ if __name__ == "__main__":
         torch.cuda.manual_seed_all(i)
     
     # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, filter_method= "random_mask")
-    if args.dataset == "HELM":
+    if dataset == "HELM":
         if masking_method in ['date','size']:
-            exit(0)
+            return
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_helm_benchmark(i, masking_method)
-    elif args.dataset == "everything":
+    elif dataset == "everything":
         if masking_method in ['date','size'] and i > 0:
-            exit(0)
+            return
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, masking_method)
-    elif args.dataset == "official_provider":
+    elif dataset == "official_provider":
         if masking_method in ['date','size'] and i > 0:
-            exit(0)
+            return
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(i, masking_method)
     else:
         assert False
@@ -171,8 +175,8 @@ if __name__ == "__main__":
         r_train = compute_r(P_hat.cpu(), Y.cpu(), train_idtor.cpu())
         r_test = compute_r(P_hat.cpu(), Y.cpu(), test_idtor.cpu())
         
-        print(f"factor {K_fit} train corr: {r_train}")
-        print(f"factor {K_fit} test corr: {r_test}")
+        print(f"{dataset} factor {K_fit} train corr: {r_train}")
+        print(f"{dataset} factor {K_fit} test corr: {r_test}")
         print("*"*30)
         
         torch.save(r_train, f"results/corr/train_corr_{config_name}.pt")
@@ -187,3 +191,60 @@ if __name__ == "__main__":
         
         # wandb.log(run_results)
         # wandb.finish()
+
+
+def sequential_job(factor, trial_id, dataset_list, masking_method_list):
+    for masking_method in masking_method_list:
+        for dataset in dataset_list:
+            try:
+                simple_model_job(dataset, masking_method, factor, trial_id)
+            except Exception as e:
+                print(f"err: dataset={dataset}, mask={masking_method}, factor={factor}, trial={trial_id}")
+                print(f" -> {type(e).__name__}: {e}")        # just type and message
+                traceback.print_exc()                        # full stack trace (optional)
+        
+def run_single_factor(factor, trial_id, dataset_list, masking_method_list):
+    """Wrapper function for a single factor - this will be parallelized"""
+    print(f"Starting factor {factor} on process {os.getpid()}")
+    sequential_job(factor, trial_id, dataset_list, masking_method_list)
+    print(f"Completed factor {factor}")
+    return factor
+
+
+# Approach 1: Using multiprocessing.Pool
+def run_parallel_pool(trial_id, dataset_list, masking_method_list, factor_list):
+    """Parallelize using multiprocessing.Pool"""
+    
+    # Create partial function with fixed arguments
+    run_factor_partial = functools.partial(
+        run_single_factor, 
+        trial_id=trial_id,
+        dataset_list=dataset_list,
+        masking_method_list=masking_method_list
+    )
+    
+    with Pool(processes=15) as pool:
+        results = pool.map(run_factor_partial, factor_list)
+    
+    print(f"Completed all factors: {results}")
+
+    
+        
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    # parser.add_argument("--dataset", type=str, default="HELM")
+    # parser.add_argument("--masking_method", type=str, default='random_mask')
+    # parser.add_argument("--factor", type=int, default=2)
+    parser.add_argument("--trial_id", type=int, default=0)
+    args = parser.parse_args()
+    # parallelize this part
+    mask_list = ["random_mask","random_row","date","size"]
+    dataset_list = ["official_provider","HELM"]
+    factor_list = [1, 2, 3, 4, 6, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+    # parallelize the part below
+    
+    # sequential_job(1, args.trial_id,dataset_list,mask_list)
+    run_parallel_pool(args.trial_id, dataset_list, mask_list, factor_list)
+    
+    # for factor in factor_list:
+    #     sequential_job(factor, args.trial_id)
