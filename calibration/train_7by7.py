@@ -90,30 +90,17 @@ def compute_r(probs, Y, idtor):
 
 
     
-def simple_model_job(dataset, masking_method, factor, trial_id):
+def simple_model_job(train_idx, test_idx, factor, trial_id):
 
     K_fit = factor
     i = trial_id
-    masking_method = masking_method
-    dataset = dataset
     
-    os.makedirs("results/auc", exist_ok=True)
-    os.makedirs("results/corr", exist_ok=True)
-    config_name = f"{dataset}_{masking_method}_k{K_fit}_i{i}"
+    os.makedirs("results/pred_dataset", exist_ok=True)
+    config_name = f"everything_train{train_idx}_test{test_idx}_k{K_fit}_i{i}"
 
     run_name = f"wandb5_{config_name}"
-    # wandb.login(key="575119bcea40be5839a138fbe59d95326bbeb2db")
-    # wandb.init(
-    #     project="info-ga-2",
-    #     name=run_name,
-    #     settings=wandb.Settings(
-    #         save_code=False,     # already minimal
-    #         init_timeout=300     # avoid 90s handshake timeout
-    #     )
-    #     # mode="offline",       # uncomment if your cluster egress is flaky; later `wandb sync`
-    # )   
     
-    mean_pred_test_path = f"results/corr/mean_pred_test_{config_name}.pt"
+    mean_pred_test_path = f"results/pred_dataset/mean_pred_test_{config_name}.pt"
 
     # ---- check if both files exist ----
     if os.path.exists(mean_pred_test_path):      
@@ -126,18 +113,11 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
     torch.manual_seed(i)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(i)
-    
-    # data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, filter_method= "random_mask")
-    if dataset == "HELM":
-        if masking_method in ['date','size']:
-            return
-        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_helm_benchmark(i, masking_method)
-    elif dataset == "everything":
-        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, masking_method)
-    elif dataset == "official_provider":
-        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(i, masking_method)
+    if train_idx == test_idx:
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, filter_method= "random_mask")
     else:
-        assert False
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark_1_to_2(i, train_idx, test_idx)
+    
     
     Y = data_with0.clone()
     N, M = Y.shape[0], Y.shape[1]
@@ -148,9 +128,7 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
     if factor == 0:
 
         
-        b_size = 5_000
-        if dataset == 'everything':
-            b_size = 500
+        b_size = 500
         print(f"using rash model b size: {b_size}")
         P_hat = rasch(data_with0, train_idtor=train_idtor, B=b_size, device="cuda:0")
     else:
@@ -164,31 +142,30 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
         auroc = AUROC(task="binary")
         P_hat = P_hat.cpu()
         train_auc = auroc(P_hat[train_idtor].cpu(), Y[train_idtor].cpu())
-        print(f"factor {K_fit} train auc: {train_auc}")
+        print(f"{config_name} train auc: {train_auc}")
 
         test_auc = auroc(P_hat[test_idtor].cpu(), Y[test_idtor].cpu())
-        print(f"factor {K_fit} test auc: {test_auc}")
+        print(f"{config_name} test auc: {test_auc}")
 
 
-        torch.save(train_auc, f"results/auc/train_auc_{config_name}.pt")
-        torch.save(test_auc, f"results/auc/test_auc_{config_name}.pt")
+        torch.save(train_auc, f"results/pred_dataset/train_auc_{config_name}.pt")
+        torch.save(test_auc, f"results/pred_dataset/test_auc_{config_name}.pt")
 
         r_train, mean_true_train, mean_pred_train = compute_r(P_hat.cpu(), Y.cpu(), train_idtor.cpu())
         r_test, mean_true_test, mean_pred_test = compute_r(P_hat.cpu(), Y.cpu(), test_idtor.cpu())
         
-        print(f"{dataset} {masking_method} factor {K_fit} train corr: {r_train}")
-        print(f"{dataset} {masking_method} factor {K_fit} test corr: {r_test}")
+        print(f"{config_name} train corr: {r_train}")
+        print(f"{config_name} test corr: {r_test}")
         print("*"*30)
         
-        torch.save(r_train, f"results/corr/train_corr_{config_name}.pt")
+        torch.save(r_train, f"results/pred_dataset/train_corr_{config_name}.pt")
+        torch.save(r_test, f"results/pred_dataset/test_corr_{config_name}.pt")
         
-        torch.save(r_test, f"results/corr/test_corr_{config_name}.pt")
+        torch.save(mean_true_train, f"results/pred_dataset/mean_true_train_{config_name}.pt")
+        torch.save(mean_pred_train, f"results/pred_dataset/mean_pred_train_{config_name}.pt")
         
-        torch.save(mean_true_train, f"results/corr/mean_true_train_{config_name}.pt")
-        torch.save(mean_pred_train, f"results/corr/mean_pred_train_{config_name}.pt")
-        
-        torch.save(mean_true_test, f"results/corr/mean_true_test_{config_name}.pt")
-        torch.save(mean_pred_test, f"results/corr/mean_pred_test_{config_name}.pt")
+        torch.save(mean_true_test, f"results/pred_dataset/mean_true_test_{config_name}.pt")
+        torch.save(mean_pred_test, f"results/pred_dataset/mean_pred_test_{config_name}.pt")
         
         # run_results = {
         #     "train_auc": float(train_auc),
@@ -240,22 +217,27 @@ def run_parallel_pool(trial_id, dataset_list, masking_method_list, factor_list):
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="HELM")
-    parser.add_argument("--masking_method", type=str, default='random_mask')
-    # parser.add_argument("--factor", type=int, default=2)
+    # parser.add_argument("--dataset", type=str, default="HELM")
+    # parser.add_argument("--masking_method", type=str, default='random_mask')
+    parser.add_argument("--factor", type=int, default=2)
     parser.add_argument("--trial_id", type=int, default=0)
     args = parser.parse_args()
     # parallelize this part
     # mask_list = ["date","size","random_mask","random_row"] #"random_mask","random_row", ,"random_mask","random_row"
     # dataset_list = ["HELM", "official_provider","everything"] #,"HELM"
-    factor_list = [ 1,0, 2, 4, 8, 16, 32, 64, 128, 256]
-    for f in factor_list:
-        try:
-            simple_model_job(args.dataset, args.masking_method, f, args.trial_id)
-        except Exception as e:
-            print(f"err: dataset={args.dataset}, mask={args.masking_method}, factor={f}, trial={args.trial_id}")
-            print(f" -> {type(e).__name__}: {e}")        # just type and message
-            traceback.print_exc()                        # full stack trace (optional)
+    # factor_list = [0, 1, 2, 4, 8, 16, 32, 64, 128, 256]
+    # for f in factor_list:
+    #     try:
+    #         simple_model_job(args.dataset, args.masking_method, f, args.trial_id)
+    #     except Exception as e:
+    #         print(f"err: dataset={args.dataset}, mask={args.masking_method}, factor={f}, trial={args.trial_id}")
+    #         print(f" -> {type(e).__name__}: {e}")        # just type and message
+    #         traceback.print_exc()                        # full stack trace (optional)
+    
+    for i in range(7):
+        for j in range(7):
+            
+            simple_model_job(6-i, 6-j, args.factor, args.trial_id)
     # parallelize the part below
     # sequential_job(0, 1, dataset_list, mask_list)
     # rasch

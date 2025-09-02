@@ -51,7 +51,7 @@ def get_all_model_meta_info():
     local_path = snapshot_download(
         repo_id="stair-lab/reeval_llm_leaderbord", repo_type="dataset"
     )
-    df = pd.read_csv(f"{local_path}/data/openllm_all_model_info.csv")
+    df = pd.read_csv(f"{local_path}/data/openllm_all_model_info_full.csv")
 
     return df
 
@@ -61,7 +61,7 @@ def get_everything_benchmark_raw():
     )
     with open(f"{local_path}/data/benchmark_data_open_llm_full.pkl", "rb") as f:
         results = pickle.load(f)
-    # breakpoint()
+
     return results
 
 
@@ -129,15 +129,20 @@ def col_mask(data_idtor,custom_col_row):
     return train_idtor, test_idtor
 
 
-def get_mask_and_data(data_withnan, is_random_row=False, custom_train_row = None):
+def get_mask_and_data(data_withnan, is_random_row=False, custom_train_row = None, custom_train_col=None):
     data_withneg1 = data_withnan.nan_to_num(nan=-1.0)
     data_idtor = (data_withneg1 != -1).to(float)
     data_with0 = data_withneg1 * data_idtor # -1 -> 0
     trial = 0
     valid_condition = False
     while not valid_condition:
+        if custom_train_col is not None:
+            assert custom_train_row is None
+            
+            train_idtor, test_idtor = col_mask(data_idtor, custom_train_col)
 
-        if custom_train_row is not None:
+
+        elif custom_train_row is not None:
 
             train_idtor, test_idtor = row_mask(data_idtor, custom_train_row)
         elif is_random_row:
@@ -252,7 +257,6 @@ def get_everything_benchmark(seed, filter_method = 'date'):
     results_model_name_df = results.reset_index().rename(columns={"index": "model_name"})
     
     model_meta_info = attatch_meta(results_model_name_df[['model_name']], get_all_model_meta_info())
-    
     is_random_row = None
     sel_train_row = None
     
@@ -284,42 +288,34 @@ def get_everything_benchmark(seed, filter_method = 'date'):
     return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,None,model_names)
 
 
-def get_everything_benchmark_1_to_2(seed,train_dataset_id,test_dataset_id, filter_method):
+def get_everything_benchmark_1_to_2(seed,train_dataset_id,test_dataset_id):
     torch.manual_seed(seed)
-    #  = ['openllm_math', 'arc_challenge', 'ifeval', 'musr', 'bbh', 'gpqa', 'mmlu_pro']
-    results = get_everything_benchmark_raw()
-    breakpoint()
-    results_model_name_df = results.reset_index().rename(columns={"index": "model_name"})
-    
-    model_meta_info = attatch_meta(results_model_name_df[['model_name']], get_all_model_meta_info())
-    
-    is_random_row = None
-    sel_train_row = None
-    
-    if filter_method == 'date':
-        sel_train_row = uploaded_before(model_meta_info, "2025-02-26")
-        keep_sel, sel_train_row = random_drop(sel_train_row)
-    elif filter_method == 'size':
-        sel_train_row = size_smaller(model_meta_info, 14)
-        keep_sel, sel_train_row = random_drop(sel_train_row)
-    elif filter_method == 'random_row':
-        is_random_row = True
-    elif filter_method == 'random_mask':
-        is_random_row = False
-    else:
-        assert False
+    benchmarks = ['openllm_math', 'arc_challenge', 'ifeval', 'musr', 'bbh', 'gpqa', 'mmlu_pro']
 
+    train_benchmark = benchmarks[train_dataset_id]
+    test_benchmark = benchmarks[test_dataset_id]
+    
+    results = get_everything_benchmark_raw()
+
+    col_scenarios = pd.Series([i[0] for i in results.columns])
+    train_col_idtor = col_scenarios == train_benchmark
+    test_col_idtor = col_scenarios == test_benchmark
+    keep_mask = train_col_idtor | test_col_idtor
+    
+    train_col_idtor = train_col_idtor[keep_mask].to_numpy()
+    test_col_idtor = test_col_idtor[keep_mask].to_numpy()
+    results = results.loc[:, keep_mask.values]   # keep only relevant columns
+    
+    # ---- Remove rows where all entries are NaN ----
+    non_nan_mask = ~results.isna().all(axis=1)
+    results = results.loc[non_nan_mask]
+        
+    model_names = list(results.index)
     all_items = list(results.columns)
     cat1 = [i[0] for i in all_items]
-
-    model_names = list(results.index)
-
-    torch.manual_seed(seed)
     data_withnan = torch.tensor(results.astype("boolean").astype(float).to_numpy())
-    if filter_method in ['date','size']:
-        data_withnan = data_withnan[keep_sel]
-    
-    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan, is_random_row=is_random_row, custom_train_row=sel_train_row)
+
+    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan, custom_train_col=train_col_idtor)
     
     return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,None,model_names)
 
@@ -420,4 +416,6 @@ def get_everything_data_sk2(seed, is_adap_testing=False):
 # # result["Upload To Hub Date"]=df["Upload To Hub Date"].to_numpy()
 # result.to_csv("model_dataset_date_compare.csv")
 
-# breakpoint()
+
+# get_everything_benchmark_1_to_2(0,1,2)
+

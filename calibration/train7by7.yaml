@@ -1,0 +1,10 @@
+program: calibration/train_7by7.py
+project: info-ga-2
+method: grid
+metric:
+    goal: minimize
+    name: loss
+parameters:
+    factor:
+        values: [0, 1, 2, 4, 8, 16, 32]
+
