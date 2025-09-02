@@ -59,9 +59,12 @@ def get_everything_benchmark_raw():
     local_path = snapshot_download(
         repo_id="stair-lab/reeval_llm_leaderbord", repo_type="dataset"
     )
-    df = pd.read_parquet(f"{local_path}/benchmark_data_open_llm.parquet")
+    with open(f"{local_path}/data/benchmark_data_open_llm_full.pkl", "rb") as f:
+        results = pickle.load(f)
+    # breakpoint()
+    return results
 
-    return df
+
 
 def get_official_provider_model_benchmark():
     local_path = snapshot_download(

@@ -84,7 +84,7 @@ def compute_r(probs, Y, idtor):
         r = np.corrcoef(x[valid], y[valid])[0, 1]
     else:
         r = np.nan
-    return r
+    return r, x, y
 
 
 
@@ -112,13 +112,13 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
     #     )
     #     # mode="offline",       # uncomment if your cluster egress is flaky; later `wandb sync`
     # )   
-    train_corr_path = f"results/corr/train_corr_{config_name}.pt"
-    test_corr_path = f"results/corr/test_corr_{config_name}.pt"
+    
+    mean_pred_test_path = f"results/corr/mean_pred_test_{config_name}.pt"
 
     # ---- check if both files exist ----
-    if os.path.exists(train_corr_path) and os.path.exists(test_corr_path):      
-        if torch.load(train_corr_path) is not None and torch.load(test_corr_path) is not None:
-            print(f"[Skip] Both {train_corr_path} and {test_corr_path} already exist. Exiting.")
+    if os.path.exists(mean_pred_test_path):      
+        if torch.load(mean_pred_test_path) is not None:
+            print(f"[Skip] {mean_pred_test_path} already exist. Exiting.")
         
             return
         
@@ -148,7 +148,7 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
     if factor == 0:
 
         print("using rash model")
-        P_hat = rasch(data_with0, train_idtor=train_idtor, B=5_000, device="cuda:0")
+        P_hat = rasch(data_with0, train_idtor=train_idtor, B=500, device="cuda:0")
     else:
         model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:0")
         model.eval()
@@ -169,15 +169,22 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
         torch.save(train_auc, f"results/auc/train_auc_{config_name}.pt")
         torch.save(test_auc, f"results/auc/test_auc_{config_name}.pt")
 
-        r_train = compute_r(P_hat.cpu(), Y.cpu(), train_idtor.cpu())
-        r_test = compute_r(P_hat.cpu(), Y.cpu(), test_idtor.cpu())
+        r_train, mean_true_train, mean_pred_train = compute_r(P_hat.cpu(), Y.cpu(), train_idtor.cpu())
+        r_test, mean_true_test, mean_pred_test = compute_r(P_hat.cpu(), Y.cpu(), test_idtor.cpu())
         
         print(f"{dataset} {masking_method} factor {K_fit} train corr: {r_train}")
         print(f"{dataset} {masking_method} factor {K_fit} test corr: {r_test}")
         print("*"*30)
         
         torch.save(r_train, f"results/corr/train_corr_{config_name}.pt")
+        
         torch.save(r_test, f"results/corr/test_corr_{config_name}.pt")
+        
+        torch.save(mean_true_train, f"results/corr/mean_true_train_{config_name}.pt")
+        torch.save(mean_pred_train, f"results/corr/mean_pred_train_{config_name}.pt")
+        
+        torch.save(mean_true_test, f"results/corr/mean_true_test_{config_name}.pt")
+        torch.save(mean_pred_test, f"results/corr/mean_pred_test_{config_name}.pt")
         
         # run_results = {
         #     "train_auc": float(train_auc),
@@ -229,20 +236,21 @@ def run_parallel_pool(trial_id, dataset_list, masking_method_list, factor_list):
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    # parser.add_argument("--dataset", type=str, default="HELM")
-    # parser.add_argument("--masking_method", type=str, default='random_mask')
+    parser.add_argument("--dataset", type=str, default="HELM")
+    parser.add_argument("--masking_method", type=str, default='random_mask')
     # parser.add_argument("--factor", type=int, default=2)
     parser.add_argument("--trial_id", type=int, default=0)
     args = parser.parse_args()
     # parallelize this part
-    mask_list = ["date","size","random_mask","random_row"] #"random_mask","random_row",
-    dataset_list = ["HELM","official_provider"] #,"HELM"
-    factor_list = [1, 2, 3, 8, 15, 30, 50]
-    # simple_model_job("HELM", "random_mask", 0, 1)
+    # mask_list = ["date","size","random_mask","random_row"] #"random_mask","random_row", ,"random_mask","random_row"
+    # dataset_list = ["HELM", "official_provider","everything"] #,"HELM"
+    factor_list = [ 1,0, 2, 4, 8, 16, 32, 64, 128, 256]
+    for f in factor_list:
+        simple_model_job(args.dataset, args.masking_method, f, args.trial_id)
     # parallelize the part below
     # sequential_job(0, 1, dataset_list, mask_list)
     # rasch
-    sequential_job(0, args.trial_id,dataset_list,mask_list)
+    # sequential_job(4, args.trial_id,dataset_list,mask_list)
     # run_parallel_pool(args.trial_id, dataset_list, mask_list, factor_list)
     
     # for factor in factor_list:

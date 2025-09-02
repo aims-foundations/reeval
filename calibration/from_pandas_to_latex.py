@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-def create_multilevel_latex_table(df, selected_factors=[1, 2, 4, 8, 15, 30, 50]):
+def create_multilevel_latex_table(df, selected_factors=[0, 1, 2, 4, 8, 15, 30, 50]):
     """
     Create a LaTeX table with multi-level structure:
     - Top level: AUC and Correlation metrics
@@ -144,15 +144,15 @@ def create_multilevel_latex_table(df, selected_factors=[1, 2, 4, 8, 15, 30, 50])
     lines.append("\\bottomrule")
     lines.append("\\end{tabular}")
     lines.append("\\end{table}")
-    
+
     return "\n".join(lines)
 
-def save_latex_table(df, filename="results/multilevel_table.tex", selected_factors=[1, 2, 4, 8, 15, 30, 50]):
+def save_latex_table(df, filename="results/multilevel_table.tex", selected_factors=[0, 1, 2, 4, 8, 15, 30, 50]):
     """
     Generate and save the LaTeX table to a file
     """
     latex_table = create_multilevel_latex_table(df, selected_factors)
-    
+
     with open(filename, 'w') as f:
         f.write(latex_table)
     
