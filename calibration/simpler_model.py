@@ -13,7 +13,7 @@ from multiprocessing import Pool
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import functools
 import traceback
-
+from rasch_model import rasch
 
 # import wandb
 class LogisticMF(nn.Module):
@@ -145,11 +145,19 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
     Y_missing = Y.clone().float()
     
     Y_missing[~train_idtor.bool()] = float("nan")
+    if factor == 0:
 
-    model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:0")
+        print("using rash model")
+        P_hat = rasch(data_with0, train_idtor=train_idtor, B=5_000, device="cuda:0")
+    else:
+        model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:0")
+        model.eval()
+        with torch.no_grad():
+            P_hat = torch.sigmoid(model.forward())
+
+    
     with torch.no_grad():
         auroc = AUROC(task="binary")
-        P_hat = torch.sigmoid(model.forward())
         P_hat = P_hat.cpu()
         train_auc = auroc(P_hat[train_idtor].cpu(), Y[train_idtor].cpu())
         print(f"factor {K_fit} train auc: {train_auc}")
@@ -228,13 +236,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # parallelize this part
     mask_list = ["date","size","random_mask","random_row"] #"random_mask","random_row",
-    dataset_list = ["official_provider"] #,"HELM"
+    dataset_list = ["HELM","official_provider"] #,"HELM"
     factor_list = [1, 2, 3, 8, 15, 30, 50]
-    # simple_model_job("official_provider", "date", 2, 1)
+    # simple_model_job("HELM", "random_mask", 0, 1)
     # parallelize the part below
     # sequential_job(0, 1, dataset_list, mask_list)
-    # sequential_job(1, args.trial_id,dataset_list,mask_list)
-    run_parallel_pool(args.trial_id, dataset_list, mask_list, factor_list)
+    # rasch
+    sequential_job(0, args.trial_id,dataset_list,mask_list)
+    # run_parallel_pool(args.trial_id, dataset_list, mask_list, factor_list)
     
     # for factor in factor_list:
     #     sequential_job(factor, args.trial_id)
