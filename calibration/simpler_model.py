@@ -152,7 +152,7 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
         if dataset == 'everything':
             b_size = 500
         print(f"using rash model b size: {b_size}")
-        P_hat = rasch(data_with0, train_idtor=train_idtor, B=b_size, device="cuda:0")
+        P_hat, _, _ = rasch(data_with0, train_idtor=train_idtor, B=b_size, device="cuda:0")
     else:
         model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:0")
         model.eval()

@@ -61,4 +61,5 @@ def rasch(data_with0, train_idtor, B=50_000, device="cuda:0"):
 
     # calculate metrics
     probs = torch.sigmoid(thetas[:, None] + zs[None, :])
-    return probs
+    
+    return probs, thetas, zs
