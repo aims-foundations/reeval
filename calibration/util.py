@@ -115,6 +115,19 @@ def row_mask(data_idtor,custom_train_row):
     
     return train_idtor, test_idtor
 
+def col_mask(data_idtor,custom_col_row):
+    
+    train_col_idtor = custom_col_row
+    
+    train_idtor = torch.zeros_like(data_idtor).int()
+    data_idtor = data_idtor.int()
+    train_idtor[:, train_col_idtor] = data_idtor[:, train_col_idtor]
+
+    train_idtor[:, ~train_col_idtor],_ = random_mask(data_idtor[:, ~train_col_idtor],0.1)
+    test_idtor = data_idtor - train_idtor
+    
+    return train_idtor, test_idtor
+
 
 def get_mask_and_data(data_withnan, is_random_row=False, custom_train_row = None):
     data_withneg1 = data_withnan.nan_to_num(nan=-1.0)
@@ -269,6 +282,49 @@ def get_everything_benchmark(seed, filter_method = 'date'):
     data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan, is_random_row=is_random_row, custom_train_row=sel_train_row)
     
     return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,None,model_names)
+
+
+def get_everything_benchmark_1_to_2(seed,train_dataset_id,test_dataset_id, filter_method):
+    torch.manual_seed(seed)
+    #  = ['openllm_math', 'arc_challenge', 'ifeval', 'musr', 'bbh', 'gpqa', 'mmlu_pro']
+    results = get_everything_benchmark_raw()
+    breakpoint()
+    results_model_name_df = results.reset_index().rename(columns={"index": "model_name"})
+    
+    model_meta_info = attatch_meta(results_model_name_df[['model_name']], get_all_model_meta_info())
+    
+    is_random_row = None
+    sel_train_row = None
+    
+    if filter_method == 'date':
+        sel_train_row = uploaded_before(model_meta_info, "2025-02-26")
+        keep_sel, sel_train_row = random_drop(sel_train_row)
+    elif filter_method == 'size':
+        sel_train_row = size_smaller(model_meta_info, 14)
+        keep_sel, sel_train_row = random_drop(sel_train_row)
+    elif filter_method == 'random_row':
+        is_random_row = True
+    elif filter_method == 'random_mask':
+        is_random_row = False
+    else:
+        assert False
+
+    all_items = list(results.columns)
+    cat1 = [i[0] for i in all_items]
+
+    model_names = list(results.index)
+
+    torch.manual_seed(seed)
+    data_withnan = torch.tensor(results.astype("boolean").astype(float).to_numpy())
+    if filter_method in ['date','size']:
+        data_withnan = data_withnan[keep_sel]
+    
+    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan, is_random_row=is_random_row, custom_train_row=sel_train_row)
+    
+    return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,None,model_names)
+
+
+
 
 # print("loading")
 # pd.read_csv("/lfs/skampere1/0/sttruong/reeval/calibration/all_benchmarks_joined.csv")
