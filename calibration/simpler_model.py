@@ -147,8 +147,12 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
     Y_missing[~train_idtor.bool()] = float("nan")
     if factor == 0:
 
-        print("using rash model")
-        P_hat = rasch(data_with0, train_idtor=train_idtor, B=500, device="cuda:0")
+        
+        b_size = 5_000
+        if dataset == 'everything':
+            b_size = 500
+        print(f"using rash model b size: {b_size}")
+        P_hat = rasch(data_with0, train_idtor=train_idtor, B=b_size, device="cuda:0")
     else:
         model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:0")
         model.eval()
@@ -246,7 +250,12 @@ if __name__ == "__main__":
     # dataset_list = ["HELM", "official_provider","everything"] #,"HELM"
     factor_list = [ 1,0, 2, 4, 8, 16, 32, 64, 128, 256]
     for f in factor_list:
-        simple_model_job(args.dataset, args.masking_method, f, args.trial_id)
+        try:
+            simple_model_job(args.dataset, args.masking_method, f, args.trial_id)
+        except Exception as e:
+            print(f"err: dataset={args.dataset}, mask={args.masking_method}, factor={f}, trial={args.trial_id}")
+            print(f" -> {type(e).__name__}: {e}")        # just type and message
+            traceback.print_exc()                        # full stack trace (optional)
     # parallelize the part below
     # sequential_job(0, 1, dataset_list, mask_list)
     # rasch
