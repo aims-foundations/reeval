@@ -2,21 +2,42 @@ import torch
 import numpy as np
 import scipy.stats as st
 import pandas as pd
-def summarize_distr(distr):
-    if  distr is None or len(distr) == 0:
-        return {"mean": None, "std": None, "ci95": (None, None)}
-    arr = np.array(distr, dtype=float)
-    n = len(arr)
-    mean = np.mean(arr)
-    std = np.std(arr, ddof=1)  # sample std (unbiased)
+# def summarize_distr(distr):
+#     if  distr is None or len(distr) == 0:
+#         return {"mean": None, "std": None, "ci95": (None, None)}
+#     arr = np.array(distr, dtype=float)
+#     n = len(arr)
+#     mean = np.mean(arr)
+#     std = np.std(arr, ddof=1)  # sample std (unbiased)
     
-    # t critical value for 95% CI
-    ci_low, ci_high = st.t.interval(
-        0.95, df=n-1, loc=mean, scale=std/np.sqrt(n)
-    )
+#     # t critical value for 95% CI
+#     ci_low, ci_high = st.t.interval(
+#         0.95, df=n-1, loc=mean, scale=std/np.sqrt(n)
+#     )
     
-    return {"mean": mean, "std": std, "ci95": (ci_low, ci_high)}
+#     return {"mean": mean, "std": std, "ci95": (ci_low, ci_high)}
 
+
+def summarize_distr(distr):
+    """
+    distr: 1D iterable of trials (may include NaNs)
+    returns: dict with mean, std, ci95=(p2.5, p97.5)
+    """
+    arr = np.asarray(distr, dtype=float)
+    # mask NaNs for stats that aren't nan-aware
+    valid = np.isfinite(arr)
+    if valid.sum() == 0:
+        return {"mean": None, "std": None, "ci95": (None, None)}
+
+    mean = arr[valid].mean()
+    std  = arr[valid].std(ddof=1) if valid.sum() > 1 else 0.0
+
+    if len(valid) == 1:
+        return {"mean": mean, "std": None, "ci95": (None, None)}
+    
+    # empirical 2.5% / 97.5% (use nanquantile for convenience)
+    p2p5, p97p5 = np.nanquantile(arr, [0.025, 0.975], method="linear")
+    return {"mean": mean, "std": std, "ci95": (p2p5, p97p5)}
 
     # mask_list = ["random_mask","random_row","date","size"]
     # dataset_list = ["official_provider","HELM"]
@@ -25,9 +46,10 @@ def summarize_distr(distr):
 
 metrics = ['auc','corr']
 # datasets = ["HELM","official_provider","everything"]
-datasets = ["HELM","official_provider"]
+datasets = ["HELM","official_provider",'everything']
 masking_methods = ["random_mask","random_row","date","size"]
-factors = [i for i in range(1,51)]
+# factors = [i for i in range(1,51)]
+factors = [0, 1, 2, 4, 8, 15, 30, 50]
 potential_trial = [i for i in range(100)]
 
 data_list = []
@@ -36,11 +58,15 @@ for metric in metrics:
     for dataset in datasets:
         for masking_method in masking_methods:
             for K_fit in factors:
+                if dataset == 'everything' and K_fit not in [0,4]:
+                    # breakpoint()
+                    continue
+                    
+                
                 distr = {
                     "train_dist":[],
                     "test_dist":[],
                 }
-                
                 for i in potential_trial:
                     try:
                         config_name = f"{dataset}_{masking_method}_k{K_fit}_i{i}"

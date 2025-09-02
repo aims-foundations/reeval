@@ -18,13 +18,18 @@ def create_multilevel_latex_table(df, selected_factors=[0, 1, 2, 4, 8, 15, 30, 5
         """Format mean ± CI for display, with optional bolding for best values"""
         if pd.isna(row['mean']) or pd.isna(row['ci95_low']) or pd.isna(row['ci95_high']):
             if not pd.isna(row['mean']):
-                formatted = f"{row['mean']:.3f} $\\pm$ --"
+                row['mean'] *= 100
+                formatted = f"{row['mean']:.1f} $\\pm$ --"
             else:
                 formatted = '--'
         else:
+            row['mean'] *= 100
+            row['ci95_high'] *= 100
+            row['ci95_low'] *= 100
+            
             mean = row['mean']
             ci_half_width = (row['ci95_high'] - row['ci95_low']) / 2
-            formatted = f"{mean:.3f} $\\pm$ {ci_half_width:.3f}"
+            formatted = f"{mean:.1f} $\\pm$ {ci_half_width:.2f}"
         
         if is_best and formatted != '--':
             formatted = f"\\textbf{{{formatted}}}"
@@ -41,7 +46,7 @@ def create_multilevel_latex_table(df, selected_factors=[0, 1, 2, 4, 8, 15, 30, 5
         'official_provider': ['random_mask', 'random_row', 'date', 'size'],
         'everything': ['random_mask', 'random_row', 'date', 'size']
     }
-    metrics = [ 'corr','auc']
+    metrics = ['auc','corr']
     
     # Calculate number of columns
     num_factor_cols = len(selected_factors)
@@ -100,7 +105,7 @@ def create_multilevel_latex_table(df, selected_factors=[0, 1, 2, 4, 8, 15, 30, 5
             # Dataset column (multirow on first occurrence)
             if row_count == dataset_start_row:
                 dataset_rows = len(masking_methods)  # Reduced since we don't multiply by splits anymore
-                row_data.append(f"\\multirow{{{dataset_rows}}}{{*}}{{{dataset}}}")
+                row_data.append(f"\\multirow{{{dataset_rows}}}{{*}}{{{dataset.replace('_',' ')}}}")
             else:
                 row_data.append("")
             
