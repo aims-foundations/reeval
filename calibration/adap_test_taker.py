@@ -4,7 +4,7 @@ from torch.distributions import Bernoulli
 import matplotlib.pyplot as plt
 import numpy as np
 from simpler_model import fit_logistic_mf
-from util import get_official_provider_benchmark, get_everything_benchmark
+from util import get_official_provider_benchmark, get_everything_benchmark, get_helm_benchmark
 import argparse
 from rasch_model import rasch
 import os
@@ -119,11 +119,21 @@ def grab_V_y(k):
     V_true = model.V.clone().cpu()
     return V_true, test_data, data_idtor_test
 
-def grab_V_y_rasch():
-    seed = 0
+def grab_V_y_rasch(dataset,seed=0):
+
     torch.manual_seed(seed)
-    device = "cuda:1"
-    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(seed, filter_method='random_row')
+    
+    
+    if dataset == "HELM":
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_helm_benchmark(seed, "random_mask")
+    elif dataset == "everything":
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(seed, "random_mask")
+    elif dataset == "official_provider":
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(seed, "random_mask")
+    else:
+        assert False
+    
+
     train_row_idtor = torch.bernoulli(data_idtor.max(axis=1).values * 0.8).bool()
     
     train_data = data_with0[train_row_idtor] 
@@ -133,15 +143,21 @@ def grab_V_y_rasch():
     train_data_missing = train_data.clone().float()
 
     # P_hat, _, zs = rasch(data_with0, train_idtor=train_idtor, B=5_000, device="cuda:0")
-    P_hat, _, zs = rasch(train_data_missing, train_idtor=data_idtor_train, B=5_000, device="cuda:0")
+    P_hat, _, zs = rasch(train_data_missing, train_idtor=data_idtor_train, B=500, device="cuda:0")
     auroc = AUROC(task="binary")
     train_auc = auroc(P_hat[data_idtor_train].cpu(), train_data_missing[data_idtor_train].cpu())
     print(f"sanity check: train auc{train_auc}")
     return zs, test_data, data_idtor_test
 
-def run_single_test_taker(test_taker_id):
+def run_single_test_taker(dataset,test_taker_id):
     is_rasch = True
-    res_path = f"results/cat/adaptive_thata_hats_official_data_rasch_{test_taker_id}.pt"
+    if is_rasch:
+        data_method_name = f"factor_0_dataset{dataset}_v2"
+    else:
+        assert False
+        
+    run_name = f"{data_method_name}_test_taker_id{test_taker_id}"
+    res_path = f"results/cat/adaptive_thata_hats_{run_name}.pt"
     if os.path.exists(res_path):      
         if torch.load(res_path) is not None:
             print(f"[Skip] {res_path} already exist. Exiting.")
@@ -149,13 +165,17 @@ def run_single_test_taker(test_taker_id):
     
     
     if is_rasch:
-        # V_true , test_data, data_idtor_test = grab_V_y_rasch()
-        # torch.save(V_true, "data/cat/V_true_rasch.pt")
-        # torch.save(test_data, "data/cat/test_data_rasch.pt")
-        # torch.save(data_idtor_test, "data/cat/data_idtor_test_rasch.pt")
-        V = torch.load("data/cat/V_true_rasch.pt")
-        test_data = torch.load("data/cat/test_data_rasch.pt")
-        data_idtor_test = torch.load("data/cat/data_idtor_test_rasch.pt")
+        data_idtor_test_path = f"data/cat/data_idtor_test_{data_method_name}.pt"
+        if not os.path.exists(data_idtor_test_path):  
+            V_true , test_data, data_idtor_test = grab_V_y_rasch(dataset)
+            
+            torch.save(V_true, f"data/cat/V_true_{data_method_name}.pt")
+            torch.save(test_data, f"data/cat/test_data_{data_method_name}.pt")
+            torch.save(data_idtor_test, f"data/cat/data_idtor_test_{data_method_name}.pt")
+        V = torch.load(f"data/cat/V_true_{data_method_name}.pt")
+        test_data = torch.load(f"data/cat/test_data_{data_method_name}.pt")
+        data_idtor_test = torch.load(f"data/cat/data_idtor_test_{data_method_name}.pt")
+
 
     #------------ test taker
 
@@ -206,8 +226,8 @@ def run_single_test_taker(test_taker_id):
         remain_ys = torch.cat([remain_ys[:next_item], remain_ys[next_item + 1:]])
     
     
-    torch.save(random_thata_hats, f"results/cat/random_thata_hats_official_data_rasch_{test_taker_id}.pt")
-    torch.save(adaptive_thata_hats, f"results/cat/adaptive_thata_hats_official_data_rasch_{test_taker_id}.pt")
+    torch.save(random_thata_hats, f"results/cat/random_thata_hats_{run_name}.pt")
+    torch.save(adaptive_thata_hats, f"results/cat/adaptive_thata_hats_{run_name}.pt")
     
     # plt.figure(figsize=(6, 5))
     # # plt.plot(np.arange(num_steps+1), (np.array(random_thata_hats) - theta_true) ** 2, label="random")
@@ -224,6 +244,7 @@ def run_single_test_taker(test_taker_id):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", type=str, default="everything", help="which test taker to simulate")
     parser.add_argument("--test_taker_id", type=int, default=0, help="which test taker to simulate")
     args = parser.parse_args()
     # V, test_data, data_idtor_test = grab_V_y_rasch()
@@ -235,4 +256,4 @@ if __name__ == "__main__":
     
     
     test_taker_id = args.test_taker_id
-    run_single_test_taker(test_taker_id)
+    run_single_test_taker(args.dataset, test_taker_id)
