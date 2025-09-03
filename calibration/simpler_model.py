@@ -115,13 +115,13 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
     # )   
     
     # mean_pred_test_path = f"results/corr/mean_pred_test_{config_name}.pt"
-    mean_pred_test_path = f"results/raw/train_idtor_{config_name}.pt"
+    mean_pred_test_path = f"results/raw/raw_data_package_{config_name}.pt"
     # ---- check if both files exist ----
-    # if os.path.exists(mean_pred_test_path):      
-    #     if torch.load(mean_pred_test_path) is not None:
-    #         print(f"[Skip] {mean_pred_test_path} already exist. Exiting.")
+    if os.path.exists(mean_pred_test_path):      
+        if torch.load(mean_pred_test_path) is not None:
+            print(f"[Skip] {mean_pred_test_path} already exist. Exiting.")
         
-    #         return
+            return
         
     print(f"running rank:{K_fit} at trial: {i} ")
     torch.manual_seed(i)
@@ -193,12 +193,21 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
         # torch.save(mean_pred_test, f"results/corr/mean_pred_test_{config_name}.pt")
         
         # save UV, test idtor , data
-        torch.save(U, f"results/raw/U_{config_name}.pt")
-        torch.save(V, f"results/raw/U_{config_name}.pt")
+        raw_data_package = {
+            "U":U,
+            "V":V,
+            "Y":Y,
+            "train_idtor":train_idtor,
+            "test_idtor":test_idtor,
+            "P_hat":P_hat,
+        }
         
-        torch.save(Y.cpu(), f"results/raw/Y_{config_name}.pt")
-        torch.save(train_idtor.cpu(), f"results/raw/train_idtor_{config_name}.pt")
-        torch.save(test_idtor.cpu(), f"results/raw/test_idtor_{config_name}.pt")
+        torch.save(raw_data_package, f"results/raw/raw_data_package_{config_name}.pt")
+        # torch.save(V, f"results/raw/V_{config_name}.pt")
+        
+        # torch.save(Y.cpu(), f"results/raw/Y_{config_name}.pt")
+        # torch.save(train_idtor.cpu(), f"results/raw/train_idtor_{config_name}.pt")
+        # torch.save(test_idtor.cpu(), f"results/raw/test_idtor_{config_name}.pt")
         
         # run_results = {
         #     "train_auc": float(train_auc),

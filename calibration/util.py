@@ -59,7 +59,7 @@ def get_everything_benchmark_raw():
     local_path = snapshot_download(
         repo_id="stair-lab/reeval_llm_leaderbord", repo_type="dataset"
     )
-    with open(f"{local_path}/data/benchmark_data_open_llm_full.pkl", "rb") as f:
+    with open(f"{local_path}/data/benchmark_data_open_llm_full_no_arc.pkl", "rb") as f:
         results = pickle.load(f)
 
     return results
@@ -253,13 +253,25 @@ def get_official_provider_benchmark(seed, filter_method = 'random_mask'):
 def get_everything_benchmark(seed, filter_method = 'date'):
     torch.manual_seed(seed)
 
+    dataset_dates = {
+        "IFEVAL": "2023-11-15",
+        "BBH": "2022-10-17",
+        "MATH": "2021-11-08",
+        "GPQA": "2023-11-20",
+        "MUSR": "2024-03-23",
+        "MMLU": "2024-11-06",
+        "arc_challenge": "2024-11-17"
+    }
+
+
+
     results = get_everything_benchmark_raw()
     results_model_name_df = results.reset_index().rename(columns={"index": "model_name"})
     
     model_meta_info = attatch_meta(results_model_name_df[['model_name']], get_all_model_meta_info())
     is_random_row = None
     sel_train_row = None
-    
+
     if filter_method == 'date':
         sel_train_row = uploaded_before(model_meta_info, "2025-02-26")
         keep_sel, sel_train_row = random_drop(sel_train_row)
@@ -286,6 +298,157 @@ def get_everything_benchmark(seed, filter_method = 'date'):
     data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan, is_random_row=is_random_row, custom_train_row=sel_train_row)
     
     return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,None,model_names)
+
+
+def create_time_difference_matrix(results, model_meta_info, dataset_dates):
+    """
+    Create a matrix showing time difference between model upload date and dataset date.
+    Positive values mean model was uploaded after dataset creation.
+    Negative values mean model was uploaded before dataset creation.
+    
+    Args:
+        results: DataFrame with models as index and (dataset, question) as columns
+        model_meta_info: DataFrame with model_name and Upload To Hub Date
+        dataset_dates: Dict mapping dataset names to their creation dates
+    
+    Returns:
+        time_diff_matrix: DataFrame with same shape as results, but values are time differences in days
+    """
+    
+    # Convert dataset dates to datetime
+    dataset_dates_dt = {}
+    for dataset, date_str in dataset_dates.items():
+        dataset_dates_dt[dataset] = pd.to_datetime(date_str)
+    
+    # Convert model upload dates to datetime
+    model_meta_info = model_meta_info.copy()
+    model_meta_info['Upload To Hub Date'] = pd.to_datetime(model_meta_info['Upload To Hub Date'])
+    
+    # Create a mapping from model name to upload date
+    model_date_mapping = dict(zip(model_meta_info['model_name'], model_meta_info['Upload To Hub Date']))
+    
+    # STEP 1: Create column series mapping each column to its dataset date (do this once)
+    print("Creating column-to-dataset mapping...")
+    col_to_dataset_date = pd.Series(index=results.columns, dtype='datetime64[ns]')
+    
+    for col in results.columns:
+        # Extract dataset name from column (assuming format like (dataset, question))
+        if isinstance(col, tuple):
+            dataset_name = col[0]  # First element of tuple
+        else:
+            # If column is a string, you might need to parse it differently
+            dataset_name = col.split('_')[0] if '_' in col else col
+        
+        # Map dataset names to match the keys in dataset_dates
+        dataset_key = None
+        for key in dataset_dates_dt.keys():
+            if key.lower() in dataset_name.lower() or dataset_name.lower() in key.lower():
+                dataset_key = key
+                break
+        
+        if dataset_key and dataset_key in dataset_dates_dt:
+            col_to_dataset_date[col] = dataset_dates_dt[dataset_key]
+        else:
+            col_to_dataset_date[col] = pd.NaT  # Not a Time
+    
+    # STEP 2: For each model, create a series of time differences and assign to matrix
+    print("Creating time difference matrix...")
+    time_diff_matrix = pd.DataFrame(
+        index=results.index,
+        columns=results.columns,
+        dtype=float
+    )
+
+    for model_name in results.index:
+        if model_name in model_date_mapping:
+            model_date = model_date_mapping[model_name]
+            
+            # Calculate time differences for all columns at once using vectorized operations
+            model_date_series = pd.Series(model_date, index=results.columns)
+            time_diffs = (model_date_series - col_to_dataset_date).dt.days
+
+            time_diff_matrix.loc[model_name] = time_diffs
+        else:
+
+            # If model not found in meta info, set entire row to NaN
+            time_diff_matrix.loc[model_name] = np.nan
+
+    return time_diff_matrix
+
+# Usage example with your existing variables:
+def get_time_diff_matrix_for_benchmark(seed):
+    """
+    Modified version of your function that also returns the time difference matrix
+    """
+    torch.manual_seed(seed)
+
+    dataset_dates = {
+        "IFEVAL": "2023-11-15",
+        "BBH": "2022-10-17", 
+        "MATH": "2021-11-08",
+        "GPQA": "2023-11-20",
+        "MUSR": "2024-03-23",
+        "MMLU": "2024-11-06",
+        "arc_challenge": "2024-11-17"
+    }
+
+    results = get_everything_benchmark_raw()
+    results_model_name_df = results.reset_index().rename(columns={"index": "model_name"})
+    
+    model_meta_info = attatch_meta(results_model_name_df[['model_name']], get_all_model_meta_info())
+    
+    # Create time difference matrix
+    time_diff_matrix = create_time_difference_matrix(results, model_meta_info, dataset_dates)
+    indicator_time_matrix = (time_diff_matrix >= 0).astype(int)
+
+    # Continue with your existing logic...
+    is_random_row = None
+    sel_train_row = None
+    
+    all_items = list(results.columns)
+    cat1 = [i[0] for i in all_items]
+    model_names = list(results.index)
+
+    torch.manual_seed(seed)
+    data_withnan = torch.tensor(results.astype("boolean").astype(float).to_numpy())
+
+    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan)
+    
+    data_idtor = data_idtor.bool()
+
+    time_diff_matrix = torch.tensor(time_diff_matrix.values, dtype=torch.float64)
+    indicator_time_matrix = torch.tensor(indicator_time_matrix.values, dtype=torch.float64)
+    
+    rmv_row_mask = torch.isnan(time_diff_matrix).any(dim=1)
+    # keep value rows
+    # time_diff_matrix_withneg1 = time_diff_matrix.nan_to_num(nan=-1.0)
+    # time_diff_matrix_idtor = (time_diff_matrix_withneg1 != -1).to(float)
+    # data_idtor = time_diff_matrix_idtor & time_diff_matrix_idtor
+
+    time_diff_matrix = time_diff_matrix[~rmv_row_mask]
+    indicator_time_matrix = indicator_time_matrix[~rmv_row_mask]
+    data_idtor = data_idtor[~rmv_row_mask]
+    data_with0 = data_with0[~rmv_row_mask]
+    
+    idx_i, idx_j = torch.meshgrid(
+        torch.arange(data_idtor.shape[0]), 
+        torch.arange(data_idtor.shape[1]), 
+        indexing='ij'
+    )
+
+    
+    
+
+    return {
+        "x":time_diff_matrix[data_idtor].unsqueeze(1),
+        'm':indicator_time_matrix[data_idtor],
+        'y':data_with0[data_idtor],
+        'idx_i':idx_i[data_idtor],
+        'idx_j':idx_j[data_idtor]
+    }
+    
+    # return data_withneg1, data_with0, data_idtor.bool(), (cat1, None, model_names), time_diff_matrix, indicator_time_matrix
+
 
 
 def get_everything_benchmark_1_to_2(seed,train_dataset_id,test_dataset_id):
