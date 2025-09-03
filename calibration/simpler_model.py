@@ -99,6 +99,7 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
     
     os.makedirs("results/auc", exist_ok=True)
     os.makedirs("results/corr", exist_ok=True)
+    os.makedirs("results/raw", exist_ok=True)
     config_name = f"{dataset}_{masking_method}_k{K_fit}_i{i}"
 
     run_name = f"wandb5_{config_name}"
@@ -113,14 +114,14 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
     #     # mode="offline",       # uncomment if your cluster egress is flaky; later `wandb sync`
     # )   
     
-    mean_pred_test_path = f"results/corr/mean_pred_test_{config_name}.pt"
-
+    # mean_pred_test_path = f"results/corr/mean_pred_test_{config_name}.pt"
+    mean_pred_test_path = f"results/raw/train_idtor_{config_name}.pt"
     # ---- check if both files exist ----
-    if os.path.exists(mean_pred_test_path):      
-        if torch.load(mean_pred_test_path) is not None:
-            print(f"[Skip] {mean_pred_test_path} already exist. Exiting.")
+    # if os.path.exists(mean_pred_test_path):      
+    #     if torch.load(mean_pred_test_path) is not None:
+    #         print(f"[Skip] {mean_pred_test_path} already exist. Exiting.")
         
-            return
+    #         return
         
     print(f"running rank:{K_fit} at trial: {i} ")
     torch.manual_seed(i)
@@ -152,10 +153,11 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
         if dataset == 'everything':
             b_size = 500
         print(f"using rash model b size: {b_size}")
-        P_hat, _, _ = rasch(data_with0, train_idtor=train_idtor, B=b_size, device="cuda:0")
+        P_hat, U, V = rasch(data_with0, train_idtor=train_idtor, B=b_size, device="cuda:0")
     else:
         model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:0")
         model.eval()
+        U,V = model.U, model.V
         with torch.no_grad():
             P_hat = torch.sigmoid(model.forward())
 
@@ -170,8 +172,8 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
         print(f"factor {K_fit} test auc: {test_auc}")
 
 
-        torch.save(train_auc, f"results/auc/train_auc_{config_name}.pt")
-        torch.save(test_auc, f"results/auc/test_auc_{config_name}.pt")
+        # torch.save(train_auc, f"results/auc/train_auc_{config_name}.pt")
+        # torch.save(test_auc, f"results/auc/test_auc_{config_name}.pt")
 
         r_train, mean_true_train, mean_pred_train = compute_r(P_hat.cpu(), Y.cpu(), train_idtor.cpu())
         r_test, mean_true_test, mean_pred_test = compute_r(P_hat.cpu(), Y.cpu(), test_idtor.cpu())
@@ -180,15 +182,23 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
         print(f"{dataset} {masking_method} factor {K_fit} test corr: {r_test}")
         print("*"*30)
         
-        torch.save(r_train, f"results/corr/train_corr_{config_name}.pt")
+        # torch.save(r_train, f"results/corr/train_corr_{config_name}.pt")
         
-        torch.save(r_test, f"results/corr/test_corr_{config_name}.pt")
+        # torch.save(r_test, f"results/corr/test_corr_{config_name}.pt")
         
-        torch.save(mean_true_train, f"results/corr/mean_true_train_{config_name}.pt")
-        torch.save(mean_pred_train, f"results/corr/mean_pred_train_{config_name}.pt")
+        # torch.save(mean_true_train, f"results/corr/mean_true_train_{config_name}.pt")
+        # torch.save(mean_pred_train, f"results/corr/mean_pred_train_{config_name}.pt")
         
-        torch.save(mean_true_test, f"results/corr/mean_true_test_{config_name}.pt")
-        torch.save(mean_pred_test, f"results/corr/mean_pred_test_{config_name}.pt")
+        # torch.save(mean_true_test, f"results/corr/mean_true_test_{config_name}.pt")
+        # torch.save(mean_pred_test, f"results/corr/mean_pred_test_{config_name}.pt")
+        
+        # save UV, test idtor , data
+        torch.save(U, f"results/raw/U_{config_name}.pt")
+        torch.save(V, f"results/raw/U_{config_name}.pt")
+        
+        torch.save(Y.cpu(), f"results/raw/Y_{config_name}.pt")
+        torch.save(train_idtor.cpu(), f"results/raw/train_idtor_{config_name}.pt")
+        torch.save(test_idtor.cpu(), f"results/raw/test_idtor_{config_name}.pt")
         
         # run_results = {
         #     "train_auc": float(train_auc),
@@ -248,7 +258,7 @@ if __name__ == "__main__":
     # parallelize this part
     # mask_list = ["date","size","random_mask","random_row"] #"random_mask","random_row", ,"random_mask","random_row"
     # dataset_list = ["HELM", "official_provider","everything"] #,"HELM"
-    factor_list = [ 1,0, 2, 4, 8, 16, 32, 64, 128, 256]
+    factor_list = [ 0,1, 2, 4, 8, 16, 32, 64, 128, 256]
     for f in factor_list:
         try:
             simple_model_job(args.dataset, args.masking_method, f, args.trial_id)
