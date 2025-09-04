@@ -2,7 +2,8 @@ import math
 import numpy as np
 import torch
 import torch.nn.functional as F
-
+from util import get_time_diff_matrix_for_benchmark
+import matplotlib.pyplot as plt
 torch.set_default_dtype(torch.float64)
 device = torch.device("cpu")
 
@@ -31,6 +32,44 @@ def corr(a, b):
     b = b - b.mean()
     denom = np.sqrt((a*a).sum() * (b*b).sum())
     return float((a*b).sum() / denom) if denom > 0 else np.nan
+
+def plot_loss_history(history, title="Training Loss", save_plot=None):
+    """
+    Plot loss vs epoch
+    
+    Args:
+        history: List or tensor of loss values
+        title: Plot title
+        save_plot: If provided, save plot to this filename
+    """
+    # Convert to numpy if tensor
+    if torch.is_tensor(history):
+        history = history.cpu().numpy()
+    
+    epochs = range(1, len(history) + 1)
+    
+    plt.figure(figsize=(10, 6))
+    plt.plot(epochs, history, 'b-', linewidth=2, marker='o', markersize=4)
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title(title)
+    plt.grid(True, alpha=0.3)
+    
+    # Add some useful info
+    min_loss = min(history)
+    min_epoch = np.argmin(history) + 1
+    plt.axhline(y=min_loss, color='r', linestyle='--', alpha=0.7)
+    plt.text(0.02, 0.98, f'Min Loss: {min_loss:.6f} (Epoch {min_epoch})', 
+             transform=plt.gca().transAxes, verticalalignment='top',
+             bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    
+    plt.tight_layout()
+    
+    if save_plot:
+        plt.savefig(save_plot, dpi=300, bbox_inches='tight')
+        print(f"Plot saved to {save_plot}")
+    
+    plt.show()
 
 # -------------- Synthetic data --------------
 
@@ -225,6 +264,7 @@ class EMContaminationRasch:
     def fit(self, iters=20, inner_max_iter=(60, 40, 40), verbose=True):
         hist = []
         for it in range(iters):
+            print(f"fitting {it} / {iters}")
             r = self.estep()
             self._mstep_theta_z(r, max_iter=inner_max_iter[0])
             self._mstep_delta(r,    max_iter=inner_max_iter[1])
@@ -234,32 +274,46 @@ class EMContaminationRasch:
             if verbose:
                 if it % 5 == 0:
                     print(f"[EM {it+1:02d}] NLL={nll:.6f}")
+                    torch.save(hist,f"results/contamination/history_{iters}.pt")
+                    rscore = self.estep()
+                    torch.save(rscore,f"results/contamination/r_{iters}.pt")
+                    plot_loss_history(hist,save_plot=f'results/plot/NLL{iters}.png')
         return hist
 
 # -------------- Run a demo --------------
+seed = 0
+# meta = make_synthetic(N=200, M=1_000, T_max=24.0, seed=8)
+# print(f"Avg true pi on exposed pairs: {meta['avg_pi_exposed']:.3f}")
+# print(f"Avg true pi overall:         {meta['avg_pi_overall']:.3f}")
 
-meta = make_synthetic(N=200, M=1000, T_max=24.0, seed=8)
-print(f"Avg true pi on exposed pairs: {meta['avg_pi_exposed']:.3f}")
-print(f"Avg true pi overall:         {meta['avg_pi_overall']:.3f}")
-breakpoint()
+device = "cuda:0"
+meta = get_time_diff_matrix_for_benchmark(seed)
+steps = 50*40
+print("got data")
 model = EMContaminationRasch(
-    idx_i=meta["idx_i"],
-    idx_j=meta["idx_j"],
-    y=meta["y"],
-    x=meta["x"],
-    m=meta["m"],
+    idx_i=meta["idx_i"].to(device),
+    idx_j=meta["idx_j"].to(device),
+    y=meta["y"].to(device),
+    x=meta["x"].to(device),
+    m=meta["m"].to(device),
     lam_theta=1e-3, lam_z=1e-3, lam_delta=1e-3, lam_alpha=1e-3
 )
-
+print("start fitting")
 # You can shrink inner_max_iter to speed up. Increase to tighten convergence.
-history = model.fit(iters=50, inner_max_iter=(40, 30, 30), verbose=True)
+history = model.fit(iters=steps, inner_max_iter=(40, 30, 30), verbose=True)
+# history = torch.load("/lfs/mercury2/0/sttruong/reeval/results/contamination/nll_history_1.pt")
+
 
 # Evaluate recovery
 with torch.no_grad():
+    r_scores = model.estep().cpu().numpy()
+    torch.save(r_scores,f"results/contamination/r_score_{steps}.pt")
+    torch.save(history,f"results/contamination/history_{steps}.pt")
+    
     theta_hat = model.theta.detach().cpu().numpy()
     z_hat = model.z.detach().cpu().numpy()
     delta_hat = F.softplus(model.delta_raw).detach().cpu().numpy()
-    r_scores = model.estep().cpu().numpy()
+    
     c_true_np = meta["c_true"].cpu().numpy()
     mask_exp = meta["m"].cpu().numpy().astype(bool)
 

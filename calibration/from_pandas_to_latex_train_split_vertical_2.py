@@ -40,11 +40,11 @@ def create_multilevel_latex_table(df, selected_factors=[0, 1, 2, 4, 8, 15, 30, 5
     df_filtered = df[(df['K_fit'].isin(selected_factors)) & (df['split'] == split_type)].copy()
     
     # Define masking methods per dataset
-    datasets = ['HELM', 'official_provider', 'everything']
+    datasets = ['HELM', 'official_provider', 'everything2']
     dataset_masking_methods = {
         'HELM': ['random_mask', 'random_row'],  # HELM only has these two
         'official_provider': ['random_mask', 'random_row', 'date', 'size'],
-        'everything': ['random_mask', 'random_row', 'date', 'size']
+        'everything2': ['random_mask', 'random_row', 'date', 'size']
     }
     metrics = ['auc', 'corr', 'log_p']
     metric_names = {'auc': 'AUC', 'corr': 'Correlation', 'log_p': 'Log Probability'}

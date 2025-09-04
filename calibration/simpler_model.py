@@ -133,7 +133,7 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
         if masking_method in ['date','size']:
             return
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_helm_benchmark(i, masking_method)
-    elif dataset == "everything":
+    elif dataset == "everything2":
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, masking_method)
     elif dataset == "official_provider":
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(i, masking_method)
@@ -150,7 +150,7 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
 
         
         b_size = 5_000
-        if dataset == 'everything':
+        if dataset == 'everything2':
             b_size = 500
         print(f"using rash model b size: {b_size}")
         P_hat, U, V = rasch(data_with0, train_idtor=train_idtor, B=b_size, device="cuda:0")

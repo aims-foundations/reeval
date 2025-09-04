@@ -241,7 +241,7 @@ def visualize_response_matrix_universal(results, value, filename):
 res = get_everything_benchmark_raw()
 res_numeric = res.astype(float)
 # breakpoint()
-visualize_response_matrix_universal(res_numeric, res_numeric, "results/plot/everything_data.png")
+visualize_response_matrix_universal(res_numeric, res_numeric, "results/plot/everything_data_no_arc.png")
 
 # res = get_official_provider_model_benchmark()
 
