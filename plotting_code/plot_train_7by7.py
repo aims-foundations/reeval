@@ -53,7 +53,7 @@ def create_benchmark_cross_table(df, selected_factors=[0, 1, 2, 4, 8, 16, 32]):
     """
     
     # Get unique benchmarks (should be 7)
-    benchmarks = ['openllm_math', 'arc_challenge', 'ifeval', 'musr', 'bbh', 'gpqa', 'mmlu_pro']
+    benchmarks = ['openllm_math', 'ifeval', 'musr', 'bbh', 'gpqa', 'mmlu_pro'] # 'arc_challenge',
     
     def find_best_values_in_cell(train_bench, test_bench, selected_factors):
         """Find the best AUC and correlation values for a given train-test pair"""
@@ -209,7 +209,7 @@ def create_benchmark_cross_table(df, selected_factors=[0, 1, 2, 4, 8, 16, 32]):
     return "\n".join(lines)
 
 
-def save_latex_tables(df, filename_full="results/tables/benchmark_cross_table_full.tex", 
+def save_latex_tables(df, filename_full="results/tables/benchmark_cross_table_full_no_arc.tex", 
                     #  filename_compact="benchmark_cross_table_compact.tex",
                      selected_factors=[0, 1, 2, 4, 8, 16, 32]):
     """
