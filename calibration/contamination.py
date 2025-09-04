@@ -276,19 +276,19 @@ class EMContaminationRasch:
                     print(f"[EM {it+1:02d}] NLL={nll:.6f}")
                     torch.save(hist,f"results/contamination/history_{iters}.pt")
                     rscore = self.estep()
-                    torch.save(rscore,f"results/contamination/r_{iters}.pt")
+                    torch.save(rscore.cpu().numpy(),f"results/contamination/r_{iters}_v2.pt")
                     plot_loss_history(hist,save_plot=f'results/plot/NLL{iters}.png')
         return hist
 
 # -------------- Run a demo --------------
-seed = 0
+seed = 3
 # meta = make_synthetic(N=200, M=1_000, T_max=24.0, seed=8)
 # print(f"Avg true pi on exposed pairs: {meta['avg_pi_exposed']:.3f}")
 # print(f"Avg true pi overall:         {meta['avg_pi_overall']:.3f}")
 
 device = "cuda:0"
 meta = get_time_diff_matrix_for_benchmark(seed)
-steps = 50*40
+steps = 50*39
 print("got data")
 model = EMContaminationRasch(
     idx_i=meta["idx_i"].to(device),

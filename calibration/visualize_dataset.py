@@ -25,6 +25,55 @@ from util import get_HELM_model_benchmark,get_everything_benchmark_raw,get_offic
 bundles.iclr2024()
 print("running experiment")
 
+
+def sort_dataframe_by_difficulty_and_performance_within_scenario(df):
+    """
+    Sort DataFrame by:
+    1. Column difficulty within each scenario (harder tasks left within each scenario group)
+    2. Row performance across all scenarios (weaker models top)
+    
+    Args:
+        df: DataFrame with True/False values (and possibly NaN)
+            Columns should be tuples where first element is scenario name
+    
+    Returns:
+        Sorted DataFrame
+    """
+    # Convert to numeric (True->1, False->0, NaN stays NaN)
+    df_numeric = df.astype(float)
+    
+    # Extract scenarios from column names
+    scenarios = [col[0] if isinstance(col, tuple) else col for col in df.columns]
+    
+    # Group columns by scenario and sort within each group
+    scenario_groups = {}
+    for i, scenario in enumerate(scenarios):
+        if scenario not in scenario_groups:
+            scenario_groups[scenario] = []
+        scenario_groups[scenario].append(df.columns[i])
+    
+    # Sort columns within each scenario by difficulty (average correctness, ascending)
+    sorted_columns = []
+    for scenario in scenario_groups:
+        scenario_cols = scenario_groups[scenario]
+        scenario_df = df_numeric[scenario_cols]
+        
+        # Calculate average correctness for each column in this scenario
+        column_averages = scenario_df.mean(axis=0, skipna=True)
+        
+        # Sort by difficulty (ascending = harder tasks first)
+        sorted_scenario_cols = column_averages.sort_values(ascending=True).index
+        sorted_columns.extend(sorted_scenario_cols)
+    
+    # Sort rows by model performance (average correctness across all scenarios)
+    row_averages = df_numeric.mean(axis=1, skipna=True)
+    sorted_rows = row_averages.sort_values(ascending=True).index
+    
+    # Apply both sorts
+    df_sorted = df_numeric.loc[sorted_rows, sorted_columns]
+    
+    return df_sorted
+
 def visualize_response_matrix(results, value, filename):
     # Extract the groups labels in the order of the columns
     group_values = results.columns.get_level_values("scenario")
@@ -241,7 +290,9 @@ def visualize_response_matrix_universal(results, value, filename):
 res = get_everything_benchmark_raw()
 res_numeric = res.astype(float)
 # breakpoint()
-visualize_response_matrix_universal(res_numeric, res_numeric, "results/plot/everything_data_no_arc.png")
+res_sorted = sort_dataframe_by_difficulty_and_performance_within_scenario(res_numeric)
+
+visualize_response_matrix_universal(res_sorted, res_sorted, "results/plot/everything_data_no_arc_sorted.png")
 
 # res = get_official_provider_model_benchmark()
 

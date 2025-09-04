@@ -8,6 +8,8 @@ from util import get_official_provider_benchmark, get_everything_benchmark, get_
 import argparse
 from rasch_model import rasch
 import os
+import multiprocessing as mp
+from functools import partial
 from torchmetrics import AUROC
 torch.manual_seed(0)
 
@@ -16,10 +18,11 @@ def estimate_theta(theta, asked_ys, asked_zs, device="cuda:0"):
         optim.zero_grad()
 
         probs = torch.sigmoid(theta @ asked_zs.T)
+
         loss = -Bernoulli(probs=probs).log_prob(asked_ys).mean()
         loss.backward()
         return loss
-    
+
     asked_ys = torch.tensor(asked_ys)
     asked_zs = torch.stack(asked_zs)
     theta = theta.clone().requires_grad_(True)
@@ -103,7 +106,7 @@ def grab_V_y(dataset,k,seed=0):
     
     if dataset == "HELM":
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_helm_benchmark(seed, "random_mask")
-    elif dataset == "everything":
+    elif dataset == "everything2":
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(seed, "random_mask")
     elif dataset == "official_provider":
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(seed, "random_mask")
@@ -136,7 +139,7 @@ def grab_V_y_rasch(dataset,seed=0):
     
     if dataset == "HELM":
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_helm_benchmark(seed, "random_mask")
-    elif dataset == "everything":
+    elif dataset == "everything2":
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(seed, "random_mask")
     elif dataset == "official_provider":
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(seed, "random_mask")
@@ -154,7 +157,7 @@ def grab_V_y_rasch(dataset,seed=0):
 
     # P_hat, _, zs = rasch(data_with0, train_idtor=train_idtor, B=5_000, device="cuda:0")
     batch = 5000
-    if dataset == 'everything':
+    if dataset == 'everything2':
         batch = 500
     P_hat, _, zs = rasch(train_data_missing, train_idtor=data_idtor_train, B=batch, device="cuda:0")
     auroc = AUROC(task="binary")
@@ -164,43 +167,17 @@ def grab_V_y_rasch(dataset,seed=0):
 
 
 
-
-def run_single_test_taker(dataset,factor):
-
-    data_method_name = f"factor_{factor}_dataset{dataset}_v2"
-    
-
-
-    data_idtor_test_path = f"data/cat/data_idtor_test_{data_method_name}.pt"
-    if not os.path.exists(data_idtor_test_path):  
-        if factor == 0:
-            V_true , test_data, data_idtor_test = grab_V_y_rasch(dataset)
-        else:
-            V_true , test_data, data_idtor_test = grab_V_y(dataset, factor)
-        
-        torch.save(V_true, f"data/cat/V_true_{data_method_name}.pt")
-        torch.save(test_data, f"data/cat/test_data_{data_method_name}.pt")
-        torch.save(data_idtor_test, f"data/cat/data_idtor_test_{data_method_name}.pt")
-        
-    V = torch.load(f"data/cat/V_true_{data_method_name}.pt")
-    test_data = torch.load(f"data/cat/test_data_{data_method_name}.pt")
-    data_idtor_test = torch.load(f"data/cat/data_idtor_test_{data_method_name}.pt")
-    print("loaded V")
-    #------------ test taker
-
-    # ---- check if both files exist ----
-    # theta_true = 1.5
-    for test_taker_id in range(test_data.shape[0]):
-    
-    
+def test_taker(factor, V, test_data, data_idtor_test ,test_taker_id, data_method_name):
+    # try:
+        device = "cuda:0"
         run_name = f"{data_method_name}_test_taker_id{test_taker_id}"
         res_path = f"results/cat/adaptive_thata_hats_{run_name}.pt"
         if os.path.exists(res_path):      
             if torch.load(res_path) is not None:
                 print(f"[Skip] {res_path} already exist. Exiting.")
-                continue
+                return
 
-    
+
         num_item_pool = V.shape[0]
         num_steps = 50
         # zs = torch.randn(num_item_pool)
@@ -226,12 +203,18 @@ def run_single_test_taker(dataset,factor):
         for i in tqdm(range(num_steps)):
             random_asked_zs.append(V_true[i])
             random_asked_ys.append(ys[i])
+            # try:
             if factor == 0:
                 random_thata_hat = estimate_theta_rasch(random_thata_hat, random_asked_ys, random_asked_zs)
             else:
                 random_thata_hat = estimate_theta(random_thata_hat, random_asked_ys, random_asked_zs)
+            # except:
+            #     breakpoint()
+            #     print("err at random")
+
+            
             random_thata_hats.append(random_thata_hat)
-        
+
         # adaptive
         adaptive_thata_hat = torch.zeros((max(1,factor),), device=device)
         adaptive_thata_hats = [adaptive_thata_hat]
@@ -240,43 +223,91 @@ def run_single_test_taker(dataset,factor):
         remain_zs = V_true.clone()
         remain_ys = ys.clone()
         for _ in tqdm(range(num_steps)):
+
             if factor == 0:
                 fisher_info = compute_fisher_info_rasch(adaptive_thata_hat, remain_zs.to(device))
             else:
                 fisher_info = compute_fisher_info(adaptive_thata_hat, remain_zs.to(device))
-                
+
             next_item = torch.argmax(fisher_info)
             adaptive_asked_zs.append(remain_zs[next_item])
             adaptive_asked_ys.append(remain_ys[next_item])
+            # try:
             if factor == 0:
                 adaptive_thata_hat = estimate_theta_rasch(adaptive_thata_hat, adaptive_asked_ys, adaptive_asked_zs)
             else:
                 adaptive_thata_hat = estimate_theta(adaptive_thata_hat, adaptive_asked_ys, adaptive_asked_zs)
-            
+            # except:
+            #     print("err at adaptive testing")
             adaptive_thata_hats.append(adaptive_thata_hat)
             remain_zs = torch.cat([remain_zs[:next_item], remain_zs[next_item + 1:]])
             remain_ys = torch.cat([remain_ys[:next_item], remain_ys[next_item + 1:]])
+    
+    
+            torch.save(random_thata_hats, f"results/cat/random_thata_hats_{run_name}.pt")
+            torch.save(adaptive_thata_hats, f"results/cat/adaptive_thata_hats_{run_name}.pt")
+    # except:
+    #     print(f"crashed{run_name}")
+    
+    # plt.figure(figsize=(6, 5))
+    # # plt.plot(np.arange(num_steps+1), (np.array(random_thata_hats) - theta_true) ** 2, label="random")
+    # # plt.plot(np.arange(num_steps+1), (np.array(adaptive_thata_hats) - theta_true) ** 2, label="adaptive")
+    
+    # plt.plot(np.arange(num_steps+1), auc_for_list_Uhat(random_thata_hats,V_true,ys), label="random")
+    # plt.plot(np.arange(num_steps+1), auc_for_list_Uhat(adaptive_thata_hats,V_true,ys), label="adaptive")
+    
+    # plt.ylabel("auc")
+    # plt.ylim(0, 1)
+    # plt.legend()
+    # plt.show()
+    # plt.savefig(f"plot/auc_adap_testing_{num_steps}.png", dpi=600)
+
+
+
+
+
+
+def run_single_test_taker(dataset,factor):
+
+    data_method_name = f"factor_{factor}_dataset{dataset}_v2"
+    
+
+
+    data_idtor_test_path = f"data/cat/data_idtor_test_{data_method_name}.pt"
+    if not os.path.exists(data_idtor_test_path):  
+        if factor == 0:
+            V_true , test_data, data_idtor_test = grab_V_y_rasch(dataset)
+        else:
+            V_true , test_data, data_idtor_test = grab_V_y(dataset, factor)
         
+        torch.save(V_true, f"data/cat/V_true_{data_method_name}.pt")
+        torch.save(test_data, f"data/cat/test_data_{data_method_name}.pt")
+        torch.save(data_idtor_test, f"data/cat/data_idtor_test_{data_method_name}.pt")
+        return
         
-        torch.save(random_thata_hats, f"results/cat/random_thata_hats_{run_name}.pt")
-        torch.save(adaptive_thata_hats, f"results/cat/adaptive_thata_hats_{run_name}.pt")
-        
-        # plt.figure(figsize=(6, 5))
-        # # plt.plot(np.arange(num_steps+1), (np.array(random_thata_hats) - theta_true) ** 2, label="random")
-        # # plt.plot(np.arange(num_steps+1), (np.array(adaptive_thata_hats) - theta_true) ** 2, label="adaptive")
-        
-        # plt.plot(np.arange(num_steps+1), auc_for_list_Uhat(random_thata_hats,V_true,ys), label="random")
-        # plt.plot(np.arange(num_steps+1), auc_for_list_Uhat(adaptive_thata_hats,V_true,ys), label="adaptive")
-        
-        # plt.ylabel("auc")
-        # plt.ylim(0, 1)
-        # plt.legend()
-        # plt.show()
-        # plt.savefig(f"plot/auc_adap_testing_{num_steps}.png", dpi=600)
+    V = torch.load(f"data/cat/V_true_{data_method_name}.pt")
+    test_data = torch.load(f"data/cat/test_data_{data_method_name}.pt")
+    data_idtor_test = torch.load(f"data/cat/data_idtor_test_{data_method_name}.pt")
+    print("loaded V")
+    #------------ test taker
+
+    # Create a partial function with fixed arguments
+    test_taker_partial = partial(test_taker, factor, V, test_data, data_idtor_test)
+    
+    # Get list of test_taker_ids
+    test_taker_ids = list(range(test_data.shape[0]))
+    
+    # for i in test_taker_ids:
+    #     # test_taker_partial(i,data_method_name)
+    #     test_taker(factor, V, test_data, data_idtor_test, i,data_method_name)
+    # Parallelize the loop
+    with mp.Pool(processes=50) as pool:
+        pool.starmap(test_taker_partial, [(test_taker_id, data_method_name) for test_taker_id in test_taker_ids])
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="everything", help="which test taker to simulate")
+    parser.add_argument("--dataset", type=str, default="everything2", help="which test taker to simulate")
     parser.add_argument("--factor", type=int, default=2, help="which test taker to simulate")
     # parser.add_argument("--test_taker_id", type=int, default=0, help="which test taker to simulate")
     args = parser.parse_args()
