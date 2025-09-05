@@ -46,6 +46,38 @@ def size_smaller(df: pd.DataFrame, cutoff_size: float):
     mask = (model_size < cutoff_size) & (~model_size.isna())
     return mask
 
+def keep_random_trues(series, keep_count=500):
+    """
+    Randomly keep only 'keep_count' True values in a boolean Series,
+    setting the rest to False.
+    
+    Parameters:
+    series: pandas Series of boolean values
+    keep_count: number of True values to keep (default 500)
+    
+    Returns:
+    pandas Series with only keep_count True values randomly selected
+    """
+    # Make a copy to avoid modifying the original
+    result = series.copy()
+    
+    # Get indices where values are True
+    true_indices = series[series == True].index
+    
+    # If we have fewer trues than requested, return as is
+    if len(true_indices) <= keep_count:
+        return result
+    
+    # Randomly sample which True indices to keep
+    indices_to_keep = np.random.choice(true_indices, size=keep_count, replace=False)
+    
+    # Set all True values to False first
+    result[series == True] = False
+    
+    # Set the randomly selected indices back to True
+    result[indices_to_keep] = True
+    
+    return result
 
 def get_all_model_meta_info():
     local_path = snapshot_download(
@@ -262,9 +294,6 @@ def get_everything_benchmark(seed, filter_method = 'date'):
         "MMLU": "2024-11-06",
         "arc_challenge": "2024-11-17"
     }
-
-
-
     results = get_everything_benchmark_raw()
     results_model_name_df = results.reset_index().rename(columns={"index": "model_name"})
     
@@ -298,6 +327,66 @@ def get_everything_benchmark(seed, filter_method = 'date'):
     data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan, is_random_row=is_random_row, custom_train_row=sel_train_row)
     
     return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,None,model_names)
+
+
+def process_everything_500_sub_data(results):
+    benchmarks = ['openllm_math',  'ifeval', 'musr', 'bbh', 'gpqa', 'mmlu_pro']
+    col_scenarios = pd.Series([i[0] for i in results.columns])
+    keep_col_sel = pd.Series([False for i in results.columns])
+
+    for benchmark in benchmarks:
+        train_col_idtor = col_scenarios == benchmark
+        train_col_idtor = keep_random_trues(train_col_idtor)
+        keep_col_sel = keep_col_sel | train_col_idtor
+    results = results.loc[:, keep_col_sel.values]   # keep only relevant columns
+    return results
+    
+
+def get_everything_benchmark_500_sub_data(seed, filter_method = 'date'):
+    torch.manual_seed(seed)
+
+    results = get_everything_benchmark_raw()
+    results = process_everything_500_sub_data(results)
+    
+    
+    
+    
+    results_model_name_df = results.reset_index().rename(columns={"index": "model_name"})
+    
+    model_meta_info = attatch_meta(results_model_name_df[['model_name']], get_all_model_meta_info())
+    is_random_row = None
+    sel_train_row = None
+
+    if filter_method == 'date':
+        sel_train_row = uploaded_before(model_meta_info, "2025-02-26")
+        keep_sel, sel_train_row = random_drop(sel_train_row)
+    elif filter_method == 'size':
+        sel_train_row = size_smaller(model_meta_info, 14)
+        keep_sel, sel_train_row = random_drop(sel_train_row)
+    elif filter_method == 'random_row':
+        is_random_row = True
+    elif filter_method == 'random_mask':
+        is_random_row = False
+    else:
+        assert False
+
+    all_items = list(results.columns)
+    cat1 = [i[0] for i in all_items]
+
+    model_names = list(results.index)
+
+    torch.manual_seed(seed)
+    data_withnan = torch.tensor(results.astype("boolean").astype(float).to_numpy())
+    if filter_method in ['date','size']:
+        data_withnan = data_withnan[keep_sel]
+    
+    data_withneg1, data_with0, data_idtor, train_idtor, test_idtor = get_mask_and_data(data_withnan, is_random_row=is_random_row, custom_train_row=sel_train_row)
+    
+    return data_withneg1, data_with0, data_idtor.bool(), train_idtor.bool(), test_idtor.bool(), (cat1,None,model_names)
+
+
+
+
 
 
 def create_time_difference_matrix(results, model_meta_info, dataset_dates):
@@ -389,12 +478,11 @@ def get_time_diff_matrix_for_benchmark(seed):
         "GPQA": "2023-11-20",
         "MUSR": "2024-03-23",
         "MMLU": "2024-11-06",
-        "arc_challenge": "2024-11-17"
     }
 
     results = get_everything_benchmark_raw()
     results_model_name_df = results.reset_index().rename(columns={"index": "model_name"})
-    
+
     model_meta_info = attatch_meta(results_model_name_df[['model_name']], get_all_model_meta_info())
     
     # Create time difference matrix
@@ -444,7 +532,11 @@ def get_time_diff_matrix_for_benchmark(seed):
         'm':indicator_time_matrix[data_idtor],
         'y':data_with0[data_idtor],
         'idx_i':idx_i[data_idtor],
-        'idx_j':idx_j[data_idtor]
+        'idx_j':idx_j[data_idtor],
+        "orig_x":time_diff_matrix,
+        "model_names":pd.Series(model_names)[~rmv_row_mask.numpy()],
+        "cat1":cat1,
+        
     }
     
     # return data_withneg1, data_with0, data_idtor.bool(), (cat1, None, model_names), time_diff_matrix, indicator_time_matrix
@@ -453,13 +545,13 @@ def get_time_diff_matrix_for_benchmark(seed):
 
 def get_everything_benchmark_1_to_2(seed,train_dataset_id,test_dataset_id):
     torch.manual_seed(seed)
-    benchmarks = ['openllm_math', 'arc_challenge', 'ifeval', 'musr', 'bbh', 'gpqa', 'mmlu_pro']
+    benchmarks = ['openllm_math', 'ifeval', 'musr', 'bbh', 'gpqa', 'mmlu_pro']
 
     train_benchmark = benchmarks[train_dataset_id]
     test_benchmark = benchmarks[test_dataset_id]
     
     results = get_everything_benchmark_raw()
-
+    results = process_everything_500_sub_data(results)
     col_scenarios = pd.Series([i[0] for i in results.columns])
     train_col_idtor = col_scenarios == train_benchmark
     test_col_idtor = col_scenarios == test_benchmark
@@ -581,4 +673,3 @@ def get_everything_data_sk2(seed, is_adap_testing=False):
 
 
 # get_everything_benchmark_1_to_2(0,1,2)
-
