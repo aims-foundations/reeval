@@ -74,7 +74,7 @@ def summarize_distr(distr):
 
 metrics = ['auc', 'corr', 'log_p']
 # datasets = ["HELM","official_provider","everything"]
-datasets = ["HELM","official_provider",'everything2']
+datasets = ["HELM","official_provider",'everything2',"everything3"]
 masking_methods = ["random_mask","random_row","date","size"]
 # factors = [i for i in range(1,51)]
 factors = [0, 1, 2, 4, 8, 16, 32, 64, 128, 256]
@@ -141,5 +141,5 @@ df = pd.DataFrame(flat_records)
 # df_2 = pd.read_csv("results/summary/partial_results_auc_corr_everything.csv")
 # df_combined = pd.concat([df, df_2], ignore_index=True)
 
-df.to_csv("results/summary/partial_results_auc_corr_all_2.csv", index=False)
+df.to_csv("results/summary/partial_results_auc_corr_all_3.csv", index=False)
 

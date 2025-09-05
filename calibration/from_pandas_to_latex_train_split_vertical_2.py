@@ -40,11 +40,12 @@ def create_multilevel_latex_table(df, selected_factors=[0, 1, 2, 4, 8, 15, 30, 5
     df_filtered = df[(df['K_fit'].isin(selected_factors)) & (df['split'] == split_type)].copy()
     
     # Define masking methods per dataset
-    datasets = ['HELM', 'official_provider', 'everything2']
+    datasets = ['HELM', 'official_provider', 'everything2',"everything3"]
     dataset_masking_methods = {
         'HELM': ['random_mask', 'random_row'],  # HELM only has these two
         'official_provider': ['random_mask', 'random_row', 'date', 'size'],
-        'everything2': ['random_mask', 'random_row', 'date', 'size']
+        'everything2': ['random_mask', 'random_row', 'date', 'size'],
+        'everything3': ['random_mask', 'random_row', 'date', 'size']
     }
     metrics = ['auc', 'corr', 'log_p']
     metric_names = {'auc': 'AUC', 'corr': 'Correlation', 'log_p': 'Log Probability'}
@@ -177,7 +178,7 @@ def save_latex_table(df, filename="results/multilevel_table.tex", selected_facto
 
 # Example usage:
 if __name__ == "__main__":
-    df = pd.read_csv("results/summary/partial_results_auc_corr_all_2.csv")
+    df = pd.read_csv("results/summary/partial_results_auc_corr_all_3.csv")
     
     # Generate table for train split
     latex_table_train = create_multilevel_latex_table(df, split_type='train_dist')
@@ -191,5 +192,5 @@ if __name__ == "__main__":
     print(latex_table_test)
     
     # Save both tables to separate files
-    save_latex_table(df, "results/tables/partial_results_auc_corr_table_train.tex", split_type='train_dist')
-    save_latex_table(df, "results/tables/partial_results_auc_corr_table_test.tex", split_type='test_dist')
+    save_latex_table(df, "results/tables/partial_results_auc_corr_table_train_3.tex", split_type='train_dist')
+    save_latex_table(df, "results/tables/partial_results_auc_corr_table_test_3.tex", split_type='test_dist')

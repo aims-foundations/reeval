@@ -285,9 +285,9 @@ def run_single_test_taker(dataset,factor):
         torch.save(data_idtor_test, f"data/cat/data_idtor_test_{data_method_name}.pt")
         return
         
-    V = torch.load(f"data/cat/V_true_{data_method_name}.pt")
-    test_data = torch.load(f"data/cat/test_data_{data_method_name}.pt")
-    data_idtor_test = torch.load(f"data/cat/data_idtor_test_{data_method_name}.pt")
+    V = torch.load(f"data/cat/V_true_{data_method_name}.pt").cpu()
+    test_data = torch.load(f"data/cat/test_data_{data_method_name}.pt").cpu()
+    data_idtor_test = torch.load(f"data/cat/data_idtor_test_{data_method_name}.pt").cpu()
     print("loaded V")
     #------------ test taker
 
@@ -306,6 +306,7 @@ def run_single_test_taker(dataset,factor):
     
 
 if __name__ == "__main__":
+    mp.set_start_method('spawn', force=True)
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="everything2", help="which test taker to simulate")
     parser.add_argument("--factor", type=int, default=2, help="which test taker to simulate")
