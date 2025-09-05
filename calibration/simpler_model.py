@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import LBFGS
 from torchmetrics import AUROC
-from util import get_helm_benchmark, get_official_provider_benchmark, get_everything_data_sk2, get_mask_and_data,get_everything_benchmark, get_everything_benchmark_1_to_2
+from util import get_helm_benchmark, get_official_provider_benchmark, get_everything_data_sk2, get_mask_and_data,get_everything_benchmark, get_everything_benchmark_1_to_2, get_everything_benchmark_500_sub_data
 import numpy as np
 import os
 import matplotlib.pyplot as plt
@@ -135,6 +135,8 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_helm_benchmark(i, masking_method)
     elif dataset == "everything2":
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, masking_method)
+    elif dataset == "everything3":
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark_500_sub_data(i, masking_method)
     elif dataset == "official_provider":
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_official_provider_benchmark(i, masking_method)
     else:
@@ -150,7 +152,7 @@ def simple_model_job(dataset, masking_method, factor, trial_id):
 
         
         b_size = 5_000
-        if dataset == 'everything2':
+        if dataset in ['everything2','everything3']:
             b_size = 500
         print(f"using rash model b size: {b_size}")
         P_hat, U, V = rasch(data_with0, train_idtor=train_idtor, B=b_size, device="cuda:0")
@@ -267,7 +269,7 @@ if __name__ == "__main__":
     # parallelize this part
     # mask_list = ["date","size","random_mask","random_row"] #"random_mask","random_row", ,"random_mask","random_row"
     # dataset_list = ["HELM", "official_provider","everything"] #,"HELM"
-    factor_list = [ 0,1, 2, 4, 8, 16, 32, 64, 128, 256]
+    factor_list = [ 1, 0,2, 4, 8, 16, 32, 64, 128, 256]
     for f in factor_list:
         try:
             simple_model_job(args.dataset, args.masking_method, f, args.trial_id)
