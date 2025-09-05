@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import LBFGS
 from torchmetrics import AUROC
-from util import get_helm_benchmark, get_official_provider_benchmark, get_everything_data_sk2, get_mask_and_data,get_everything_benchmark, get_everything_benchmark_1_to_2
+from util import get_helm_benchmark, get_official_provider_benchmark, get_everything_data_sk2, get_mask_and_data,get_everything_benchmark, get_everything_benchmark_1_to_2, get_everything_benchmark_500_sub_data
 import numpy as np
 import os
 import matplotlib.pyplot as plt
@@ -96,7 +96,7 @@ def simple_model_job(train_idx, test_idx, factor, trial_id):
     i = trial_id
     
     os.makedirs("results/pred_dataset", exist_ok=True)
-    config_name = f"everything_train{train_idx}_test{test_idx}_k{K_fit}_i{i}"
+    config_name = f"everything3_train{train_idx}_test{test_idx}_k{K_fit}_i{i}"
 
     run_name = f"wandb5_{config_name}"
     
@@ -114,7 +114,7 @@ def simple_model_job(train_idx, test_idx, factor, trial_id):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(i)
     if train_idx == test_idx:
-        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark(i, filter_method= "random_mask")
+        data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark_500_sub_data(i, filter_method= "random_mask")
     else:
         data_withneg1, data_with0, data_idtor, train_idtor, test_idtor, _ = get_everything_benchmark_1_to_2(i, train_idx, test_idx)
     
@@ -130,10 +130,11 @@ def simple_model_job(train_idx, test_idx, factor, trial_id):
         
         b_size = 500
         print(f"using rash model b size: {b_size}")
-        P_hat = rasch(data_with0, train_idtor=train_idtor, B=b_size, device="cuda:0")
+        P_hat, U, V = rasch(data_with0, train_idtor=train_idtor, B=b_size, device="cuda:0")
     else:
         model = fit_logistic_mf(Y_missing, K=K_fit, mask=train_idtor, steps=50, lr=5e-3, device="cuda:0")
         model.eval()
+        U,V = model.U, model.V
         with torch.no_grad():
             P_hat = torch.sigmoid(model.forward())
 
@@ -166,6 +167,18 @@ def simple_model_job(train_idx, test_idx, factor, trial_id):
         
         torch.save(mean_true_test, f"results/pred_dataset/mean_true_test_{config_name}.pt")
         torch.save(mean_pred_test, f"results/pred_dataset/mean_pred_test_{config_name}.pt")
+        
+        raw_data_package = {
+            "U":U,
+            "V":V,
+            "Y":Y,
+            "train_idtor":train_idtor,
+            "test_idtor":test_idtor,
+            "P_hat":P_hat,
+        }
+        
+        torch.save(raw_data_package, f"results/raw/raw_data_package_{config_name}.pt")
+        
         
         # run_results = {
         #     "train_auc": float(train_auc),
@@ -234,10 +247,10 @@ if __name__ == "__main__":
     #         print(f" -> {type(e).__name__}: {e}")        # just type and message
     #         traceback.print_exc()                        # full stack trace (optional)
     
-    for i in range(7):
-        for j in range(7):
-            
-            simple_model_job(6-i, 6-j, args.factor, args.trial_id)
+    for i in range(6):
+        for j in range(6):
+            simple_model_job(5-i, 5-j, args.factor, args.trial_id)
+            # simple_model_job(5-i, 5-j, args.factor, args.trial_id)
     # parallelize the part below
     # sequential_job(0, 1, dataset_list, mask_list)
     # rasch
