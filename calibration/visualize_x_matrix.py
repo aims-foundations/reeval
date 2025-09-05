@@ -7,23 +7,6 @@ from tueplots import bundles
 import warnings
 from util import get_time_diff_matrix_for_benchmark
 warnings.filterwarnings('ignore')
-import pandas as pd
-import numpy as np
-import torch
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-from tueplots import bundles
-import warnings
-warnings.filterwarnings('ignore')
-
-import pandas as pd
-import numpy as np
-import torch
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-from tueplots import bundles
-import warnings
-warnings.filterwarnings('ignore')
 
 def sort_dataframe_by_mean_values_within_scenario(df, scenarios):
     """
@@ -181,9 +164,6 @@ def visualize_continuous_matrix(df, scenarios, model_names, filename, title="Mod
                transform=ax.transAxes, fontsize=10, verticalalignment='top',
                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
         
-        # plt.tight_layout()
-        # plt.savefig(filename, dpi=300, bbox_inches="tight", facecolor='white')
-        # plt.close()
         plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.95)
         plt.savefig(filename, dpi=300, bbox_inches="tight", facecolor='white')
         plt.close()
@@ -194,7 +174,7 @@ def visualize_continuous_matrix(df, scenarios, model_names, filename, title="Mod
     print(f"Number of scenarios: {len(set(scenarios))}")
     print(f"Number of models: {len(model_names)}")
 
-def visualize_meta_orig_x(meta, output_filename="meta_orig_x_visualization.png"):
+def visualize_meta_orig_x(meta, output_filename="results/plot/meta_orig_x_visualization.png"):
     """
     Main function to visualize meta['orig_x'] data.
     
@@ -233,7 +213,6 @@ def visualize_meta_orig_x(meta, output_filename="meta_orig_x_visualization.png")
     
     # Get sorted model names
     model_names_sorted = [model_names[i] for i in sorted_row_indices]
-    df_sorted = df
     
     print("Data sorted successfully!")
     print("Sample of sorted data:")
@@ -319,10 +298,41 @@ def visualize_meta_orig_x_custom_colormap(meta, output_filename="meta_orig_x_cus
         
         ax.set_title(f"Model Performance Matrix ({colormap} colormap)", fontsize=14, pad=20)
         
+        # Enhanced colorbar with custom ticks
         cbar = plt.colorbar(im, ax=ax, shrink=0.8)
-        cbar.set_label('Value', rotation=270, labelpad=20)
+        cbar.set_label('Days', rotation=270, labelpad=20)
         
-        plt.tight_layout()
+        # Create custom colorbar ticks
+        n_ticks = 10
+        tick_values = np.linspace(vmin, vmax, n_ticks)
+        cbar.set_ticks(tick_values)
+        cbar.set_ticklabels([f'{val:.0f}' for val in tick_values])
+        
+        # Add color legend with value ranges
+        n_legend_colors = 5
+        legend_values = np.linspace(vmin, vmax, n_legend_colors)
+        legend_colors = [cmap((val - vmin) / (vmax - vmin)) for val in legend_values]
+        
+        from matplotlib.patches import Rectangle
+        legend_elements = []
+        for i, (val, color) in enumerate(zip(legend_values, legend_colors)):
+            if i == 0:
+                label = f'≤ {val:.0f} days'
+            elif i == n_legend_colors - 1:
+                label = f'≥ {val:.0f} days'
+            else:
+                range_start = legend_values[i-1] if i > 0 else vmin
+                range_end = val
+                label = f'{range_start:.0f}-{range_end:.0f} days'
+            
+            legend_elements.append(Rectangle((0,0),1,1, facecolor=color, label=label))
+        
+        legend = ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.05, 1),
+                          title='Value Ranges', frameon=True, fancybox=True, shadow=True)
+        legend.get_title().set_fontsize(10)
+        legend.get_title().set_fontweight('bold')
+        
+        # plt.subplots_adjust(left=0.08, bottom=0.1, right=0.75, top=0.95)
         plt.savefig(output_filename, dpi=300, bbox_inches="tight", facecolor='white')
         plt.close()
     

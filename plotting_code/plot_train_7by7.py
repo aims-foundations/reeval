@@ -4,13 +4,13 @@ import numpy as np
 data_list = []
 factors = [0, 1, 2, 4, 8, 16, 32]
 i = 0
-benchmarks = ['openllm_math', 'arc_challenge', 'ifeval', 'musr', 'bbh', 'gpqa', 'mmlu_pro']
+benchmarks = ['openllm_math','ifeval', 'musr', 'bbh', 'gpqa', 'mmlu_pro']  # 'arc_challenge', 
 for K_fit in factors:
-    for train_idx in range(7):
-        for test_idx in range(7):
+    for train_idx in range(6):
+        for test_idx in range(6):
             train_benchmark = benchmarks[train_idx]
             test_benchmark = benchmarks[test_idx]
-            config_name = f"everything_train{train_idx}_test{test_idx}_k{K_fit}_i{i}"
+            config_name = f"everything3_train{train_idx}_test{test_idx}_k{K_fit}_i{i}"
             try:
                 train_auc = torch.load(f"results/pred_dataset/train_auc_{config_name}.pt")
                 test_auc = torch.load(f"results/pred_dataset/test_auc_{config_name}.pt")
@@ -209,7 +209,7 @@ def create_benchmark_cross_table(df, selected_factors=[0, 1, 2, 4, 8, 16, 32]):
     return "\n".join(lines)
 
 
-def save_latex_tables(df, filename_full="results/tables/benchmark_cross_table_full_no_arc.tex", 
+def save_latex_tables(df, filename_full="results/tables/benchmark_cross_table_full_no_arc_3.tex", 
                     #  filename_compact="benchmark_cross_table_compact.tex",
                      selected_factors=[0, 1, 2, 4, 8, 16, 32]):
     """
