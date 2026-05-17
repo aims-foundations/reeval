@@ -1,6 +1,6 @@
 from huggingface_hub import snapshot_download
 
-repo_id = f"stair-lab/reeval"
+repo_id = "stair-lab/reeval"
 
 snapshot_download(
     repo_id=repo_id,

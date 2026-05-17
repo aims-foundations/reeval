@@ -289,7 +289,7 @@ def plot_bar(datasets, nums, plot_path, ylabel, exp_axis=False):
             plt.text(
                 bar.get_x() + bar.get_width() / 2,
                 height,
-                f"{height/1000:.1f}k",
+                f"{height / 1000:.1f}k",
                 ha="center",
                 va="bottom",
                 fontsize=20,

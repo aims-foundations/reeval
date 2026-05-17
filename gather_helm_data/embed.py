@@ -1,8 +1,10 @@
-import pandas as pd
-from vllm import LLM
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+
+import pandas as pd
 from transformers import GPT2TokenizerFast
+from vllm import LLM
+
 
 def embed_sub_batch(idx, gpu_id, sub_batch, model_name):
     llm = LLM(
@@ -20,13 +22,14 @@ def embed_sub_batch(idx, gpu_id, sub_batch, model_name):
     embs = [o.outputs.embedding for o in outputs]
     return idx, embs
 
+
 if __name__ == "__main__":
-    gpu_ids = [1,2,3]
+    gpu_ids = [1, 2, 3]
     num_gpus = len(gpu_ids)
     model_name = "meta-llama/Llama-3.1-8B-Instruct"
     # When use Mistral to do embedding, need tokenizer_mode="mistral" and vllm==0.8.1
     # model_name = "mistralai/Mistral-7B-Instruct-v0.3"
-    
+
     # Load and filter prompts
     df = pd.read_pickle("../data/long.pkl")
     df = df.dropna(subset=["dicho_score", "input.text"])
@@ -41,14 +44,12 @@ if __name__ == "__main__":
         return_length=True,
     )
     unique_df["token_length"] = encodings["length"]
-    filtered = (
-        unique_df.loc[unique_df["token_length"] < 2048, 
-                    ["input.text", "token_length"]]
-                .sort_values("token_length", ascending=False)
-    )
+    filtered = unique_df.loc[
+        unique_df["token_length"] < 2048, ["input.text", "token_length"]
+    ].sort_values("token_length", ascending=False)
     unique_prompts = filtered["input.text"].tolist()
     print(len(unique_prompts))
-    
+
     # Split into sub‐batches for each GPU
     sub_batches = [unique_prompts[j::num_gpus] for j in range(num_gpus)]
 
@@ -66,10 +67,12 @@ if __name__ == "__main__":
                 ordered_embs[orig_idx] = emb
 
     # save result
-    question_embedding = pd.DataFrame({
-        "question": unique_prompts,
-        "embedding": ordered_embs,
-    })
+    question_embedding = pd.DataFrame(
+        {
+            "question": unique_prompts,
+            "embedding": ordered_embs,
+        }
+    )
     safe_name = model_name.replace("/", "_")
     out_path = Path("../data") / f"embed_{safe_name}.pkl"
     out_path.parent.mkdir(parents=True, exist_ok=True)

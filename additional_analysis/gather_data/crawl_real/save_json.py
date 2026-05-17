@@ -3,7 +3,6 @@ import os
 
 import pandas as pd
 import requests
-import wandb
 from tqdm import tqdm
 
 if __name__ == "__main__":
@@ -53,7 +52,7 @@ if __name__ == "__main__":
                     file.write(response.content)
                 found_tag = True
                 break
-        if found_tag == False:
+        if not found_tag:
             print(
                 f"Failed to download the file for {full_string}. Status code:",
                 response.status_code,

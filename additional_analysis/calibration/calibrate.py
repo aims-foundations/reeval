@@ -44,7 +44,7 @@ if __name__ == "__main__":
     embedder_short_name = args.embedder_name.split("/")[1]
     if not args.amortized_question:
         embedder_short_name = ""
-        
+
     data_folder = snapshot_download(
         repo_id="stair-lab/reeval_matrices", repo_type="dataset"
     )
@@ -165,15 +165,16 @@ if __name__ == "__main__":
 
     # save to csv
     import numpy as np
+
     abilities_df = np.array(abilities)
     # flatten the list of lists
     abilities_df = abilities_df.flatten()
     abilities_df = pd.DataFrame(abilities_df)
-    abilities_df.to_csv(f"abilities_python.csv", index=False, header=False)
+    abilities_df.to_csv("abilities_python.csv", index=False, header=False)
     item_parms = np.array(item_parms)
     difficulties = item_parms[:, 0]
     difficulties = pd.DataFrame(difficulties)
-    difficulties.to_csv(f"difficulties_python.csv", index=False, header=False)
+    difficulties.to_csv("difficulties_python.csv", index=False, header=False)
 
     pickle.dump(abilities, open(f"{output_dir}/abilities.pkl", "wb"))
     pickle.dump(item_parms, open(f"{output_dir}/item_parms.pkl", "wb"))
@@ -213,7 +214,7 @@ if __name__ == "__main__":
         repo_type="dataset",
         exist_ok=True,
     )
-    
+
     if embedder_short_name != "":
         embedder_short_name += "/"
     upload_api.upload_folder(

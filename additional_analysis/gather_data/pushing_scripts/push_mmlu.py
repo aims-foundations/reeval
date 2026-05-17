@@ -1,10 +1,10 @@
 import os
 
-from huggingface_hub import HfApi, snapshot_download
+from huggingface_hub import HfApi
 
 upload_api = HfApi()
 for file in os.listdir(
-    f"/dfs/scratch1/nqduc/reeval/data/gather_data/crawl_real/jsons/mmlu_json"
+    "/dfs/scratch1/nqduc/reeval/data/gather_data/crawl_real/jsons/mmlu_json"
 ):
     mmlu_file = (
         f"/dfs/scratch1/nqduc/reeval/data/gather_data/crawl_real/jsons/mmlu_json/{file}"

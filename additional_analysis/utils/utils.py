@@ -230,7 +230,9 @@ def load_ctt_corr_scores(
 
     if len(ctt_scores.unique()) <= 3:
         warnings.warn(
-            f"ctt_scores has little value: {ctt_scores.tolist()}", UserWarning
+            f"ctt_scores has little value: {ctt_scores.tolist()}",
+            UserWarning,
+            stacklevel=2,
         )
 
     return irt_scores, ctt_scores

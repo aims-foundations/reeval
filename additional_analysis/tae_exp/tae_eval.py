@@ -1,6 +1,5 @@
 import argparse
 import io
-import os
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 
@@ -12,8 +11,7 @@ from huggingface_hub import HfApi, snapshot_download
 from scipy.stats import spearmanr
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
-from utils.constants import DATASETS
-from utils.utils import inverse_sigmoid, set_seed, str2bool
+from utils.utils import inverse_sigmoid, set_seed
 
 warnings.filterwarnings("ignore")
 

@@ -3,17 +3,16 @@ import gc
 import io
 import os
 import pickle
+
 import pandas as pd
 import torch
-from datasets import Dataset, load_dataset
+from datasets import Dataset
 from embed_text_package.embed_text_v2 import Embedder
-from huggingface_hub import HfApi, snapshot_download
-from ppo_reward_model import extract_score
-from transformers import GenerationConfig
-from vllm import LLM, SamplingParams
-
 from gen_figures.plot import plot_hist
-from utils.constants import DESCRIPTION_MAP, SHORT_NAME_MAPPING
+from huggingface_hub import HfApi, snapshot_download
+from transformers import GenerationConfig
+from utils.constants import DESCRIPTION_MAP
+from vllm import LLM, SamplingParams
 
 
 def call_diff(
@@ -100,7 +99,6 @@ if __name__ == "__main__":
         {"role": "user", "content": user_content},
     ]
 
-
     # train_dataset = load_dataset(
     #     f"stair-lab/reeval-ppo-mocktest",
     #     f"{ds_short_name}_{ds_model_short_name}",
@@ -132,11 +130,16 @@ if __name__ == "__main__":
 
         breakpoint()
 
-
-        train_outputs = [train_outputs[0].outputs[i] for i in range(args.num_restarts) if train_outputs[0].outputs[i].finish_reason != "length"]
+        train_outputs = [
+            train_outputs[0].outputs[i]
+            for i in range(args.num_restarts)
+            if train_outputs[0].outputs[i].finish_reason != "length"
+        ]
 
         # print len(train_outputs[0].outputs[].text)
-        len_generated_text = [len(train_outputs[i].text) for i in range(len(train_outputs))]
+        len_generated_text = [
+            len(train_outputs[i].text) for i in range(len(train_outputs))
+        ]
         print(len_generated_text)
 
         # find the index of the longest text

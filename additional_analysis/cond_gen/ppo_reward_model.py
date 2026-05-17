@@ -1,8 +1,6 @@
 import pickle
 import re
 
-import pandas as pd
-
 import torch
 from datasets import Dataset
 from embed_text_package.embed_text_v2 import Embedder

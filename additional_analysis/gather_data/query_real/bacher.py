@@ -88,7 +88,7 @@ class Batcher:
             print(f"Error occurred: {e}")
         finally:
             executor.shutdown(wait=False)
-            return new_list
+        return new_list
 
     def complete_attitude_list(self, attitude_list, max_length):
         completed_list = []

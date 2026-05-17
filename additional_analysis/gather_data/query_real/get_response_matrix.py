@@ -4,13 +4,13 @@ import pandas as pd
 
 if __name__ == "__main__":
     input_dir = "../../../gather_data/query_real/eval"
-    output_dir = f"../../../data/pre_calibration/airbench"
+    output_dir = "../../../data/pre_calibration/airbench"
     os.makedirs(output_dir, exist_ok=True)
 
     matrix_df = pd.DataFrame()
     for filename in os.listdir(input_dir):
         if filename.endswith(".csv"):
-            model_name = filename.split(f"eval_")[1].split("_result.csv")[0]
+            model_name = filename.split("eval_")[1].split("_result.csv")[0]
             infile_path = os.path.join(input_dir, filename)
             data = pd.read_csv(infile_path)
             columns_to_keep = [

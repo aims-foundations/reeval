@@ -1,5 +1,4 @@
 import argparse
-import os
 
 import numpy as np
 from datasets import Dataset
@@ -60,9 +59,9 @@ if __name__ == "__main__":
     dataset_str = args.dataset.replace("/", "_")
     if args.mocktest:
         dataset_dict.push_to_hub(
-            f"stair-lab/reeval-ppo-mocktest", f"{dataset_str}_{model_short_name}"
+            "stair-lab/reeval-ppo-mocktest", f"{dataset_str}_{model_short_name}"
         )
     else:
         dataset_dict.push_to_hub(
-            f"stair-lab/reeval-ppo", f"{dataset_str}_{model_short_name}"
+            "stair-lab/reeval-ppo", f"{dataset_str}_{model_short_name}"
         )

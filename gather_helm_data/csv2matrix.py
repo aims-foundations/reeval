@@ -1,15 +1,20 @@
-import numpy as np
 import pickle
+
+import numpy as np
 
 if __name__ == "__main__":
     # read long table
-    with open(f"../data/long.pkl", "rb") as f:
+    with open("../data/long.pkl", "rb") as f:
         results_full = pickle.load(f)
 
     # keep useful columns, drop nan rows
     results_full = results_full.sample(frac=1).reset_index(drop=True)
-    results = results_full[["request.model", "input.text", "scenario", "benchmark", "dicho_score"]]
-    results = results.dropna(subset=["request.model", "input.text", "scenario", "benchmark", "dicho_score"])
+    results = results_full[
+        ["request.model", "input.text", "scenario", "benchmark", "dicho_score"]
+    ]
+    results = results.dropna(
+        subset=["request.model", "input.text", "scenario", "benchmark", "dicho_score"]
+    )
 
     # drop the dicho_score of 0.5
     # results = results[results["dicho_score"] != 0.5]
@@ -18,33 +23,45 @@ if __name__ == "__main__":
     assert results["dicho_score"].isin([0, 1]).all()
 
     # drop duplicate rows
-    results = results.drop_duplicates(subset=["request.model", "input.text", "scenario", "benchmark"], keep='first')
-    print(f"non-duplicate percentage:{results.shape[0]/results_full.shape[0]}")
+    results = results.drop_duplicates(
+        subset=["request.model", "input.text", "scenario", "benchmark"], keep="first"
+    )
+    print(f"non-duplicate percentage:{results.shape[0] / results_full.shape[0]}")
 
     # Count the number of unique input.text for each request.model
-    model_prompt_counts = results.groupby('request.model', observed=True)['input.text'].nunique()
+    model_prompt_counts = results.groupby("request.model", observed=True)[
+        "input.text"
+    ].nunique()
     # Count the number of unique request.model for each input.text
-    prompt_model_counts = results.groupby('input.text', observed=True)['request.model'].nunique()
+    prompt_model_counts = results.groupby("input.text", observed=True)[
+        "request.model"
+    ].nunique()
     # Identify models with at least 30 unique prompts and prompts with at least 30 unique models
     models_to_keep = model_prompt_counts[model_prompt_counts >= 30].index
     prompts_to_keep = prompt_model_counts[prompt_model_counts >= 30].index
     # Filter the DataFrame accordingly
     results = results[
-        results['request.model'].isin(models_to_keep) &
-        results['input.text'].isin(prompts_to_keep)
+        results["request.model"].isin(models_to_keep)
+        & results["input.text"].isin(prompts_to_keep)
     ]
 
     # pivot to turn long table into matrix
-    results = results.pivot(index="request.model", columns=["input.text", "scenario", "benchmark"], values="dicho_score")
+    results = results.pivot(
+        index="request.model",
+        columns=["input.text", "scenario", "benchmark"],
+        values="dicho_score",
+    )
     # sort the columns by scenario
     results = results.sort_index(axis=1, level="scenario")
 
     # nan -> -1 -> np.nan
     results = results.fillna(-1).astype(int)
     results = results.replace(-1, np.nan)
-    
+
     # delete all 0 or all 1 cols
-    results = results.loc[:, ~((results.isin([0, np.nan]).all()) | (results.isin([1, np.nan]).all()))]
+    results = results.loc[
+        :, ~((results.isin([0, np.nan]).all()) | (results.isin([1, np.nan]).all()))
+    ]
 
     # Compute the overall average for each scenario manually
     scenario_means = {}
@@ -55,18 +72,23 @@ if __name__ == "__main__":
     # Sort the scenario by their average score
     sorted_scenarios = sorted(scenario_means, key=scenario_means.get)
     # Create a mapping from scenario to its sort order
-    scenario_order = {scenario: order for order, scenario in enumerate(sorted_scenarios)}
+    scenario_order = {
+        scenario: order for order, scenario in enumerate(sorted_scenarios)
+    }
     # Reorder the columns based on the new scenario order using the key parameter
-    results = results.sort_index(axis=1, level="scenario", key=lambda x: x.map(scenario_order))
+    results = results.sort_index(
+        axis=1, level="scenario", key=lambda x: x.map(scenario_order)
+    )
     # Compute the overall average for each row (ignoring NaNs)
     row_means = results.mean(axis=1)
     # Sort the rows by these computed averages (lowest to highest)
     results = results.loc[row_means.sort_values().index]
-    
+
     print(results.shape)
-    print(f"missing percentage: {results.isna().values.sum() / (results.shape[0] * results.shape[1])}")
-    
+    print(
+        f"missing percentage: {results.isna().values.sum() / (results.shape[0] * results.shape[1])}"
+    )
+
     # save
     with open("../data/resmat.pkl", "wb") as f:
         pickle.dump(results, f)
-    

@@ -1,10 +1,13 @@
 import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 from tueplots import bundles
+
 plt.rcParams.update(bundles.iclr2024())
+
 
 def plot_cat(
     randoms,
@@ -19,7 +22,9 @@ def plot_cat(
         plt.figure(figsize=(10, 10))
         plt.plot(randoms, label="Random", color="red", linewidth=2)
         plt.plot(cats, label=r"Fisher (Full Bank)", color="blue", linewidth=2)
-        plt.plot(cat_subs, label=r"Fisher (10\% Bank)", color="darkgoldenrod", linewidth=2)
+        plt.plot(
+            cat_subs, label=r"Fisher (10\% Bank)", color="darkgoldenrod", linewidth=2
+        )
         plt.tick_params(axis="both", labelsize=25)
         plt.ylabel(ylabel, fontsize=25)
         if hline_value:
@@ -27,13 +32,20 @@ def plot_cat(
             if show_value:
                 ax = plt.gca()
                 ax.text(
-                    -0.03, hline_value, f"{hline_value:.2f}", transform=ax.get_yaxis_transform(),
-                    va="center", ha="right", color="black", fontsize=15
+                    -0.03,
+                    hline_value,
+                    f"{hline_value:.2f}",
+                    transform=ax.get_yaxis_transform(),
+                    va="center",
+                    ha="right",
+                    color="black",
+                    fontsize=15,
                 )
         plt.ylim(0, 1)
         plt.legend(fontsize=25)
         plt.savefig(plot_path, dpi=300, bbox_inches="tight")
         plt.close()
+
 
 def error_bar_plot_double(
     datasets,
@@ -63,7 +75,9 @@ def error_bar_plot_double(
 
     improvements.sort(key=lambda x: x[1], reverse=True)
     # print mean improvement
-    print(f"Mean improvement: {np.mean([improvement for _, improvement in improvements])}")
+    print(
+        f"Mean improvement: {np.mean([improvement for _, improvement in improvements])}"
+    )
     for dataset, improvement in improvements:
         print(f"{dataset}: {improvement}")
 
@@ -72,7 +86,8 @@ def error_bar_plot_double(
     ax.set_xlim(0, xlim_upper)
     plt.savefig(plot_path, dpi=300, bbox_inches="tight")
     plt.close()
-    
+
+
 scenarios = [
     "air_bench_2024",
     "babi_qa",
@@ -95,11 +110,11 @@ scenarios = [
     "synthetic_reasoning",
     "thai_exam",
     "truthful_qa",
-    "wikifact"
+    "wikifact",
 ]
 
 if __name__ == "__main__":
-    plot_dir = f"../result/cat_plot"
+    plot_dir = "../result/cat_plot"
     os.makedirs(plot_dir, exist_ok=True)
 
     cat_reli_reachs, cat_mse_reachs = [], []

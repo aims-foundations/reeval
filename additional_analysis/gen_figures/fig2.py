@@ -6,15 +6,13 @@ which is the Figure 2 in the paper.
 import os
 
 import pandas as pd
-
 from gen_figures.plot import plot_bar
 from huggingface_hub import snapshot_download
-from utils.constants import DATASETS, SHORT_NAME_MAPPING
-
+from utils.constants import DATASETS
 
 if __name__ == "__main__":
     DATASETS = [d for d in DATASETS if d != "combined_data"]
-    plot_dir = f"../plot/others"
+    plot_dir = "../plot/others"
     os.makedirs(plot_dir, exist_ok=True)
     data_folder = snapshot_download(
         repo_id="stair-lab/reeval_responses", repo_type="dataset"

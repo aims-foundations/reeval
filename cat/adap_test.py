@@ -1,9 +1,11 @@
-from tqdm import tqdm
-import torch
-from torch.distributions import Bernoulli
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
+from torch.distributions import Bernoulli
+from tqdm import tqdm
+
 torch.manual_seed(0)
+
 
 def estimate_theta(theta, asked_ys, asked_zs):
     def closure():
@@ -16,27 +18,31 @@ def estimate_theta(theta, asked_ys, asked_zs):
     asked_ys = torch.tensor(asked_ys)
     asked_zs = torch.tensor(asked_zs)
     theta = theta.clone().requires_grad_(True)
-    optim = torch.optim.LBFGS([theta], lr=0.1, max_iter=20, history_size=10, line_search_fn="strong_wolfe")
-    
+    optim = torch.optim.LBFGS(
+        [theta], lr=0.1, max_iter=20, history_size=10, line_search_fn="strong_wolfe"
+    )
+
     for iteration in range(100):
         if iteration > 0:
             previous_theta = theta.clone()
             previous_loss = loss.clone()
-        
+
         loss = optim.step(closure)
-        
+
         if iteration > 0:
             d_loss = previous_loss - loss
             d_theta = torch.norm(previous_theta - theta, p=2)
             grad_norm = torch.norm(optim.param_groups[0]["params"][0].grad, p=2)
             if d_loss < 1e-5 and d_theta < 1e-5 and grad_norm < 1e-5:
                 break
-    
+
     return theta.detach()
+
 
 def compute_fisher_info(theta, remain_zs):
     p = torch.sigmoid(theta[:, None] + remain_zs[None, :])
     return p * (1 - p)
+
 
 if __name__ == "__main__":
     theta_true = 1.5
@@ -53,9 +59,11 @@ if __name__ == "__main__":
     for i in tqdm(range(num_steps)):
         random_asked_zs.append(zs[i])
         random_asked_ys.append(ys[i])
-        random_thata_hat = estimate_theta(random_thata_hat, random_asked_ys, random_asked_zs)
+        random_thata_hat = estimate_theta(
+            random_thata_hat, random_asked_ys, random_asked_zs
+        )
         random_thata_hats.append(random_thata_hat)
-    
+
     # adaptive
     adaptive_thata_hat = torch.zeros((1,))
     adaptive_thata_hats = [adaptive_thata_hat]
@@ -68,14 +76,24 @@ if __name__ == "__main__":
         next_item = torch.argmax(fisher_info)
         adaptive_asked_zs.append(remain_zs[next_item])
         adaptive_asked_ys.append(remain_ys[next_item])
-        adaptive_thata_hat = estimate_theta(adaptive_thata_hat, adaptive_asked_ys, adaptive_asked_zs)
+        adaptive_thata_hat = estimate_theta(
+            adaptive_thata_hat, adaptive_asked_ys, adaptive_asked_zs
+        )
         adaptive_thata_hats.append(adaptive_thata_hat)
-        remain_zs = torch.cat([remain_zs[:next_item], remain_zs[next_item + 1:]])
-        remain_ys = torch.cat([remain_ys[:next_item], remain_ys[next_item + 1:]])
-    
+        remain_zs = torch.cat([remain_zs[:next_item], remain_zs[next_item + 1 :]])
+        remain_ys = torch.cat([remain_ys[:next_item], remain_ys[next_item + 1 :]])
+
     plt.figure(figsize=(6, 5))
-    plt.plot(np.arange(num_steps+1), (np.array(random_thata_hats) - theta_true) ** 2, label="random")
-    plt.plot(np.arange(num_steps+1), (np.array(adaptive_thata_hats) - theta_true) ** 2, label="adaptive")
+    plt.plot(
+        np.arange(num_steps + 1),
+        (np.array(random_thata_hats) - theta_true) ** 2,
+        label="random",
+    )
+    plt.plot(
+        np.arange(num_steps + 1),
+        (np.array(adaptive_thata_hats) - theta_true) ** 2,
+        label="adaptive",
+    )
     plt.ylabel("MSE")
     plt.ylim(0, 1)
     plt.legend()

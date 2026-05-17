@@ -1,13 +1,15 @@
-from datasets import load_dataset
-import random
 import pickle
-from tqdm import tqdm
+import random
 
-fw = load_dataset("HuggingFaceFW/fineweb", name="CC-MAIN-2024-10", split="train", streaming=True)
+from datasets import load_dataset
+
+fw = load_dataset(
+    "HuggingFaceFW/fineweb", name="CC-MAIN-2024-10", split="train", streaming=True
+)
 sampled_dataset = fw.filter(lambda x: random.random() < 0.1)
 data = []
 count = 0
-total_size = 16_000_000 # 4096 * 4096 * 3
+total_size = 16_000_000  # 4096 * 4096 * 3
 bathch_size = 50_000
 for sample in sampled_dataset.take(total_size):
     data.append(sample["text"])

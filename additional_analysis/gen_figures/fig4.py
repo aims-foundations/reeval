@@ -7,49 +7,48 @@ set. Each dot represents a dataset from HELM, which is the Figure 4 in the paper
 import os
 
 import pandas as pd
-
 from utils import plot_corr, plot_corr_double
 
 if __name__ == "__main__":
-    plot_dir = f"../plot/overall"
+    plot_dir = "../plot/overall"
     os.makedirs(plot_dir, exist_ok=True)
 
     nonamor4plugin_gof_train = pd.read_csv(
-        f"../plot/nonamor_calibration/nonamor4plugin_gof_train.csv"
+        "../plot/nonamor_calibration/nonamor4plugin_gof_train.csv"
     )["gof_means"].values
     nonamor4plugin_gof_test = pd.read_csv(
-        f"../plot/nonamor_calibration/nonamor4plugin_gof_test.csv"
+        "../plot/nonamor_calibration/nonamor4plugin_gof_test.csv"
     )["gof_means"].values
     nonamor4amor_gof_train = pd.read_csv(
-        f"../plot/nonamor_calibration/nonamor4amor_gof_train.csv"
+        "../plot/nonamor_calibration/nonamor4amor_gof_train.csv"
     )["gof_means"].values
     nonamor4amor_gof_test = pd.read_csv(
-        f"../plot/nonamor_calibration/nonamor4amor_gof_test.csv"
+        "../plot/nonamor_calibration/nonamor4amor_gof_test.csv"
     )["gof_means"].values
-    amor_gof_train = pd.read_csv(f"../plot/amor_calibration/amor_single_gof_train.csv")[
+    amor_gof_train = pd.read_csv("../plot/amor_calibration/amor_single_gof_train.csv")[
         "gof_means"
     ].values
-    amor_gof_test = pd.read_csv(f"../plot/amor_calibration/amor_single_gof_test.csv")[
+    amor_gof_test = pd.read_csv("../plot/amor_calibration/amor_single_gof_test.csv")[
         "gof_means"
     ].values
     plugin_gof_train = pd.read_csv(
-        f"../plot/plugin_regression/plugin_single_gof_train.csv"
+        "../plot/plugin_regression/plugin_single_gof_train.csv"
     )["gof_means"].values
     plugin_gof_test = pd.read_csv(
-        f"../plot/plugin_regression/plugin_single_gof_test.csv"
+        "../plot/plugin_regression/plugin_single_gof_test.csv"
     )["gof_means"].values
 
     nonamor_ctt = pd.read_csv(
-        f"../plot/nonamor_calibration/nonamor_calibration_corr_ctt.csv"
+        "../plot/nonamor_calibration/nonamor_calibration_corr_ctt.csv"
     )["corr_ctt_means"].values
-    amor_ctt = pd.read_csv(f"../plot/amor_calibration/amor_calibration_corr_ctt.csv")[
+    amor_ctt = pd.read_csv("../plot/amor_calibration/amor_calibration_corr_ctt.csv")[
         "corr_ctt_means"
     ].values
 
     nonamor_helm = pd.read_csv(
-        f"../plot/nonamor_calibration/nonamor_calibration_corr_helm.csv"
+        "../plot/nonamor_calibration/nonamor_calibration_corr_helm.csv"
     )["corr_helm_means"].values
-    amor_helm = pd.read_csv(f"../plot/amor_calibration/amor_calibration_corr_helm.csv")[
+    amor_helm = pd.read_csv("../plot/amor_calibration/amor_calibration_corr_helm.csv")[
         "corr_helm_means"
     ].values
 

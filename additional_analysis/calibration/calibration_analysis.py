@@ -13,7 +13,6 @@ from gen_figures.plot import auc_roc_plot, goodness_of_fit_plot, theta_corr_plot
 from huggingface_hub import snapshot_download
 from tqdm import tqdm
 from tueplots import bundles
-from utils.constants import DATASETS
 from utils.utils import arg2str
 
 warnings.filterwarnings("ignore")
@@ -451,4 +450,4 @@ if __name__ == "__main__":
     axs[2].set_title("Correlation with HELM")
     axs[3].set_title("AUC-ROC")
     plt.xticks(x, list_datasets, rotation=90)
-    plt.savefig(f"../plot/calibration_analysis.png", bbox_inches="tight", dpi=300)
+    plt.savefig("../plot/calibration_analysis.png", bbox_inches="tight", dpi=300)

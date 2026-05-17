@@ -7,7 +7,6 @@ import pandas as pd
 from datasets import Dataset
 from huggingface_hub import snapshot_download
 from transformers import AutoTokenizer
-from utils.constants import DESCRIPTION_MAP
 from utils.utils import set_seed
 
 if __name__ == "__main__":
@@ -31,7 +30,7 @@ if __name__ == "__main__":
 
     # Load the difficulty scores
     item_parms_folder = snapshot_download(
-        repo_id=f"stair-lab/reeval_results",
+        repo_id="stair-lab/reeval_results",
         repo_type="dataset",
     )
     item_parms = pickle.load(
@@ -62,7 +61,9 @@ if __name__ == "__main__":
         # remove question that are too long (which also includes the answer)
         prompt_len = np.array([len(prompt) for prompt in question_df["prompt"]])
         question_df = question_df[prompt_len < 1024]
-        difficulty = [difficulty[i] for i in range(len(difficulty)) if prompt_len[i] < 1024]
+        difficulty = [
+            difficulty[i] for i in range(len(difficulty)) if prompt_len[i] < 1024
+        ]
 
     question_dataset = Dataset.from_pandas(question_df)
 
@@ -80,7 +81,6 @@ if __name__ == "__main__":
             "questions across 57 domains"
         )
 
-
     # Define the chat template
     user_content = (
         "You are acting as a world-class psychometrician. Your job is to create a question with a specified "
@@ -97,7 +97,9 @@ if __name__ == "__main__":
         {"role": "user", "content": user_content},
         {"role": "assistant", "content": "%s"},
     ]
-    template = tokenizer.apply_chat_template(sft_chat, tokenize=False, add_generation_prompt=False)
+    template = tokenizer.apply_chat_template(
+        sft_chat, tokenize=False, add_generation_prompt=False
+    )
 
     # Process the text
     def process_text(text, difficulty):
@@ -143,5 +145,5 @@ if __name__ == "__main__":
     dataset_dict = dataset.train_test_split(test_size=0.2)
     dataset_str = args.dataset.replace("/", "_")
     dataset_dict.push_to_hub(
-        f"stair-lab/reeval-sft", f"{dataset_str}_{model_short_name}"
+        "stair-lab/reeval-sft", f"{dataset_str}_{model_short_name}"
     )

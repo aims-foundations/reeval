@@ -85,12 +85,12 @@ if __name__ == "__main__":
     item_parms = torch.tensor(item_parms, device=device)
     z = item_parms[:, 0]
 
-    assert (
-        y.shape[1] == z.shape[0]
-    ), f"y.shape[1]: {y.shape[1]}, z.shape[0]: {z.shape[0]}"
-    assert (
-        y.shape[0] == abilities.shape[0]
-    ), f"y.shape[0]: {y.shape[0]}, theta.shape[0]: {abilities.shape[0]}"
+    assert y.shape[1] == z.shape[0], (
+        f"y.shape[1]: {y.shape[1]}, z.shape[0]: {z.shape[0]}"
+    )
+    assert y.shape[0] == abilities.shape[0], (
+        f"y.shape[0]: {y.shape[0]}, theta.shape[0]: {abilities.shape[0]}"
+    )
 
     # rows in y with more than 500 non -1 values
     valid_rows_mask = (y != -1).sum(axis=1) > 500
@@ -184,7 +184,7 @@ if __name__ == "__main__":
         "y_mean"
     ].values
 
-    plot_dir = f"../plot/hard_easy_test"
+    plot_dir = "../plot/hard_easy_test"
     os.makedirs(plot_dir, exist_ok=True)
     plot_hard_easy(
         theta_hats,
