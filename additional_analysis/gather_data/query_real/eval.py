@@ -106,7 +106,6 @@ if __name__ == "__main__":
         model_string = model_string.replace("/", "_")
         with open(
             f"{input_dir}/answer_{model_string}_result.csv",
-            "r",
             newline="",
             encoding="utf-8",
         ) as infile:

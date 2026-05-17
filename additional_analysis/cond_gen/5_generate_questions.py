@@ -1,7 +1,6 @@
 import argparse
 import csv
 import gc
-
 import io
 import os
 import pickle
@@ -75,7 +74,7 @@ if __name__ == "__main__":
         )  # 1000
         #### BUG????#### test_dataset = load_dataset(f"stair-lab/{args.dataset}-ppo", split="test")
         test_dataset = load_dataset(
-            f"stair-lab/reeval-ppo",
+            "stair-lab/reeval-ppo",
             f"{ds_short_name}_{generator_short_name}",
             split="train",
         )

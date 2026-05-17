@@ -1,13 +1,12 @@
-from huggingface_hub import HfApi, snapshot_download
-import pandas as pd
-import torch
-import numpy as np
 import pickle
 
+import numpy as np
+import pandas as pd
+import torch
+from huggingface_hub import snapshot_download
+
 dataset = "mmlu"
-data_folder = snapshot_download(
-    repo_id="stair-lab/reeval_csv", repo_type="dataset"
-)
+data_folder = snapshot_download(repo_id="stair-lab/reeval_csv", repo_type="dataset")
 df_responses = pickle.load(open(f"{data_folder}/{dataset}/responses.pkl", "rb"))
 instances = pd.read_csv(f"{data_folder}/{dataset}/instances.csv")
 
@@ -23,14 +22,16 @@ subjects = df["subject"].unique()
 mean_score_per_subject = []
 for i in range(len(subjects)):
     # filter out the row of subject[0] and subject[1]
-    subjects_subset = subjects[0+i:1+i]
+    subjects_subset = subjects[0 + i : 1 + i]
     df_subject = df[df["subject"].isin(subjects_subset)]
 
     # only keep the model_id, instance_id, and exact_match columns
     df_subject = df_subject[["model_id", "instance_id", "exact_match"]]
 
     # create a pivot table with model_id as index, instance_id as columns, and exact_match as values
-    df_subject = df_subject.pivot(index="model_id", columns="instance_id", values="exact_match")
+    df_subject = df_subject.pivot(
+        index="model_id", columns="instance_id", values="exact_match"
+    )
 
     # drop the columns with only 0 or 1 value
     df_subject = df_subject.loc[:, (df_subject != 0).any()]
@@ -55,22 +56,28 @@ import matplotlib.pyplot as plt
 
 for i in range(75):
     # color gradient from blue to red
-    plt.plot(range(56), mean_score_per_subject[:, i], color=(i/75, 0, 1-i/75), alpha=0.5)
+    plt.plot(
+        range(56),
+        mean_score_per_subject[:, i],
+        color=(i / 75, 0, 1 - i / 75),
+        alpha=0.5,
+    )
 
 plt.savefig("ability_across_task.png", dpi=300, bbox_inches="tight")
 
 breakpoint()
 
 # save the data to csv file without index and header and type int
-df_subject.to_csv(f"Subset.csv", index=False, header=False)
+df_subject.to_csv("Subset.csv", index=False, header=False)
 
 # Run the mirt.R script to get the item_difficulty and ability_MAP
 import subprocess
+
 subprocess.run(["Rscript", "mirt.R"])
 
 # load item_difficulty and ability_MAP csv into a torch tensor
-item_difficulty = pd.read_csv(f"item_difficulty.csv", header=None)
-ability = pd.read_csv(f"ability_MAP.csv", header=None)
+item_difficulty = pd.read_csv("item_difficulty.csv", header=None)
+ability = pd.read_csv("ability_MAP.csv", header=None)
 item_difficulty = torch.tensor(item_difficulty.values)
 item_difficulty = item_difficulty[:, 1]
 ability = torch.tensor(ability.values)[:, 0]
@@ -84,6 +91,7 @@ prob_correct = torch.sigmoid(ability - item_difficulty).numpy()
 
 # compute AUC ROC with prob = prob_correct and ground truth = df_subject
 from sklearn.metrics import roc_auc_score
+
 y_true = df_subject.values.flatten()
 y_score = prob_correct.flatten()
 print("AUC ROC:", roc_auc_score(y_true, y_score))

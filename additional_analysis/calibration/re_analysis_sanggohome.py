@@ -1,23 +1,29 @@
-import pandas as pd
 import matplotlib.pyplot as plt
-from tueplots import bundles
+import pandas as pd
 from tqdm import tqdm
+from tueplots import bundles
+
 bundles.icml2024()
 import random
-import numpy as np
+
 import matplotlib.colors as mcolors
-from torchmetrics import AUROC
+import numpy as np
 import torch
+from torchmetrics import AUROC
+
 auroc = AUROC(task="binary")
-from torch.distributions import Bernoulli
 import pickle
-from huggingface_hub import hf_hub_download
+
+from torch.distributions import Bernoulli
+
 torch.manual_seed(0)
 device = "cuda:3"
 # device = "cpu"
 import os
-from torch.optim import LBFGS
+
 from huggingface_hub import snapshot_download
+from torch.optim import LBFGS
+
 
 def majority_vote(series):
     # Convert to NumPy array for fast vectorized operations
@@ -36,6 +42,7 @@ def majority_vote(series):
         return 0
     else:
         return random.choice([0, 1])
+
 
 def visualize_response_matrix(results, value, filename):
     # Extract the groups labels in the order of the columns
@@ -81,13 +88,15 @@ def visualize_response_matrix(results, value, filename):
         # Add vertical lines at each boundary
         for b in boundaries:
             ax.axvline(x=b, color="black", linewidth=0.25, linestyle="--", alpha=0.5)
-        
+
         # Add group labels above the matrix, but only if they're at least 500 apart
         for name, pos in zip(group_names, group_midpoints):
             if pos - last_label_pos >= min_spacing:
                 # name = eval(name)
-                # name = "/".join(name) 
-                ax.text(pos, -5, name, ha='center', va='bottom', rotation=90, fontsize=3)
+                # name = "/".join(name)
+                ax.text(
+                    pos, -5, name, ha="center", va="bottom", rotation=90, fontsize=3
+                )
                 last_label_pos = pos
 
         # add model labels
@@ -101,6 +110,7 @@ def visualize_response_matrix(results, value, filename):
         plt.savefig(f"{filename}.png", dpi=600, bbox_inches="tight")
         plt.close()
 
+
 def trainer(parameters, optim, closure, verbose=True):
     pbar = tqdm(range(100)) if verbose else range(100)
     for iteration in pbar:
@@ -108,22 +118,31 @@ def trainer(parameters, optim, closure, verbose=True):
             # Clone each tensor individually for previous state
             previous_parameters = [p.clone() for p in parameters]
             previous_loss = loss.clone()
-        
+
         loss = optim.step(closure)
-        
+
         if iteration > 0:
             d_loss = (previous_loss - loss).item()
             d_parameters = sum(
                 torch.norm(prev - curr, p=2).item()
                 for prev, curr in zip(previous_parameters, parameters)
             )
-            grad_norm = sum(torch.norm(p.grad, p=2).item() for p in parameters if p.grad is not None)
+            grad_norm = sum(
+                torch.norm(p.grad, p=2).item() for p in parameters if p.grad is not None
+            )
             if verbose:
-                pbar.set_postfix({"grad_norm": grad_norm, "d_parameter": d_parameters, "d_loss": d_loss})
-            
+                pbar.set_postfix(
+                    {
+                        "grad_norm": grad_norm,
+                        "d_parameter": d_parameters,
+                        "d_loss": d_loss,
+                    }
+                )
+
             if d_loss < 1e-5 and d_parameters < 1e-5 and grad_norm < 1e-5:
                 break
     return parameters
+
 
 def compute_auc(probs, data, train_idtor, test_idtor):
     train_probs = probs[train_idtor.bool()]
@@ -134,14 +153,15 @@ def compute_auc(probs, data, train_idtor, test_idtor):
     print(f"train auc: {auroc(train_probs, train_labels)}")
     print(f"test auc: {auroc(test_probs, test_labels)}")
 
+
 # results = pd.read_pickle("../gather_helm_data/helm_tables/responses.pkl")
 # results_full = pd.read_pickle("results_perplexity.pkl")
 # results_full = pd.read_pickle("results_perplexity_thirdattempt.pkl")
 # results_full = pd.read_pickle("results_perplexity_forthattempt.pkl")
 file_path = snapshot_download(
-    repo_id="stair-lab/results_perplexity_forthattempt", 
+    repo_id="stair-lab/results_perplexity_forthattempt",
     repo_type="dataset",
-    use_auth_token="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"
+    use_auth_token="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",
 )
 with open(f"{file_path}/results_perplexity_forthattempt.pkl", "rb") as f:
     results_full = pickle.load(f)
@@ -152,29 +172,43 @@ if os.path.exists("results.pkl"):
 
 else:
     results_full = results_full.sample(frac=1).reset_index(drop=True)
-    results = results_full[["request.model", "request.prompt", "scenario", "dicho_score"]]
-    results = results.dropna(subset=["request.model", "request.prompt", "scenario", "dicho_score"])
+    results = results_full[
+        ["request.model", "request.prompt", "scenario", "dicho_score"]
+    ]
+    results = results.dropna(
+        subset=["request.model", "request.prompt", "scenario", "dicho_score"]
+    )
     # drop the dicho_score of 0.5
     results = results[results["dicho_score"] != 0.5]
     results["dicho_score"] = results["dicho_score"].astype(bool)
     assert results["dicho_score"].isin([0, 1]).all()
-    results = results.drop_duplicates(subset=["request.model", "request.prompt", "scenario"], keep='first')
-    print(results.shape[0]/results_full.shape[0])
+    results = results.drop_duplicates(
+        subset=["request.model", "request.prompt", "scenario"], keep="first"
+    )
+    print(results.shape[0] / results_full.shape[0])
 
     # Count the number of unique request.prompt for each request.model
-    model_prompt_counts = results.groupby('request.model', observed=True)['request.prompt'].nunique()
+    model_prompt_counts = results.groupby("request.model", observed=True)[
+        "request.prompt"
+    ].nunique()
     # Count the number of unique request.model for each request.prompt
-    prompt_model_counts = results.groupby('request.prompt', observed=True)['request.model'].nunique()
+    prompt_model_counts = results.groupby("request.prompt", observed=True)[
+        "request.model"
+    ].nunique()
     # Identify models with at least 10 unique prompts and prompts with at least 10 unique models
     models_to_keep = model_prompt_counts[model_prompt_counts >= 30].index
     prompts_to_keep = prompt_model_counts[prompt_model_counts >= 30].index
     # Filter the DataFrame accordingly
     results = results[
-        results['request.model'].isin(models_to_keep) &
-        results['request.prompt'].isin(prompts_to_keep)
+        results["request.model"].isin(models_to_keep)
+        & results["request.prompt"].isin(prompts_to_keep)
     ]
 
-    results = results.pivot(index="request.model", columns=["request.prompt", "scenario"], values="dicho_score")
+    results = results.pivot(
+        index="request.model",
+        columns=["request.prompt", "scenario"],
+        values="dicho_score",
+    )
 
     # sort the columns by groups
     results = results.sort_index(axis=1, level="scenario")
@@ -199,7 +233,9 @@ else:
     group_order = {group: order for order, group in enumerate(sorted_groups)}
 
     # Reorder the columns based on the new group order using the key parameter
-    results = results.sort_index(axis=1, level="scenario", key=lambda x: x.map(group_order))
+    results = results.sort_index(
+        axis=1, level="scenario", key=lambda x: x.map(group_order)
+    )
 
     # Compute the overall average for each row (ignoring NaNs)
     row_means = results.mean(axis=1)
@@ -209,7 +245,7 @@ else:
 
     # convert nan back to -1
     results = results.replace(np.nan, -1)
-    # count the fraction of -1 
+    # count the fraction of -1
     print((results == -1).sum().sum() / (results.shape[0] * results.shape[1]))
     # >> 0.6929338169796397
 
@@ -238,7 +274,7 @@ embedding_name = "unique_prompts_embeddings_gte-Qwen2-7B-instruct.pkl"
 with open(f"{file_path}/{embedding_name}", "rb") as f:
     prompt_embedding = pickle.load(f)
 
-prompt_embedding.rename(columns={'question': 'request.prompt'}, inplace=True)
+prompt_embedding.rename(columns={"question": "request.prompt"}, inplace=True)
 merged_df = pd.merge(prompt_embedding, results_full, on="request.prompt", how="outer")
 embedding = merged_df[["scenario", "request.prompt", "embedding"]]
 # set the index to the request.prompt and scenario
@@ -254,18 +290,26 @@ if feature_type == "perplexity":
     perplexity = results_full[["perplexity"]]
     perplexity = perplexity.loc[results.columns]
 
-    features = torch.tensor(np.nan_to_num(perplexity, nan=0.0), dtype=torch.float, device=device)
+    features = torch.tensor(
+        np.nan_to_num(perplexity, nan=0.0), dtype=torch.float, device=device
+    )
     # >>> n_items
     features = features[:, None]
     # >>> n_items, 1
 
     has_feature = torch.tensor(~np.isnan(perplexity), dtype=torch.float, device=device)
 else:
-    has_feature = torch.tensor(~embedding["embedding"].isna(), dtype=torch.float, device=device)
+    has_feature = torch.tensor(
+        ~embedding["embedding"].isna(), dtype=torch.float, device=device
+    )
 
     # Convert embeddings to a tensor
-    embedding_values = embedding["embedding"].apply(lambda x: x if isinstance(x, list) else [0.0] * len(embedding["embedding"][0]))
-    features = torch.tensor(embedding_values.to_list(), dtype=torch.float, device=device)
+    embedding_values = embedding["embedding"].apply(
+        lambda x: x if isinstance(x, list) else [0.0] * len(embedding["embedding"][0])
+    )
+    features = torch.tensor(
+        embedding_values.to_list(), dtype=torch.float, device=device
+    )
     # >>>  n_items, embedding_dim
 
     # id = [i for i in range(has_feature.shape[0]) if has_feature[i] == 1]
@@ -282,47 +326,61 @@ print("Fraction of data with perplexity feature: ", has_feature_train.float().me
 w = torch.randn(features.shape[1], requires_grad=True, device=device)
 b = torch.randn(1, requires_grad=True, device=device)
 z_free = torch.zeros(n_items, requires_grad=True, device=device)
-optim_z = LBFGS([z_free, w, b], lr=0.1, max_iter=20, history_size=10, line_search_fn="strong_wolfe")
+optim_z = LBFGS(
+    [z_free, w, b], lr=0.1, max_iter=20, history_size=10, line_search_fn="strong_wolfe"
+)
 thetas_nuisance = torch.randn(150, n_test_takers, device=device)
+
+
 def closure_z():
     optim_z.zero_grad()
-    z = z_free * (1 - has_feature_train) + (features@w + b) * has_feature_train
+    z = z_free * (1 - has_feature_train) + (features @ w + b) * has_feature_train
     probs = torch.sigmoid(thetas_nuisance[:, :, None] + z[None, None, :])
-    loss = -(Bernoulli(probs=probs).log_prob(data_)*train_idtor).mean()
+    loss = -(Bernoulli(probs=probs).log_prob(data_) * train_idtor).mean()
     loss.backward()
     return loss
+
+
 z_free, w, b = trainer([z_free, w, b], optim_z, closure_z)
-z = z_free * (1 - has_feature) + (features@w + b) * has_feature
+z = z_free * (1 - has_feature) + (features @ w + b) * has_feature
 z = z.detach()
 perplexity_rasch_z = z.clone()
 
 thetas = torch.randn(n_test_takers, requires_grad=True, device=device)
-optim_theta = LBFGS([thetas], lr=0.1, max_iter=20, history_size=10, line_search_fn="strong_wolfe")
+optim_theta = LBFGS(
+    [thetas], lr=0.1, max_iter=20, history_size=10, line_search_fn="strong_wolfe"
+)
+
+
 def closure_theta():
     optim_theta.zero_grad()
     probs = torch.sigmoid(thetas[:, None] + z[None, :])
-    loss = -(Bernoulli(probs=probs).log_prob(data_)*train_idtor).mean()
+    loss = -(Bernoulli(probs=probs).log_prob(data_) * train_idtor).mean()
     loss.backward()
     return loss
+
+
 thetas = trainer([thetas], optim_theta, closure_theta)[0]
 perplexity_rasch_thetas = thetas.clone()
 
 # compute AUC ROC on train and test
 probs = torch.sigmoid(thetas[:, None] + z[None, :])
 compute_auc(probs, data_, train_idtor, test_idtor)
-visualize_response_matrix(results, probs.detach().cpu().numpy(), f"response_matrix_prob_{feature_type}")
+visualize_response_matrix(
+    results, probs.detach().cpu().numpy(), f"response_matrix_prob_{feature_type}"
+)
 
 # trial 0 valid condition: False
 # trial 1 valid condition: False
 # trial 2 valid condition: True
 # Fraction of data with perplexity feature:  tensor(0.8004, device='cuda:7')
-# 100%|██████████| 100/100 [01:19<00:00,  1.25it/s, grad_norm=0.00133, d_params=0, d_loss=0]           
-#  17%|█▋        | 17/100 [00:00<00:02, 27.87it/s, grad_norm=1.54e-7, d_thetas=0, d_loss=1.05e-10]       
+# 100%|██████████| 100/100 [01:19<00:00,  1.25it/s, grad_norm=0.00133, d_params=0, d_loss=0]
+#  17%|█▋        | 17/100 [00:00<00:02, 27.87it/s, grad_norm=1.54e-7, d_thetas=0, d_loss=1.05e-10]
 # train auc: 0.6750435829162598
 # test auc: 0.6736481189727783
 
 # Fraction of data with perplexity feature:  tensor(0.8010, device='cuda:5')
-# 100%|██████████| 100/100 [19:15<00:00, 11.55s/it, grad_norm=2.23e-5, d_parameter=1.25, d_loss=7.81e-7] 
-#  13%|█▎        | 13/100 [00:00<00:03, 24.07it/s, grad_norm=1.5e-7, d_parameter=0, d_loss=4.8e-10]       
+# 100%|██████████| 100/100 [19:15<00:00, 11.55s/it, grad_norm=2.23e-5, d_parameter=1.25, d_loss=7.81e-7]
+#  13%|█▎        | 13/100 [00:00<00:03, 24.07it/s, grad_norm=1.5e-7, d_parameter=0, d_loss=4.8e-10]
 # train auc: 0.6958008408546448
 # test auc: 0.69359290599823

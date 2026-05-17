@@ -6,7 +6,6 @@ from datasets import load_dataset
 from huggingface_hub import HfApi, snapshot_download
 from utils.constants import DATASETS
 
-
 if __name__ == "__main__":
     upload_api = HfApi()
 

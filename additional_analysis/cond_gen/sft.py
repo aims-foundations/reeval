@@ -13,24 +13,22 @@
 # limitations under the License.
 
 from dataclasses import dataclass
-from typing import Optional
 
 from datasets import (
-    concatenate_datasets,
     DatasetDict,
+    concatenate_datasets,
     get_dataset_config_names,
     load_dataset,
 )
 from transformers import AutoTokenizer
-
 from trl import (
-    get_kbit_device_map,
-    get_peft_config,
-    get_quantization_config,
     ModelConfig,
     SFTConfig,
     SFTTrainer,
     TrlParser,
+    get_kbit_device_map,
+    get_peft_config,
+    get_quantization_config,
 )
 
 
@@ -57,8 +55,8 @@ class ScriptArguments:
     dataset_name: str
     dataset_train_split: str = "train"
     dataset_test_split: str = "test"
-    dataset_subset: str = "air-bench_air_bench_2024_Meta-Llama-3.1-8B-Instruct" # "all"
-    config: Optional[str] = None
+    dataset_subset: str = "air-bench_air_bench_2024_Meta-Llama-3.1-8B-Instruct"  # "all"
+    config: str | None = None
     gradient_checkpointing_use_reentrant: bool = False
     ignore_bias_buffers: bool = False
 

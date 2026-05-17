@@ -1,10 +1,12 @@
+import copy
+
 import numpy as np
+import pandas as pd
 import torch
 import wandb
 from torch import nn, optim
 from tqdm import tqdm
-import copy
-import pandas as pd
+
 from .network import MLP
 
 
@@ -16,7 +18,7 @@ class IRT(nn.Module):
         device="cpu",
         report_to=None,
     ):
-        super(IRT, self).__init__()
+        super().__init__()
         self.D = D
         self.PL = PL
         self.device = device
@@ -158,17 +160,17 @@ class IRT(nn.Module):
     ):
         if embedding is not None:
             amortize_item = True
-            assert (
-                amortized_question_hyperparams is not None
-            ), "Please provide hyperparameters for item amortization"
+            assert amortized_question_hyperparams is not None, (
+                "Please provide hyperparameters for item amortization"
+            )
         else:
             amortize_item = False
 
         if model_features is not None:
             amortize_student = True
-            assert (
-                amortized_model_hyperparams is not None
-            ), "Please provide hyperparameters for student amortization"
+            assert amortized_model_hyperparams is not None, (
+                "Please provide hyperparameters for student amortization"
+            )
         else:
             amortize_student = False
 
@@ -243,7 +245,7 @@ class IRT(nn.Module):
         theta_nodes = torch.tensor(theta_nodes, device=response_matrix.device)
         # theta_nodes, weights = np.polynomial.hermite_e.hermegauss(n_mc_samples)
         # theta_nodes = torch.tensor(theta_nodes, device=response_matrix.device)
-        
+
         theta_matrices = theta_nodes[:, None, None]
         theta_matrices = theta_matrices.repeat(1, self.n_students, self.D)
         # >>> n_mc_samples x n_students x D
@@ -307,10 +309,10 @@ class IRT(nn.Module):
 
                 local_mask = mask[batch_start:batch_end]
 
-                masked_prob_matrix = prob_matrices #[:, local_mask]
+                masked_prob_matrix = prob_matrices  # [:, local_mask]
                 # >>> n_mc_samples x batch_size x n_questions
-                
-                obs = response_matrix[batch_start:batch_end] #[local_mask]
+
+                obs = response_matrix[batch_start:batch_end]  # [local_mask]
                 obs = obs[None, :, :].repeat(n_mc_samples, 1, 1)
                 # >>> n_mc_samples x batch_size x n_questions
 
@@ -323,7 +325,9 @@ class IRT(nn.Module):
                 weights_local = weights[:, None].repeat(1, obs.shape[1])
                 # >>> n_mc_samples x batch_size
 
-                log_marginal_prob = torch.logsumexp(ll_sum + torch.log(weights_local), dim=0)
+                log_marginal_prob = torch.logsumexp(
+                    ll_sum + torch.log(weights_local), dim=0
+                )
                 loss.append(-log_marginal_prob)
 
             loss = torch.concatenate(loss).mean()
@@ -332,7 +336,7 @@ class IRT(nn.Module):
 
             if self.report_to is not None:
                 wandb.log({"loss_item": loss.item()})
-            
+
             if iteration > 0:
                 params_norm_diff = 0
                 for p, pp in zip(parameters, previous_parameters):
@@ -344,17 +348,26 @@ class IRT(nn.Module):
                 grad_norm = 0
                 for p in parameters:
                     grad_norm += torch.norm(p.grad, p=2).item()
-                pbar.set_postfix({"grad_norm": grad_norm, "params_norm_diff": params_norm_diff, "loss_diff": loss_diff})
+                pbar.set_postfix(
+                    {
+                        "grad_norm": grad_norm,
+                        "params_norm_diff": params_norm_diff,
+                        "loss_diff": loss_diff,
+                    }
+                )
 
-                if params_norm_diff < self.tol and loss_diff < self.tol and grad_norm < self.tol:
+                if (
+                    params_norm_diff < self.tol
+                    and loss_diff < self.tol
+                    and grad_norm < self.tol
+                ):
                     break
 
         item_parms = self.get_item_parameters().cpu().detach().tolist()
         item_parms = np.array(item_parms)
         difficulties = item_parms[:, 0]
         difficulties = pd.DataFrame(difficulties)
-        difficulties.to_csv(f"difficulties_python.csv", index=False, header=False)
-
+        difficulties.to_csv("difficulties_python.csv", index=False, header=False)
 
     def em_ability(
         self,
@@ -423,14 +436,26 @@ class IRT(nn.Module):
                 wandb.log({"loss_ability": loss.item()})
 
             if iteration > 0:
-                params_norm_diff = torch.norm(self.ability - previous_parameters, p=2).item()
+                params_norm_diff = torch.norm(
+                    self.ability - previous_parameters, p=2
+                ).item()
                 loss_diff = torch.abs(loss - previous_loss).item()
 
                 # compute gradient norm
                 grad_norm = torch.norm(self.ability.grad, p=2).item()
-                pbar.set_postfix({"grad_norm": grad_norm, "params_norm_diff": params_norm_diff, "loss_diff": loss_diff})
+                pbar.set_postfix(
+                    {
+                        "grad_norm": grad_norm,
+                        "params_norm_diff": params_norm_diff,
+                        "loss_diff": loss_diff,
+                    }
+                )
 
-                if params_norm_diff < self.tol and loss_diff < self.tol and grad_norm < self.tol:
+                if (
+                    params_norm_diff < self.tol
+                    and loss_diff < self.tol
+                    and grad_norm < self.tol
+                ):
                     break
 
     def get_abilities(self):

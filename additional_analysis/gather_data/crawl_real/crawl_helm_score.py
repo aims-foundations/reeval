@@ -59,7 +59,7 @@ if __name__ == "__main__":
                     raise ValueError("model name is empty")
                 true_tag = 1
 
-            except (Exception, ValueError) as e:
+            except (Exception, ValueError):
                 try:
                     # If model name not found, extract from the 'div' with specific classes
                     model_element = row.find_element(
@@ -70,7 +70,7 @@ if __name__ == "__main__":
                     # Check if the model name is empty
                     if model_name == "":
                         raise ValueError("model name is empty")
-                except (Exception, ValueError) as e:
+                except (Exception, ValueError):
                     model_name = ""
                     print(f"Model name not found, url: {url}")
 
@@ -84,7 +84,7 @@ if __name__ == "__main__":
                 score = score_element.text.strip()
                 if score == "":
                     raise ValueError("score is empty")
-            except (Exception, ValueError) as e:
+            except (Exception, ValueError):
                 score = ""
                 print(f"Score not found, model name: {model_name}, url: {url}")
 

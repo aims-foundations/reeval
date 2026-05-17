@@ -10,7 +10,7 @@ class MLP(nn.Module):
         output_dim,
         device="cpu",
     ):
-        super(MLP, self).__init__()
+        super().__init__()
         self.input_dim = input_dim
         self.n_layers = n_layers
         self.hidden_dim = hidden_dim

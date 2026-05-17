@@ -1,0 +1,30 @@
+line-length = 88
+target-version = "py310"
+extend-exclude = ["*.ipynb"]
+
+[lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "W",   # pycodestyle warnings
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long (ruff format handles this)
+    "E741",  # ambiguous variable name (l, I, O common in math code)
+    "E402",  # module import not at top (common in scripts that set env first)
+    "E722",  # bare except (common in research code)
+    "E731",  # lambda assignment (stylistic)
+    "B007",  # unused loop variable (common in plotting/iteration code)
+    "B008",  # function call in default argument (common with argparse)
+    "B023",  # function uses loop variable (false positives common)
+    "B905",  # zip without strict= (added in 3.10, not enforcing)
+    "F821",  # undefined name (15 pre-existing, tracked separately)
+    "F841",  # unused local variable (minor)
+]
+
+[format]
+quote-style = "double"
+indent-style = "space"

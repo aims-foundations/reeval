@@ -1,7 +1,6 @@
 import argparse
 import io
 
-import numpy as np
 import pandas as pd
 import torch
 from datasets import Dataset
@@ -9,7 +8,6 @@ from embed_text_package.embed_text_v2 import Embedder
 from huggingface_hub import HfApi, snapshot_download
 from torch.utils.data import DataLoader
 from utils.constants import DATASETS, DESCRIPTION_MAP
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -98,7 +96,7 @@ if __name__ == "__main__":
         upload_api.delete_file(
             repo_id="stair-lab/reeval_matrices",
             repo_type="dataset",
-            path_in_repo=f"combined_data/item_embeddings.pt",
+            path_in_repo="combined_data/item_embeddings.pt",
         )
     except:
         pass

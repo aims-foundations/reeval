@@ -205,7 +205,7 @@ if __name__ == "__main__":
     test_questions = test_question_df["text"].tolist()
 
     test_dataset = load_dataset(
-        f"stair-lab/reeval-ppo",
+        "stair-lab/reeval-ppo",
         f"{ds_short_name}_{generator_short_name}",
         split="train",
     )

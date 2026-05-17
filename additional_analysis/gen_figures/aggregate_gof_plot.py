@@ -13,35 +13,35 @@ if __name__ == "__main__":
     plot_dir = "../plot/aggregate_gof_plot"
     os.makedirs(plot_dir, exist_ok=True)
 
-    trad_gof = pd.read_csv(f"../plot/nonamor_calibration/nonamor_calibration_gof.csv")[
+    trad_gof = pd.read_csv("../plot/nonamor_calibration/nonamor_calibration_gof.csv")[
         "gof_means"
     ].values
     plugin_gof_train = pd.read_csv(
-        f"../plot/plugin_regression/plugin_regression_gof_train.csv"
+        "../plot/plugin_regression/plugin_regression_gof_train.csv"
     )["gof_means"].values
     plugin_gof_test = pd.read_csv(
-        f"../plot/plugin_regression/plugin_regression_gof_test.csv"
+        "../plot/plugin_regression/plugin_regression_gof_test.csv"
     )["gof_means"].values
     joint_gof_train = pd.read_csv(
-        f"../plot/amor_calibration/amor_calibration_gof_train.csv"
+        "../plot/amor_calibration/amor_calibration_gof_train.csv"
     )["gof_means"].values
     joint_gof_test = pd.read_csv(
-        f"../plot/amor_calibration/amor_calibration_gof_test.csv"
+        "../plot/amor_calibration/amor_calibration_gof_test.csv"
     )["gof_means"].values
     dim2_1pl_trad_gof = pd.read_csv(
-        f"../plot/mle_multi_dim_calibration/dim2_1pl_gof_con_True.csv"
+        "../plot/mle_multi_dim_calibration/dim2_1pl_gof_con_True.csv"
     )["gof_means"].values
     dim2_1pl_amor_gof_train_dataset = pd.read_csv(
-        f"../plot/mle_multi_dim_amor_theta/mle_multi_dim_amor_theta_gof_con_True_train.csv"
+        "../plot/mle_multi_dim_amor_theta/mle_multi_dim_amor_theta_gof_con_True_train.csv"
     )["datasets"].values
     dim2_1pl_amor_gof_train = pd.read_csv(
-        f"../plot/mle_multi_dim_amor_theta/mle_multi_dim_amor_theta_gof_con_True_train.csv"
+        "../plot/mle_multi_dim_amor_theta/mle_multi_dim_amor_theta_gof_con_True_train.csv"
     )["gof_means"].values
     dim2_1pl_amor_gof_test_dataset = pd.read_csv(
-        f"../plot/mle_multi_dim_amor_theta/mle_multi_dim_amor_theta_gof_con_True_test.csv"
+        "../plot/mle_multi_dim_amor_theta/mle_multi_dim_amor_theta_gof_con_True_test.csv"
     )["datasets"].values
     dim2_1pl_amor_gof_test = pd.read_csv(
-        f"../plot/mle_multi_dim_amor_theta/mle_multi_dim_amor_theta_gof_con_True_test.csv"
+        "../plot/mle_multi_dim_amor_theta/mle_multi_dim_amor_theta_gof_con_True_test.csv"
     )["gof_means"].values
 
     dim2_1pl_amor_gof_train_aligned = [None] * len(DATASETS)

@@ -5,7 +5,7 @@ import re
 
 import numpy as np
 import pandas as pd
-from huggingface_hub import HfApi, snapshot_download
+from huggingface_hub import HfApi
 from tqdm import tqdm
 
 
@@ -127,14 +127,14 @@ if __name__ == "__main__":
     # 3. Questions with no references with logprob
 
     logprob_tag = False
-    with open(f"{input_dir}/{full_strings[0]}.json", "r") as f:
+    with open(f"{input_dir}/{full_strings[0]}.json") as f:
         data = json.load(f)
 
     if not data["request_states"][0]["instance"]["references"]:
         logprob_tag = True
         logprobs = []
         for full_string in full_strings:
-            with open(f"{input_dir}/{full_string}.json", "r") as f:
+            with open(f"{input_dir}/{full_string}.json") as f:
                 data = json.load(f)
             for question in data["request_states"]:
                 logprob = question["result"]["completions"][0]["logprob"]
@@ -155,7 +155,7 @@ if __name__ == "__main__":
                 delete_model_name(file_name_without_json) == non_model_string
             ):
                 model_name = extract_model_name(file_name_without_json)
-                with open(f"{input_dir}/{filename}", "r") as f:
+                with open(f"{input_dir}/{filename}") as f:
                     data = json.load(f)
 
                 len_q = len(data["request_states"])
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     search_dict = {"idx": [], "text": [], "is_deleted": []}
     base_idx = 0
     for i, non_model_string in enumerate(non_model_strings):
-        with open(f"{input_dir}/{max_len_file_names[i]}", "r") as f:
+        with open(f"{input_dir}/{max_len_file_names[i]}") as f:
             data = json.load(f)
         for j, question in enumerate(data["request_states"]):
             text = question["request"]["prompt"]

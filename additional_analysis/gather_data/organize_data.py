@@ -4,9 +4,7 @@ import os
 import pandas as pd
 import requests
 import torch
-from datasets import Dataset, load_dataset
 from huggingface_hub import HfApi, snapshot_download
-
 from tqdm import tqdm
 from utils.constants import DATASETS
 
@@ -248,9 +246,9 @@ if __name__ == "__main__":
     )
     combined_row_keys = df_sorted.rename(columns={"index": "model_name"})
 
-    assert (
-        combined_matrix.index.tolist() == combined_row_keys["model_name"].tolist()
-    ), f"{combined_matrix.index.tolist()} != {combined_row_keys['model_name'].tolist()}"
+    assert combined_matrix.index.tolist() == combined_row_keys["model_name"].tolist(), (
+        f"{combined_matrix.index.tolist()} != {combined_row_keys['model_name'].tolist()}"
+    )
 
     # upload the response matrix as a csv file
     combined_matrix_file = io.BytesIO()

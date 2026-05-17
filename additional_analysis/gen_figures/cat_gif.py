@@ -1,7 +1,6 @@
 import os
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from tueplots import bundles
@@ -64,7 +63,7 @@ if __name__ == "__main__":
         # plt.ylim(0, 1)
         plt.gca().get_yaxis().set_visible(False)
         plt.xlabel(r"$\theta$", fontsize=25)
-        plt.title(f"Iteration {i+1}/{num_iter}", fontsize=25)
+        plt.title(f"Iteration {i + 1}/{num_iter}", fontsize=25)
         plt.legend(fontsize=15)
         plt.tick_params(axis="both", labelsize=25)
 

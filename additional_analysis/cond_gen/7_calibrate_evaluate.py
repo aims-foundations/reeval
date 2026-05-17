@@ -6,7 +6,6 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import requests
 import torch
 from amortized_irt.irt import IRT
 from datasets import load_dataset
@@ -177,7 +176,7 @@ if __name__ == "__main__":
     ).tolist()
 
     test_dataset = load_dataset(
-        f"stair-lab/reeval-ppo",
+        "stair-lab/reeval-ppo",
         f"{ds_short_name}_{generator_short_name}",
         split="train",
     )
@@ -399,7 +398,7 @@ if __name__ == "__main__":
             ds_model_short_name = "_Meta-Llama-3.1-8B-Instruct"
 
         test_dataset = load_dataset(
-            f"stair-lab/reeval-ppo", ds_short_name + ds_model_short_name, split="train"
+            "stair-lab/reeval-ppo", ds_short_name + ds_model_short_name, split="train"
         )
         test_texts = test_dataset["text"][: args.num_samples]
         gt_difficulties = torch.tensor(
